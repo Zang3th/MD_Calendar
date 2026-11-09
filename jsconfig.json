@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "strict": true,
+    "noEmit": true,
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": []
+  },
+  "include": [
+    "app.js",
+    "domain/**/*.js",
+    "io/**/*.js",
+    "ui/**/*.js",
+    "types/globals.d.ts"
+  ],
+  "exclude": ["vendor", "node_modules", "playwright-report", "test-results"]
+}

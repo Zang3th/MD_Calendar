@@ -1,0 +1,81 @@
+# Views
+
+The three views behind the view switcher. Rules about what appears where come from the [Domain](../Domain.md); this document defines how it is presented.
+
+## Default view
+
+| Orientation | Default view |
+|---|---|
+| Landscape | Week |
+| Portrait | Month |
+
+Rotating the screen switches to the default view of the new orientation. The backlog panel is hidden by default.
+
+## Entry tile
+
+- Check box, optional time, title. A recurring entry shows a repeat icon.
+- The tile is tinted with its tag color; without a tag it uses the neutral item surface.
+- Time: in the week view (landscape) on its own small line above the title in the tag color; elsewhere inline before the title.
+- Done: 60 % opacity, title struck through, check box filled.
+- Overdue: red check box border and a red outline.
+- Hover lifts the tile slightly.
+
+## Day header
+
+- Weekday and date. Today: weekday in the accent color and an accent-tinted day card with a soft glow.
+- **Badges** next to the date: the holiday first, then birthdays and anniversaries, stacked vertically while there is room.
+  - Holiday badge in `--accent-2`, birthday and anniversary badges in `--warm` with a cake icon, name and the age the contact turns.
+  - Maximum badges: 3 in the landscape week, 5 in the portrait week, 1 in the month view. Beyond the maximum the last badge shows „+X"; the tooltip lists all names with ages.
+  - Clicking a birthday or anniversary badge opens the contact in the contacts view.
+- School vacations are not shown in the week and month views; they appear only in the [holiday overview](#holiday-overview).
+
+## Holiday overview
+
+A button toggles a small view that lists all public holidays and the school vacations of North Rhine-Westphalia for the current year. Placement of the button and look of the view are still open (see [Open Questions](../OpenQuestions.md)).
+
+## Week, landscape
+
+- Seven day cards side by side, Monday to Sunday.
+- Each card: day header, then the day list from top to bottom, then an add button.
+- Multi-day entries are horizontal bars across the covered days, between day header and list. Overlapping bars stack in lanes, ordered by start date, then the longer bar first, then the order in the file. Bars continuing beyond the week have square ends on that side. A bar shows title and date range.
+
+## Week, portrait
+
+- The seven days are rows stacked vertically. Each row: day header on the left (badges below the date), multi-day lane, entry grid, add button on the right.
+- **Entry grid: 3 columns × 4 entries = 12 entries at a glance.** Spacing and heights are tuned for this. Entries fill column by column. A 13th entry starts a fourth column and the row scrolls horizontally.
+- Multi-day entries become vertical bars between day header and grid, spanning the covered rows, with vertical text.
+
+## Month
+
+- Grid of week rows, Monday to Sunday. Days outside the month are faded.
+- A slim column (20px) on the left shows the ISO week number of each row, without a column heading. The current week's number is highlighted like the KW badge in the header.
+- Each cell: date (the first of a month shows the month name), at most one badge plus „+X", compact entry list.
+- Visible entries per cell: 3 in landscape, 4 in portrait. Further entries collapse into a „+N" chip; clicking it opens the week of that day.
+- Multi-day bars run across the cells of each week row.
+
+## Contacts
+
+A full contact editor with a list on the left and the selected contact on the right.
+
+### List
+
+- Search field across name, company, email and phone; filters while typing.
+- Filter chips: „Alle", „Favoriten", one chip per contact group.
+- Sort: „A–Z" or „Geburtstag" (next birthday first).
+- Sorted by name: favorites pinned at the top, then sections by initial letter. Sorted by birthday: „Nächste 30 Tage", „Später", „Ohne Geburtstag".
+- Row: initials avatar with a color gradient derived from the name, display name, and either an upcoming birthday („heute · wird 32", „in 7 Tagen") in `--warm` or company, groups or first phone number. Favorites show a star.
+- „Import" opens a vCard file; the result is reported in a notification.
+- Footer: number of contacts and the file name.
+
+### Detail
+
+- Header: large avatar; first name, last name, nickname, company and position as inline fields.
+- Actions: „Anrufen" (`tel:`), „Mail" (`mailto:`), „Favorit", „vCard" (export), „Löschen".
+- Birthday card on the right: countdown („Heute!", „morgen", „in N Tagen"), date and age; highlighted in `--warm` when the birthday is today or within 14 days.
+- Section cards in two columns:
+  - „Telefon", „E-Mail", „Adressen": one row per value with a label button (click cycles through the labels), the value, a direct link (call, mail) or a copy button (address), and a remove button; „… hinzufügen" adds a row.
+  - „Daten": birthday (`TT.MM.JJJJ` or `TT.MM.`) with the upcoming age, anniversaries with an editable label and a date.
+  - „Gruppen": toggle chips per group and an input to create a new group with Enter.
+  - „Notiz": full width.
+- Inline fields have no frame; a surface appears on hover and an accent outline on focus. Remove buttons are always visible.
+- Portrait: narrower list, single-column detail, birthday card as a row below the header.
