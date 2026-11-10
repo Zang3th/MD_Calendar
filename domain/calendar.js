@@ -296,7 +296,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
    * Multi-day bars across `count` days from `start`, stacked in lanes:
    * ordered by start date, then the longer bar first, then file order (docs/ui/Views.md).
    * @param {MDCCalendar} calendar @param {string} start @param {number} count
-   * @returns {{segments: MDCSegment[], lanes: number}}
+   * @returns {{segments: MDCSegment[], lanes: number, dayLanes: number[]}}
    */
   function segments(calendar, start, count) {
     const end = addDays(start, count - 1);
@@ -318,7 +318,125 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       laneEnds[lane] = segment.column + segment.span - 1;
       segment.lane = lane;
     }
-    return { segments: result, lanes: laneEnds.length };
+    // Lanes each day needs: one more than the highest lane of a bar covering it, so that only those days make room.
+    const dayLanes = Array.from({ length: count }, () => 0);
+    for (const segment of result) {
+      for (let column = segment.column; column < segment.column + segment.span; column += 1) dayLanes[column] = Math.max(dayLanes[column], segment.lane + 1);
+    }
+    return { segments: result, lanes: laneEnds.length, dayLanes };
+  }
+
+  /**
+   * Changes several occurrences at once, grouped per series: marks them done or open, or deletes them.
+   * @param {MDCCalendar} calendar @param {Array<{index: number, key: string}>} occurrences @param {"done" | "open" | "delete"} mode
+   * @returns {MDCDayAction[]}
+   */
+  function changeOccurrences(calendar, occurrences, mode) {
+    /** @type {Map<number, string[]>} */
+    const bySeries = new Map();
+    for (const item of occurrences) bySeries.set(item.index, [...(bySeries.get(item.index) || []), item.key]);
+    /** @type {MDCDayAction[]} */
+    const actions = [];
+    for (const [index, keys] of bySeries) {
+      const series = seriesAt(calendar, index);
+      const done = mode === "done" ? [...new Set([...series.done, ...keys])].sort() : series.done.filter(date => !keys.includes(date));
+      const except = mode === "delete" ? [...new Set([...series.except, ...keys])].sort() : series.except;
+      const action = updateSeries(calendar, index, { ...series, done, except });
+      if (action) actions.push({ ...action, days: keys, layout: false });
+    }
+    return actions;
+  }
+
+  /**
+   * Imports events as one action: single-day events become entries (done before `today`), events over several days
+   * multi-day entries, supported rules series. Events already present (same title and date) are skipped.
+   * @param {MDCCalendar} calendar @param {MDCIcsEvent[]} events @param {string} today
+   * @returns {{action: MDCDayAction | null, entries: number, series: number, multiDay: number, duplicates: number, simplified: number}}
+   */
+  function importEvents(calendar, events, today) {
+    const result = { action: /** @type {MDCDayAction | null} */ (null), entries: 0, series: 0, multiDay: 0, duplicates: 0, simplified: 0 };
+    const known = new Set([
+      ...Array.from(calendar.days, ([key, day]) => day.entries.map(entry => `e|${key}|${entry.title}`)).flat(),
+      ...calendar.series.map(item => "raw" in item ? "" : `s|${item.start}|${item.title}`),
+      ...calendar.multiDay.map(item => "raw" in item ? "" : `m|${item.start}|${item.end}|${item.title}`)
+    ]);
+    /** @type {Map<string, MDCEntry[]>} */
+    const newEntries = new Map();
+    /** @type {MDCSeries[]} */
+    const newSeries = [];
+    /** @type {MDCMultiDay[]} */
+    const newMultiDay = [];
+    for (const event of events) {
+      const base = { title: event.title, tag: "", location: event.location, note: event.note, extra: [] };
+      if (event.rule && event.start === event.end) {
+        const id = `s|${event.start}|${event.title}`;
+        if (known.has(id)) { result.duplicates += 1; continue; }
+        known.add(id);
+        newSeries.push({ ...base, start: event.start, startTime: event.startTime, endTime: event.endTime, rule: event.rule, except: event.except, done: [] });
+        result.series += 1;
+      } else if (event.end > event.start) {
+        const id = `m|${event.start}|${event.end}|${event.title}`;
+        if (known.has(id)) { result.duplicates += 1; continue; }
+        known.add(id);
+        newMultiDay.push({ ...base, start: event.start, end: event.end });
+        result.multiDay += 1;
+      } else {
+        const id = `e|${event.start}|${event.title}`;
+        if (known.has(id)) { result.duplicates += 1; continue; }
+        known.add(id);
+        if (event.unsupportedRule) result.simplified += 1;
+        newEntries.set(event.start, [...(newEntries.get(event.start) || []),
+          { ...base, done: event.start < today, start: event.startTime, end: event.startTime ? event.endTime : "" }]);
+        result.entries += 1;
+      }
+    }
+    if (!newEntries.size && !newSeries.length && !newMultiDay.length) return result;
+    const keys = Array.from(newEntries.keys());
+    const before = keys.map(key => [...entries(calendar, key)]);
+    const after = keys.map((key, index) => [...before[index], ...(newEntries.get(key) || [])]);
+    const seriesBefore = [...calendar.series];
+    const multiBefore = [...calendar.multiDay];
+    /** @param {MDCEntry[][]} days @param {Array<MDCSeries | MDCRawBlock>} series @param {Array<MDCMultiDay | MDCRawBlock>} multi */
+    const set = (days, series, multi) => {
+      keys.forEach((key, index) => dayList(calendar, key).splice(0, Infinity, ...days[index]));
+      calendar.series.splice(0, Infinity, ...series);
+      calendar.multiDay.splice(0, Infinity, ...multi);
+      calendar.seriesRevision += 1;
+    };
+    const seriesAfter = [...seriesBefore, ...newSeries];
+    const multiAfter = [...multiBefore, ...newMultiDay];
+    result.action = {
+      label: "ICS-Import", days: keys, layout: true,
+      size: after.flat().reduce((total, entry) => total + sizeOf(entry), 0) + [...newSeries, ...newMultiDay].reduce((total, item) => total + itemSize(item), 0),
+      redo() { set(after, seriesAfter, multiAfter); },
+      undo() { set(before, seriesBefore, multiBefore); }
+    };
+    return result;
+  }
+
+  /**
+   * Periods of a year with the given tag: multi-day entries and entries, consecutive days with the same title merged.
+   * Used for the vacations in the holiday overview (docs/ui/Views.md#holiday-overview).
+   * @param {MDCCalendar} calendar @param {string} tag @param {number} year @returns {MDCPeriod[]}
+   */
+  function taggedPeriods(calendar, tag, year) {
+    const prefix = String(year);
+    /** @type {MDCPeriod[]} */
+    const periods = [];
+    for (const item of calendar.multiDay) {
+      if (!("raw" in item) && item.tag === tag && item.start.slice(0, 4) <= prefix && item.end.slice(0, 4) >= prefix) periods.push({ start: item.start, end: item.end, title: item.title });
+    }
+    /** @type {MDCPeriod[]} */
+    const singles = [];
+    for (const key of Array.from(calendar.days.keys()).filter(day => day.startsWith(prefix)).sort()) {
+      for (const entry of entries(calendar, key)) {
+        if (entry.tag !== tag) continue;
+        const previous = singles.find(period => period.title === entry.title && addDays(period.end, 1) === key);
+        if (previous) previous.end = key;
+        else singles.push({ start: key, end: key, title: entry.title });
+      }
+    }
+    return [...periods, ...singles].sort((left, right) => left.start.localeCompare(right.start));
   }
 
   /** Days since 1970-01-01. @param {string} key */
@@ -330,6 +448,6 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     parseDate, formatDate, parseTime, todayKey, addDays, addMonths, weekStart, weekDays, isoWeek,
     entries, dayList, createEntry, updateEntry, deleteEntry, toggleDone, moveEntry, isOverdue,
     combine, createSeries, updateSeries, deleteSeries, toggleOccurrence, deleteOccurrence, endSeries,
-    createMultiDay, updateMultiDay, deleteMultiDay, segments
+    createMultiDay, updateMultiDay, deleteMultiDay, segments, taggedPeriods, changeOccurrences, importEvents
   };
 })(window.MDCalendar);

@@ -102,9 +102,9 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 **Reasons:** the files must stay readable and easy to edit by hand, also on a phone.
 **Rejected:** visible or hidden IDs per entry (for example HTML comments).
 
-## D19 · No user settings; mute in the header
+## D19 · No user settings; mute in the options menu
 
-**Decision:** The UI is fixed by the application: scheme Nord, lights in the corners at full size and intensity without drift, all borders, dimmed past periods. The only user control is a speaker toggle in the header that mutes the completion sound, with the icons and behavior of MD_Manager; its state is not stored. → [Design System](ui/DesignSystem.md), [Shell](ui/Shell.md#sound-toggle)
+**Decision:** The UI is fixed by the application: scheme Nord, lights in the corners at full size and intensity without drift, all borders, dimmed past periods. The only user control is a speaker toggle in the options menu right of **+** that mutes the completion sound, with the icons and behavior of MD_Manager; its state is not stored. → [Design System](ui/DesignSystem.md), [Shell](ui/Shell.md#sound-toggle)
 **Rejected:** a settings dialog opened from the logo; selectable schemes, adjustable lights and style options; storing the mute state in `Config.md` (it would make muting an undoable, unsaved change).
 
 ## D20 · English data format
@@ -153,11 +153,11 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 **Decision:** A changed file with local changes and any deleted file lead to a persistent choice between „Neu laden“ and „Überschreiben“. → [Architecture](Architecture.md#external-changes), [Shell](ui/Shell.md#notifications)
 **Rejected:** treating a deleted file as an empty file.
 
-## D29 · Visible controls, no hover-only buttons
+## D29 · No add button per day; no hover-only controls
 
-**Decision:** The add button of a day is always visible; hover only emphasizes it. → [AGENTS.md](../AGENTS.md#user-experience)
-**Reasons:** touch has no hover; the mobile phase needs the same controls.
-**Rejected:** showing the button only on hover, as in the prototype.
+**Decision:** Days have no add button. A new entry is created with **+**, `N` (on the day under the pointer), a double-click on a day or the context menu of a day. Controls never appear only on hover. → [Interaction](ui/Interaction.md#creating-entries), [AGENTS.md](../AGENTS.md#user-experience)
+**Reasons:** the user wants the day cards without buttons; **+** and the dialog's date picker reach every day on touch too.
+**Rejected:** an always visible add button per day; showing it only on hover, as in the prototype (touch has no hover).
 
 ## D30 · Series end with the chosen occurrence; occurrences are never overdue
 
@@ -169,10 +169,54 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 
 **Decision:** Dragging a bar moves it with its duration; dragging an end changes start or end. → [Interaction](ui/Interaction.md#drag-and-drop)
 
-## D32 · Tag icon on tiles and bars; holiday overview in the header
+## D32 · Tag icon on tiles, bars and in the tag dropdown; holiday overview in the header
 
-**Decision:** The tag icon appears on entry tiles and multi-day bars, not on the tag chips of the dialog. The holiday overview is a floating panel opened by an icon button in the header with two lists, holidays and school vacations. → [Views](ui/Views.md)
-**Rejected:** a year calendar of twelve small months; a fourth view in the view switcher.
+**Decision:** The tag icon appears on entry tiles, multi-day bars and in the tag dropdown of the entry dialog, where the tags are sorted alphabetically and „Kein Tag“ is the default. The holiday overview is a floating panel opened by an icon button in the header with the lists holidays, own vacations and school vacations. → [Views](ui/Views.md), [Shell](ui/Shell.md#entry-dialog)
+**Rejected:** tag chips in the dialog (too wide with many tags); a year calendar of twelve small months; a fourth view in the view switcher.
+
+## D33 · Birthdays on 29 February show on 28 February
+
+**Decision:** In years without 29 February, a birthday or anniversary on that day shows on 28 February. → [Domain](Domain.md#birthdays-and-anniversaries)
+**Rejected:** 1 March.
+
+## D34 · vCard duplicates are merged
+
+**Decision:** An imported contact with the same name, phone number or email address as an existing one is merged into it: missing values are added, nothing is overwritten. → [Domain](Domain.md#vcard-import-and-export)
+**Rejected:** skipping duplicates; importing them as new contacts; asking per duplicate.
+
+## D35 · No contact photos; badges with first and last name
+
+**Decision:** Contacts have initials avatars only. Birthday and anniversary badges show first and last name, never the nickname. → [Domain](Domain.md#contact)
+
+## D36 · Vacations are entries with the tag „Urlaub“
+
+**Decision:** Entries and multi-day entries with the tag named „Urlaub“ are listed as own vacations in the holiday overview, between holidays and school vacations. → [Views](ui/Views.md#holiday-overview)
+**Rejected:** recognizing vacations by the tag icon; listing multi-day entries only.
+
+## D37 · Selection, internal clipboard and context menu
+
+**Decision:** Entries are selected with a lasso on free space or `Ctrl`+click. A selection is checked off, copied, deleted and dragged together. Copies go to an app-internal clipboard and are pasted onto a day by its context menu or `Ctrl+V` on the day under the pointer; copies are open. Right-click opens a context menu. → [Interaction](ui/Interaction.md#selection-copy-and-paste)
+**Rejected:** duplicating directly on the same day; dragging only single entries while a selection exists; the system clipboard (entries are not plain text).
+
+## D38 · Further shortcuts
+
+**Decision:** `F` search, `K` contacts, `?` shortcut overview, `Space`, `Del`, `Ctrl+A`, `Ctrl+C`, `Ctrl+V` for the selection, `N` on the day under the pointer, and the mouse wheel switches one week or month per gesture. → [Interaction](ui/Interaction.md#keyboard-shortcuts)
+**Rejected:** `Ctrl+K` and `/` for the search.
+
+## D39 · Imported history is done
+
+**Decision:** The ICS import marks entries before today as done, so that years of history do not show as overdue. Events already present are skipped. → [Domain](Domain.md#ics-import)
+**Rejected:** importing everything open.
+
+## D40 · No tooltips for now
+
+**Decision:** All tooltips were removed; icon buttons name their action through `aria-label`. Single tooltips are added back deliberately later; the tooltip system stays. → [Design System](ui/DesignSystem.md#icons)
+**Reasons:** the user wants to start without tooltips and add useful ones back one by one.
+
+## D41 · Logo without tile in the browser
+
+**Decision:** Favicons and the regular PWA icons show the mark without tile; only the iOS home screen icon and the maskable icon keep the tile. → [Design System](ui/DesignSystem.md#logo-orbit-c)
+**Reasons:** the user wants the logo without a frame wherever possible.
 
 ## Research notes
 

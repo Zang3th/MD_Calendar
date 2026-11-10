@@ -106,5 +106,85 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return action(calendar, backlog, entry.title, { ref: from, entry }, { ref: to, entry });
   }
 
-  app.backlog = { entryAt, create, update, remove, toggle, move, isBacklog };
+  // ---------- Several entries at once: selection, paste ----------
+
+  /** @param {MDCEntryRef} ref */
+  function placeId(ref) {
+    return isBacklog(ref) ? `g${ref.group}` : `d${ref.key}`;
+  }
+
+  /**
+   * One undo step over several lists: `mutate` changes the lists, the action restores or reapplies their contents.
+   * @param {MDCCalendar} calendar @param {MDCBacklog} backlog @param {string} label @param {MDCEntryRef[]} places
+   * @param {() => void} mutate @param {string | undefined} target
+   * @returns {MDCDayAction}
+   */
+  function snapshot(calendar, backlog, label, places, mutate, target) {
+    const unique = [...new Map(places.map(ref => [placeId(ref), ref])).values()];
+    const before = unique.map(ref => [...list(calendar, backlog, ref)]);
+    mutate();
+    const after = unique.map(ref => [...list(calendar, backlog, ref)]);
+    /** @param {MDCEntry[][]} contents */
+    const set = contents => unique.forEach((ref, index) => list(calendar, backlog, ref).splice(0, Infinity, ...contents[index]));
+    set(before);
+    return {
+      label,
+      days: [...new Set(unique.filter(ref => !isBacklog(ref)).map(ref => ref.key))],
+      backlog: unique.some(isBacklog),
+      target,
+      size: after.flat().reduce((total, entry) => total + sizeOf(entry), 0),
+      redo() { set(after); },
+      undo() { set(before); }
+    };
+  }
+
+  /** Refs ordered by place and descending index, so that removing them one by one keeps the others valid. @param {MDCEntryRef[]} refs */
+  function descending(refs) {
+    return [...refs].sort((left, right) => placeId(left).localeCompare(placeId(right)) || right.index - left.index);
+  }
+
+  /** @param {MDCCalendar} calendar @param {MDCBacklog} backlog @param {MDCEntryRef[]} refs @param {string} label */
+  function removeEntries(calendar, backlog, refs, label) {
+    return snapshot(calendar, backlog, label, refs, () => {
+      for (const ref of descending(refs)) list(calendar, backlog, ref).splice(ref.index, 1);
+    }, undefined);
+  }
+
+  /** Marks all entries done, or all open when they are all done already. @param {MDCCalendar} calendar @param {MDCBacklog} backlog @param {MDCEntryRef[]} refs */
+  function toggleEntries(calendar, backlog, refs) {
+    const done = !refs.every(ref => entryAt(calendar, backlog, ref).done);
+    return snapshot(calendar, backlog, `${refs.length} Einträge`, refs, () => {
+      for (const ref of refs) {
+        const entries = list(calendar, backlog, ref);
+        entries[ref.index] = { ...entries[ref.index], done };
+      }
+    }, undefined);
+  }
+
+  /**
+   * Moves several entries to one place, in their order, starting at `target.index` of the target list
+   * after they were removed. `dragged` is the entry the pointer moved; it keeps its place among them.
+   * @param {MDCCalendar} calendar @param {MDCBacklog} backlog @param {MDCEntryRef[]} refs @param {MDCEntryRef} target
+   * @returns {MDCDayAction}
+   */
+  function moveEntries(calendar, backlog, refs, target) {
+    const ordered = [...refs].sort((left, right) => placeId(left).localeCompare(placeId(right)) || left.index - right.index);
+    const moving = ordered.map(ref => entryAt(calendar, backlog, ref));
+    const crossing = refs.some(ref => isBacklog(ref) !== isBacklog(target));
+    return snapshot(calendar, backlog, `${refs.length} Einträge`, [...refs, target], () => {
+      for (const ref of descending(refs)) list(calendar, backlog, ref).splice(ref.index, 1);
+      const destination = list(calendar, backlog, target);
+      destination.splice(Math.min(target.index, destination.length), 0, ...moving);
+    }, crossing ? (isBacklog(target) ? backlogFile : calendarFile) : undefined);
+  }
+
+  /** Inserts copies at the end of a day; copies are open. @param {MDCCalendar} calendar @param {MDCBacklog} backlog @param {MDCEntry[]} entries @param {string} key */
+  function pasteEntries(calendar, backlog, entries, key) {
+    const ref = { key, index: 0 };
+    return snapshot(calendar, backlog, entries.length === 1 ? entries[0].title : `${entries.length} Einträge`, [ref], () => {
+      list(calendar, backlog, ref).push(...entries.map(entry => ({ ...entry, done: false, note: [...entry.note], extra: [...entry.extra] })));
+    }, undefined);
+  }
+
+  app.backlog = { entryAt, create, update, remove, toggle, move, isBacklog, removeEntries, toggleEntries, moveEntries, pasteEntries };
 })(window.MDCalendar);

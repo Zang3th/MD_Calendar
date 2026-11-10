@@ -4,6 +4,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 (function (app) {
   const calendarFile = "Calendar.md";
   const backlogFile = "Backlog.md";
+  const contactsFile = "Contacts.md";
   const externalCheckInterval = 2000;
 
   /** @type {Array<[string, () => boolean]>} */
@@ -13,10 +14,15 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     ["domain/calendar.js", () => Boolean(app.calendar)],
     ["domain/history.js", () => Boolean(app.history)],
     ["domain/backlog.js", () => Boolean(app.backlog)],
+    ["domain/contacts.js", () => Boolean(app.contacts)],
+    ["domain/search.js", () => Boolean(app.search)],
     ["io/calendar-format.js", () => Boolean(app.calendarFormat)],
     ["io/backlog-format.js", () => Boolean(app.backlogFormat)],
     ["io/holidays-format.js", () => Boolean(app.holidaysFormat)],
     ["io/config-format.js", () => Boolean(app.configFormat)],
+    ["io/contacts-format.js", () => Boolean(app.contactsFormat)],
+    ["io/vcard.js", () => Boolean(app.vcard)],
+    ["io/ics.js", () => Boolean(app.ics)],
     ["io/storage.js", () => Boolean(app.storage)],
     ["ui/notifications.js", () => Boolean(app.notifications)],
     ["ui/tooltips.js", () => Boolean(app.tooltips)],
@@ -27,6 +33,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     ["ui/tiles.js", () => Boolean(app.tiles)],
     ["ui/render-week.js", () => Boolean(app.week)],
     ["ui/render-month.js", () => Boolean(app.month)],
+    ["ui/render-contacts.js", () => Boolean(app.contactsView)],
+    ["ui/pickers.js", () => Boolean(app.pickers)],
+    ["ui/menus.js", () => Boolean(app.menus)],
+    ["ui/search-panel.js", () => Boolean(app.searchPanel)],
     ["ui/backlog-panel.js", () => Boolean(app.backlogPanel)],
     ["ui/holidays-panel.js", () => Boolean(app.holidaysPanel)],
     ["ui/dialog.js", () => Boolean(app.dialog)],
@@ -94,6 +104,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     let calendar = null;
     /** @type {MDCBacklog | null} */
     let backlog = null;
+    /** @type {MDCContacts | null} */
+    let contacts = null;
+    /** Index of the contact shown in the contacts view, or -1. */
+    let selectedContact = 0;
     /** @type {MDCHolidays} */
     let holidays = { holidays: [], vacations: [] };
     /** @type {MDCConfig} */
@@ -107,10 +121,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const files = {
       "Calendar.md": { disk: null, baseline: "", external: null, writable: true },
       "Backlog.md": { disk: null, baseline: "", external: null, writable: true },
+      "Contacts.md": { disk: null, baseline: "", external: null, writable: true },
       "Holidays.md": { disk: null, baseline: "", external: null, writable: false },
       "Config.md": { disk: null, baseline: "", external: null, writable: false }
     };
-    const writableFiles = /** @type {MDCFileName[]} */ (["Calendar.md", "Backlog.md"]);
+    const writableFiles = /** @type {MDCFileName[]} */ (["Calendar.md", "Backlog.md", "Contacts.md"]);
     /** The file that received the latest move between Calendar.md and Backlog.md; it is written first. */
     /** @type {MDCFileName} */
     let firstFile = "Calendar.md";
@@ -149,24 +164,42 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     }
 
     function renderer() {
-      return view === "week" ? app.week : app.month;
+      return view === "month" ? app.month : app.week;
     }
 
     function bindLists() {
-      app.interactions.bindLists([...renderer().lists(), ...app.backlogPanel.lists()]);
+      app.interactions.bindLists([...(view === "contacts" ? [] : renderer().lists()), ...app.backlogPanel.lists()]);
+    }
+
+    function renderContacts() {
+      if (!contacts) return;
+      selectedContact = Math.min(selectedContact, contacts.contacts.length - 1);
+      app.contactsView.render(contacts, selectedContact, today);
     }
 
     function render() {
-      if (!calendar || !backlog) return;
-      (view === "week" ? app.month : app.week).hide();
-      const rebuiltView = renderer().render(calendar, anchor, today);
+      if (!calendar || !backlog || !contacts) return;
+      app.tiles.setContacts(contacts);
+      let rebuiltView = false;
+      if (view === "contacts") {
+        app.week.hide();
+        app.month.hide();
+        renderContacts();
+        rebuiltView = true;
+      } else {
+        app.contactsView.hide();
+        (view === "week" ? app.month : app.week).hide();
+        rebuiltView = renderer().render(calendar, anchor, today);
+      }
       const rebuiltBacklog = app.backlogPanel.render(backlog, backlogOpen);
       if (rebuiltView || rebuiltBacklog) bindLists();
+      app.interactions.refreshSelection();
       updateHeader();
     }
 
     /** Whether two anchors show the same period in the current view. @param {string} left @param {string} right */
     function samePeriod(left, right) {
+      if (view === "contacts") return true;
       return view === "week" ? app.calendar.weekStart(left) === app.calendar.weekStart(right) : left.slice(0, 7) === right.slice(0, 7);
     }
 
@@ -196,6 +229,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     /** Parses one file into the model; writable files start a new history. @param {MDCFileName} name @param {MDCFileText} file */
     function useFile(name, file) {
       const state = files[name];
+      dataVersion += 1;
       state.disk = file;
       state.external = null;
       /** @type {MDCFormatWarning[]} */
@@ -210,6 +244,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         backlog = parsed.backlog;
         state.baseline = app.backlogFormat.serialize(backlog);
         warnings = parsed.warnings;
+      } else if (name === "Contacts.md") {
+        const parsed = app.contactsFormat.parse(file?.text ?? "# Contacts\n");
+        contacts = parsed.contacts;
+        state.baseline = app.contactsFormat.serialize(contacts);
+        warnings = parsed.warnings;
       } else if (name === "Holidays.md") {
         const parsed = app.holidaysFormat.parse(file?.text ?? "");
         holidays = parsed.holidays;
@@ -219,8 +258,14 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       } else {
         const parsed = app.configFormat.parse(file?.text ?? "");
         config = parsed.config;
-        app.tiles.setTags(config.tags);
         warnings = parsed.warnings;
+        const unknown = app.tiles.setTags(config.tags);
+        if (unknown.length) {
+          app.notifications.show("error", "Unbekannte Tag-Icons", [{ value: name }, `: ${unknown.map(tag => tag.icon ? `„${tag.name}“ nutzt das unbekannte Icon „${tag.icon}“` : `„${tag.name}“ hat kein Icon`).join(", ")}. Diese Tags erscheinen ohne Icon.`], {
+            code: "MDC-301",
+            details: `Bekannte Icon-IDs: ${app.tiles.tagIconIds().join(", ")}.`
+          });
+        }
       }
       if (state.writable) history = app.history.create();
       if (file) reportWarnings(name, warnings);
@@ -254,30 +299,50 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     /** Updates what an action changed. @param {MDCUndoAction} action */
     function showChange(action) {
       if (!calendar || !backlog) return;
+      if (action.contacts) {
+        app.tiles.setContacts(contacts);
+        if (view === "contacts") renderContacts();
+        else renderer().render(calendar, anchor, today);
+        updateHeader();
+        return;
+      }
       if (action.layout) {
         render();
         return;
       }
-      renderer().renderDays(calendar, action.days || [], today);
+      if (view !== "contacts") renderer().renderDays(calendar, action.days || [], today);
       if (action.backlog) app.backlogPanel.render(backlog, backlogOpen);
       updateHeader();
     }
 
-    /** Executes an action as one undo step and updates what it changed. @param {MDCDayAction | null} action */
+    /** Executes an action as one undo step and updates what it changed. @param {MDCUndoAction | null} action */
     function execute(action) {
       if (!action || !calendar) return false;
-      const state = { view, anchor };
-      app.history.execute(history, { ...action, beforeViewState: state, afterViewState: state });
+      const before = { view, anchor, contact: selectedContact };
+      let after = before;
+      if (action.contacts) {
+        const selectAfter = action.selectAfter ?? selectedContact;
+        after = { view: /** @type {MDCView} */ ("contacts"), anchor, contact: selectAfter };
+        selectedContact = selectAfter;
+      }
+      dataVersion += 1;
+      app.history.execute(history, { ...action, beforeViewState: action.contacts ? { ...before, view: "contacts" } : before, afterViewState: after });
       if (action.target) firstFile = /** @type {MDCFileName} */ (action.target);
-      showChange(action);
+      if (action.contacts && view !== "contacts") {
+        view = "contacts";
+        render();
+      } else showChange(action);
       return true;
     }
 
     /** Returns to the view of an undone or redone action. @param {MDCUndoEntry | null} entry @param {boolean} undone */
     function showUndone(entry, undone) {
       if (!entry || !calendar) return;
+      dataVersion += 1;
+      app.interactions.clearSelection();
       if (entry.target) firstFile = /** @type {MDCFileName} */ (undone ? (entry.target === calendarFile ? backlogFile : calendarFile) : entry.target);
-      const target = entry.afterViewState || { view, anchor };
+      const target = (undone ? entry.beforeViewState : entry.afterViewState) || { view, anchor };
+      if (target.contact !== undefined && target.contact >= 0) selectedContact = target.contact;
       if (target.view !== view || !samePeriod(target.anchor, anchor)) {
         view = target.view;
         anchor = target.anchor;
@@ -313,11 +378,12 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       clearConflict();
       writableFiles.forEach((name, index) => useFile(name, texts[index]));
       render();
-      app.notifications.show("info", "Neu geladen", "Kalender und Backlog wurden neu geladen.");
+      app.notifications.show("info", "Neu geladen", "Kalender, Backlog und Kontakte wurden neu geladen.");
     }
 
     /** @param {MDCFileName} name */
     function serialized(name) {
+      if (name === "Contacts.md") return app.contactsFormat.serialize(/** @type {MDCContacts} */ (contacts));
       return name === "Calendar.md" ? app.calendarFormat.serialize(/** @type {MDCCalendar} */ (calendar)) : app.backlogFormat.serialize(/** @type {MDCBacklog} */ (backlog));
     }
 
@@ -351,7 +417,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       if (!folder || !calendar || !backlog) return;
       const current = session;
       const position = history.position;
-      const order = firstFile === calendarFile ? writableFiles : [...writableFiles].reverse();
+      const order = /** @type {MDCFileName[]} */ (firstFile === calendarFile ? [calendarFile, backlogFile, contactsFile] : [backlogFile, calendarFile, contactsFile]);
       let written = false;
       let complete = true;
       for (const name of order) {
@@ -437,9 +503,22 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
     /** @param {string} key */
     function showDay(key) {
+      const direction = view === "contacts" || samePeriod(key, anchor) ? 0 : key < anchor ? -1 : 1;
       anchor = key;
       render();
+      if (direction && view !== "contacts") app.tiles.slide(view === "week" ? "week" : "month", direction);
     }
+
+    /** The first visible day of the shown period, or today when it is visible. */
+    function visibleDay() {
+      if (samePeriod(today, anchor)) return today;
+      return view === "week" ? app.calendar.weekStart(anchor) : `${anchor.slice(0, 7)}-01`;
+    }
+
+    /** Data version for the search index; changes with every action and every reload. */
+    let dataVersion = 0;
+    /** Copied entries; pasting inserts open copies (docs/ui/Interaction.md#copy-and-paste). @type {MDCEntry[]} */
+    let clipboard = [];
 
     /** @param {string} title */
     function confirmDeleted(title) {
@@ -486,7 +565,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     /** @param {string} [key] */
     function newEntry(key) {
       if (!calendar) return;
-      openDialog({ kind: "entry", isNew: true, inBacklog: false, title: "", location: "", note: [], tag: "", date: key || today, end: "", startTime: "", endTime: "", rule: null, occurrence: "" }, {
+      if (view === "contacts" && !key) {
+        newContact();
+        return;
+      }
+      openDialog({ kind: "entry", isNew: true, inBacklog: false, title: "", location: "", note: [], tag: "", date: key || visibleDay(), end: "", startTime: "", endTime: "", rule: null, occurrence: "" }, {
         apply: result => {
           execute(createFrom(result, null));
           showResult(result);
@@ -588,6 +671,214 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       });
     }
 
+    /** Offers a text as a file download. @param {string} name @param {string} text */
+    function download(name, text) {
+      app.contactsView.download(name.replace(/[\\/:*?"<>|]/g, "_"), text, "text/vcard");
+    }
+
+    function newContact() {
+      if (!contacts) return;
+      execute(app.contacts.create(contacts, app.contactsFormat.emptyContact()));
+      app.contactsView.focusField("firstName");
+    }
+
+    /** @param {number} index */
+    function openContact(index) {
+      if (!contacts || !contacts.contacts[index]) return;
+      selectedContact = index;
+      view = "contacts";
+      render();
+    }
+
+    /** Entries and multi-day entries with this tag are the vacations of the holiday overview (docs/ui/Views.md#holiday-overview). */
+    const vacationTag = "Urlaub";
+
+    /** @param {MDCEntryRef} left @param {MDCEntryRef} right */
+    function sameRef(left, right) {
+      return left.key === right.key && left.group === right.group && left.index === right.index;
+    }
+
+    /** @param {MDCPick} pick */
+    function pickDone(pick) {
+      if (!calendar || !backlog) return false;
+      if (pick.ref) return app.backlog.entryAt(calendar, backlog, pick.ref).done;
+      const series = calendar.series[/** @type {number} */ (pick.series)];
+      return Boolean(series && !("raw" in series) && series.done.includes(pick.key));
+    }
+
+    /** @param {MDCPick[]} picks */
+    function occurrencesOf(picks) {
+      return picks.filter(pick => pick.series !== undefined).map(pick => ({ index: /** @type {number} */ (pick.series), key: pick.key }));
+    }
+
+    /** @param {MDCPick[]} picks */
+    function refsOf(picks) {
+      return picks.flatMap(pick => pick.ref ? [pick.ref] : []);
+    }
+
+    /** @param {MDCPick} pick */
+    function pickTitle(pick) {
+      if (!calendar || !backlog) return "";
+      if (pick.ref) return app.backlog.entryAt(calendar, backlog, pick.ref).title;
+      const series = calendar.series[/** @type {number} */ (pick.series)];
+      return series && !("raw" in series) ? series.title : "";
+    }
+
+    /** Marks all picked entries done, or all open when they are all done; plays the sound when something got done. @param {MDCPick[]} picks */
+    function toggleMany(picks) {
+      if (!calendar || !backlog || !picks.length) return;
+      const currentBacklog = backlog;
+      const done = picks.some(pick => !pickDone(pick));
+      const refs = refsOf(picks).filter(ref => app.backlog.entryAt(/** @type {MDCCalendar} */ (calendar), currentBacklog, ref).done !== done);
+      const actions = [
+        ...(refs.length ? [app.backlog.toggleEntries(calendar, backlog, refs)] : []),
+        ...app.calendar.changeOccurrences(calendar, occurrencesOf(picks), done ? "done" : "open")
+      ];
+      if (!actions.length) return;
+      execute(actions.length === 1 ? actions[0] : app.calendar.combine(`${picks.length} Einträge`, actions));
+      app.interactions.refreshSelection();
+      if (done) void app.sounds.play();
+    }
+
+    /** @param {MDCPick[]} picks */
+    function removeMany(picks) {
+      if (!calendar || !backlog || !picks.length) return;
+      const refs = refsOf(picks);
+      const label = picks.length === 1 ? pickTitle(picks[0]) : `${picks.length} Einträge`;
+      const actions = [
+        ...(refs.length ? [app.backlog.removeEntries(calendar, backlog, refs, label)] : []),
+        ...app.calendar.changeOccurrences(calendar, occurrencesOf(picks), "delete")
+      ];
+      if (!actions.length) return;
+      app.interactions.clearSelection();
+      execute(actions.length === 1 ? actions[0] : app.calendar.combine(label, actions));
+      confirmDeleted(label);
+    }
+
+    /** Copies the picked entries; an occurrence is copied as a plain entry with the fields of its series. @param {MDCPick[]} picks */
+    function copy(picks) {
+      if (!calendar || !backlog || !picks.length) return;
+      const currentCalendar = calendar;
+      const currentBacklog = backlog;
+      clipboard = picks.flatMap(pick => {
+        if (pick.ref) return [{ ...app.backlog.entryAt(currentCalendar, currentBacklog, pick.ref) }];
+        const series = currentCalendar.series[/** @type {number} */ (pick.series)];
+        return series && !("raw" in series)
+          ? [{ done: false, start: series.startTime, end: series.endTime, title: series.title, tag: series.tag, location: series.location, note: [...series.note], extra: [] }]
+          : [];
+      });
+      if (!clipboard.length) return;
+      app.notifications.show("info", "Kopiert", clipboard.length === 1
+        ? [{ value: clipboard[0].title }, " ist kopiert. Rechtsklick auf einen Tag oder Strg V fügt ein."]
+        : `${clipboard.length} Einträge sind kopiert. Rechtsklick auf einen Tag oder Strg V fügt ein.`);
+    }
+
+    /** Inserts open copies of the clipboard at the end of a day. @param {string} key */
+    function paste(key) {
+      if (!calendar || !backlog || view === "contacts") return;
+      if (!clipboard.length) {
+        app.notifications.show("info", "Nichts kopiert", "Kopiere zuerst Einträge mit Rechtsklick oder Strg C.");
+        return;
+      }
+      execute(app.backlog.pasteEntries(calendar, backlog, clipboard, key || visibleDay()));
+    }
+
+    /** Jumps to a search hit and highlights it. @param {MDCSearchItem} item */
+    function jumpTo(item) {
+      if (!calendar || !backlog) return;
+      if (item.kind === "backlog") {
+        if (!backlogOpen) {
+          backlogOpen = true;
+          render();
+        }
+        const ref = /** @type {MDCEntryRef} */ (item.ref);
+        const tile = document.querySelector(`.bl__list[data-group="${ref.group}"] .ev[data-index="${ref.index}"]`);
+        if (tile instanceof HTMLElement) app.tiles.pulse(tile);
+        return;
+      }
+      const series = item.kind === "series" ? calendar.series[/** @type {number} */ (item.series)] : null;
+      const key = series && !("raw" in series) ? app.search.nextOccurrence(series, today) : item.key;
+      if (view === "contacts") view = portrait.matches ? "month" : "week";
+      showDay(key);
+      const cell = renderer().cell(key);
+      const tile = item.kind === "entry" ? cell?.querySelector(`.ev[data-index="${item.ref?.index}"]`)
+        : item.kind === "series" ? cell?.querySelector(`.ev[data-series="${item.series}"]`)
+          : document.querySelector(`.bar[data-multi="${item.multi}"]`);
+      const target = tile instanceof HTMLElement ? tile : cell;
+      if (target) app.tiles.pulse(target);
+    }
+
+    app.searchPanel.init(query => calendar && backlog ? app.search.search(calendar, backlog, dataVersion, query, today, 30) : [], jumpTo);
+
+    app.menus.onImport((text, name) => {
+      if (!calendar) return;
+      const { events, skipped } = app.ics.parse(text);
+      if (!events.length) {
+        app.notifications.show("warning", "Keine Termine gefunden", [{ value: name }, " enthält keine lesbaren Termine."]);
+        return;
+      }
+      const result = app.calendar.importEvents(calendar, events, today);
+      if (!result.action) {
+        app.notifications.show("info", "Nichts Neues", [{ value: name }, `: alle ${result.duplicates} Termine sind schon im Kalender.`]);
+        return;
+      }
+      if (view === "contacts") view = portrait.matches ? "month" : "week";
+      execute(result.action);
+      if (events.length === 1) showDay(events[0].start);
+      const parts = [`${result.entries} Einträge`, result.series ? `${result.series} Serien` : "", result.multiDay ? `${result.multiDay} mehrtägige` : "",
+        result.duplicates ? `${result.duplicates} schon vorhanden` : "", skipped ? `${skipped} übersprungen` : "",
+        result.simplified ? `${result.simplified} mit nicht unterstützter Wiederholung als Einzeltermin` : ""].filter(Boolean);
+      app.notifications.show("info", "Kalender importiert", [{ value: name }, `: ${parts.join(", ")}. Strg Z macht es rückgängig.`]);
+    });
+
+    app.contactsView.init({
+      select(index) {
+        selectedContact = index;
+        renderContacts();
+      },
+      update(index, updated, groups) {
+        if (contacts) execute(app.contacts.update(contacts, index, updated, groups));
+      },
+      addGroup(index, group) {
+        if (contacts) execute(app.contacts.addGroup(contacts, index, group));
+      },
+      remove(index) {
+        if (!contacts || !contacts.contacts[index]) return;
+        const name = app.contacts.name(contacts.contacts[index]) || "Kontakt";
+        execute(app.contacts.remove(contacts, index));
+        confirmDeleted(name);
+      },
+      importText(text, name) {
+        if (!contacts) return;
+        const found = app.vcard.parse(text);
+        const result = app.contacts.importContacts(contacts, found);
+        if (!found.length) {
+          app.notifications.show("warning", "Keine Kontakte gefunden", [{ value: name }, " enthält keine lesbare vCard."]);
+          return;
+        }
+        execute(result.action);
+        const unchanged = found.length - result.added - result.merged;
+        app.notifications.show("info", "vCard importiert", `${result.added} neu, ${result.merged} zusammengeführt${unchanged ? `, ${unchanged} unverändert` : ""}. Strg Z macht es rückgängig.`);
+      },
+      exportOne(index) {
+        const contact = contacts?.contacts[index];
+        if (contact) download(`${app.contacts.name(contact) || "Kontakt"}.vcf`, app.vcard.serialize([contact]));
+      },
+      exportAll() {
+        if (contacts?.contacts.length) download("Contacts.vcf", app.vcard.serialize(contacts.contacts));
+        else app.notifications.show("info", "Nichts zu exportieren", "Es gibt noch keine Kontakte.");
+      },
+      copy(text) {
+        void navigator.clipboard.writeText(text).then(
+          () => app.notifications.show("info", "Kopiert", "Die Adresse ist in der Zwischenablage."),
+          () => app.notifications.show("warning", "Nicht kopiert", "Die Zwischenablage ist nicht verfügbar."));
+      },
+      reject(message) {
+        app.notifications.show("warning", "Ungültige Eingabe", message);
+        renderContacts();
+      }
+    });
+
     app.interactions.init({
       async pickFolder() {
         try { await openFolder(await app.storage.pickFolder()); }
@@ -604,6 +895,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       },
       today() {
         if (!calendar) return;
+        if (view === "contacts") view = portrait.matches ? "month" : "week";
         showDay(today);
         const cell = renderer().cell(today);
         if (cell) app.tiles.pulse(cell);
@@ -615,7 +907,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         view = next;
         render();
       },
+      openContact,
       openWeek(key) {
+        if (view === "contacts") return;
         view = "week";
         showDay(key);
       },
@@ -625,7 +919,37 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         render();
       },
       toggleHolidays() {
-        if (calendar) app.holidaysPanel.toggle(holidays, today);
+        if (calendar) app.holidaysPanel.toggle(holidays, today, year => calendar ? app.calendar.taggedPeriods(calendar, vacationTag, year) : []);
+      },
+      toggleSearch() {
+        if (calendar) app.searchPanel.toggle();
+      },
+      showHelp() { app.menus.showHelp(); },
+      isContactsView: () => view === "contacts",
+      notice(title, body) { app.notifications.show("info", title, body); },
+      contextMenu(picks, x, y, key) {
+        if (!calendar || !backlog) return;
+        /** @type {MDCMenuItem[]} */
+        const items = [];
+        if (picks.length) {
+          const open = picks.some(pick => !pickDone(pick));
+          items.push({ label: open ? "Erledigt" : "Nicht erledigt", icon: "check", key: "Leertaste", run: () => toggleMany(picks) });
+          items.push({ label: picks.length > 1 ? `${picks.length} Einträge kopieren` : "Kopieren", icon: "copy", key: "Strg C", run: () => copy(picks) });
+          items.push({ label: picks.length > 1 ? `${picks.length} Einträge löschen` : "Löschen", icon: "trash", key: "Entf", danger: true, run: () => removeMany(picks) });
+        } else {
+          items.push({ label: "Neuer Eintrag", icon: "plus", key: "N", run: () => newEntry(key) });
+          if (clipboard.length) items.push({ label: clipboard.length > 1 ? `${clipboard.length} Einträge einfügen` : "Einfügen", icon: "clipboard", key: "Strg V", run: () => paste(key) });
+        }
+        app.menus.showContext(items, x, y);
+      },
+      toggleMany: picks => toggleMany(picks),
+      removeMany: picks => removeMany(picks),
+      copy: picks => copy(picks),
+      paste: key => paste(key),
+      moveMany(refs, dragged, target) {
+        if (!calendar || !backlog) return;
+        const ordered = refs.some(ref => sameRef(ref, dragged)) ? refs : [...refs, dragged];
+        execute(app.backlog.moveEntries(calendar, backlog, ordered, target));
       },
       newEntry,
       openEntry,

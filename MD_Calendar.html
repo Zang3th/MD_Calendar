@@ -20,10 +20,15 @@
   <script defer src="domain/recurrence.js"></script>
   <script defer src="domain/history.js"></script>
   <script defer src="domain/backlog.js"></script>
+  <script defer src="domain/contacts.js"></script>
+  <script defer src="domain/search.js"></script>
   <script defer src="io/calendar-format.js"></script>
   <script defer src="io/backlog-format.js"></script>
   <script defer src="io/holidays-format.js"></script>
   <script defer src="io/config-format.js"></script>
+  <script defer src="io/contacts-format.js"></script>
+  <script defer src="io/vcard.js"></script>
+  <script defer src="io/ics.js"></script>
   <script defer src="io/storage.js"></script>
   <script defer src="ui/notifications.js"></script>
   <script defer src="ui/tooltips.js"></script>
@@ -33,14 +38,32 @@
   <script defer src="ui/tiles.js"></script>
   <script defer src="ui/render-week.js"></script>
   <script defer src="ui/render-month.js"></script>
+  <script defer src="ui/render-contacts.js"></script>
   <script defer src="ui/backlog-panel.js"></script>
   <script defer src="ui/holidays-panel.js"></script>
+  <script defer src="ui/pickers.js"></script>
   <script defer src="ui/dialog.js"></script>
+  <script defer src="ui/menus.js"></script>
+  <script defer src="ui/search-panel.js"></script>
   <script defer src="ui/interactions.js"></script>
   <script defer src="app.js"></script>
 </head>
 <body>
   <svg class="icon-sprite" aria-hidden="true">
+    <symbol id="icon-building" viewBox="0 0 32 32" fill="none">
+    <path d="M8 27V7Q8 5 10 5H22Q24 5 24 7V27M5 27H27M13 10H14M18 10H19M13 15H14M18 15H19M14 27V21H18V27"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-cake" viewBox="0 0 32 32" fill="none">
+    <path d="M6 27H26M8 27V18Q8 16 10 16H22Q24 16 24 18V27M8 21Q10.5 23.5 13 21Q15.5 18.5 18 21Q20.5 23.5 24 21M11 16V12M16 16V12M21 16V12M11 7V8M16 7V8M21 7V8"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
     <symbol id="icon-calendar" viewBox="0 0 32 32" fill="none">
     <path d="M9 7H23Q27 7 27 11V23Q27 27 23 27H9Q5 27 5 23V11Q5 7 9 7Z
              M5 13H27M11 4V9M21 4V9"
@@ -105,8 +128,36 @@
           stroke-linecap="round"
           stroke-linejoin="round"/>
     </symbol>
+    <symbol id="icon-copy" viewBox="0 0 32 32" fill="none">
+    <path d="M13 11H24Q26 11 26 13V25Q26 27 24 27H13Q11 27 11 25V13Q11 11 13 11ZM6 21V8Q6 5 9 5H20"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-download" viewBox="0 0 32 32" fill="none">
+    <path d="M16 5V19M10 13L16 19L22 13M6 21V25Q6 27 8 27H24Q26 27 26 25V21"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
     <symbol id="icon-flag" viewBox="0 0 32 32" fill="none">
     <path d="M8 28V5M8 6H24L20 11.5L24 17H8"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-heart" viewBox="0 0 32 32" fill="none">
+    <path d="M16 26C16 26 5 19.5 5 12.5Q5 7 10 7Q13.5 7 16 10.5Q18.5 7 22 7Q27 7 27 12.5C27 19.5 16 26 16 26Z"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-import" viewBox="0 0 32 32" fill="none">
+    <path d="M9 5H19L25 11V25Q25 27 23 27H9Q7 27 7 25V7Q7 5 9 5ZM16 13V22M12 18L16 22L20 18"
           stroke="currentColor"
           stroke-width="3"
           stroke-linecap="round"
@@ -115,6 +166,20 @@
     <symbol id="icon-inbox" viewBox="0 0 32 32" fill="none">
     <path d="M5 17L9 7H23L27 17V23Q27 26 24 26H8Q5 26 5 23Z
              M5 17H11L13 20.5H19L21 17H27"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-keyboard" viewBox="0 0 32 32" fill="none">
+    <path d="M6 9H26Q28 9 28 11V21Q28 23 26 23H6Q4 23 4 21V11Q4 9 6 9ZM9 13.5H9.5M13 13.5H13.5M17 13.5H17.5M21.5 13.5H23M10 18.5H22"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-mail" viewBox="0 0 32 32" fill="none">
+    <path d="M7 8H25Q27 8 27 10V22Q27 24 25 24H7Q5 24 5 22V10Q5 8 7 8ZM6 9.5L16 17L26 9.5"
           stroke="currentColor"
           stroke-width="3"
           stroke-linecap="round"
@@ -130,6 +195,10 @@
           stroke-linecap="round"
           stroke-linejoin="round"/>
     </symbol>
+    <symbol id="icon-more" viewBox="0 0 32 32">
+    <path fill="currentColor"
+          d="M8 13.5A2.5 2.5 0 1 1 8 18.5A2.5 2.5 0 1 1 8 13.5ZM16 13.5A2.5 2.5 0 1 1 16 18.5A2.5 2.5 0 1 1 16 13.5ZM24 13.5A2.5 2.5 0 1 1 24 18.5A2.5 2.5 0 1 1 24 13.5Z"/>
+    </symbol>
     <symbol id="icon-muted" viewBox="0 0 32 32" fill="none">
     <g transform="translate(-.5 0)">
     <path d="M7 12H10.5L16.5 7.5Q18 6.4 18 8.25V23.75Q18 25.6 16.5 24.5L10.5 20H7Q5 20 5 18V14Q5 12 7 12Z"
@@ -143,6 +212,20 @@
           stroke-width="3"
           stroke-linecap="round"/>
     </g>
+    </symbol>
+    <symbol id="icon-note" viewBox="0 0 32 32" fill="none">
+    <path d="M9 5H19L25 11V25Q25 27 23 27H9Q7 27 7 25V7Q7 5 9 5ZM19 5V11H25M11.5 17H20.5M11.5 22H17"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-phone" viewBox="0 0 32 32" fill="none">
+    <path d="M9 5H12.5L14.5 10.5L11.8 12.3Q13.6 17.3 19.7 20.2L21.5 17.5L27 19.5V23Q27 27 23 27Q14.5 26.5 9.5 21.5Q5 16.5 5 9Q5 5 9 5Z"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
     </symbol>
     <symbol id="icon-pin" viewBox="0 0 32 32" fill="none">
     <path d="M16 28C16 28 7 20.5 7 13.5A9 9 0 0 1 25 13.5C25 20.5 16 28 16 28Z
@@ -184,6 +267,27 @@
           stroke-linecap="round"
           stroke-linejoin="round"/>
     </symbol>
+    <symbol id="icon-search" viewBox="0 0 32 32" fill="none">
+    <path d="M14 6A8 8 0 1 1 14 22A8 8 0 1 1 14 6ZM20 20L26 26"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-star" viewBox="0 0 32 32" fill="none">
+    <path d="M16 4.5L19.4 11.4L27 12.5L21.5 17.8L22.8 25.4L16 21.8L9.2 25.4L10.5 17.8L5 12.5L12.6 11.4Z"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-trash" viewBox="0 0 32 32" fill="none">
+    <path d="M5 9H27M12 9V6Q12 5 13 5H19Q20 5 20 6V9M8 9L9.5 25Q9.7 27 11.7 27H20.3Q22.3 27 22.5 25L24 9M13.5 14V22M18.5 14V22"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
     <symbol id="icon-undo" viewBox="0 0 32 32" fill="none">
     <g transform="translate(-.5 .5)">
     <path d="M12 9L7 14L12 19
@@ -193,6 +297,13 @@
           stroke-linecap="round"
           stroke-linejoin="round"/>
     </g>
+    </symbol>
+    <symbol id="icon-upload" viewBox="0 0 32 32" fill="none">
+    <path d="M16 19V5M10 11L16 5L22 11M6 21V25Q6 27 8 27H24Q26 27 26 25V21"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
     </symbol>
     <symbol id="icon-volume" viewBox="0 0 32 32" fill="none">
     <g transform="translate(-.625 0)">
@@ -217,36 +328,135 @@
           stroke-linecap="round"
           stroke-linejoin="round"/>
     </symbol>
+    <symbol id="tag-briefcase" viewBox="0 0 32 32" fill="none">
+    <path d="M7 27V7Q7 5 9 5H19Q21 5 21 7V27M21 13H24Q26 13 26 15V27M4 27H28M11.5 10H16.5M11.5 15H16.5M11.5 20H16.5"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="tag-car" viewBox="0 0 32 32" fill="none">
+    <path d="M4 20V16.5Q4 14.5 6 14L9 13.5L12 9Q13 7.5 15 7.5H20Q22 7.5 23 9L26 13.5Q28 14.5 28 16.5V20Q28 21 27 21H25M7 21H5Q4 21 4 20M12.5 21H19.5M9.75 18.5A2.75 2.75 0 1 1 9.75 24A2.75 2.75 0 1 1 9.75 18.5ZM22.25 18.5A2.75 2.75 0 1 1 22.25 24A2.75 2.75 0 1 1 22.25 18.5Z"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="tag-code" viewBox="0 0 32 32" fill="none">
+    <path d="M11 9L4 16L11 23M21 9L28 16L21 23M18 6L14 26"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="tag-cooking" viewBox="0 0 32 32" fill="none">
+    <path d="M6 15H26V22Q26 26 22 26H10Q6 26 6 22ZM3 15H29M12 11Q10 9 12 7M16 11Q14 9 16 7M20 11Q18 9 20 7"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="tag-doctor" viewBox="0 0 32 32" fill="none">
+    <path d="M8 5H24Q27 5 27 8V24Q27 27 24 27H8Q5 27 5 24V8Q5 5 8 5ZM16 10V22M10 16H22"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="tag-dumbbell" viewBox="0 0 32 32" fill="none">
+    <path d="M7 10Q7 9 8 9H10Q11 9 11 10V22Q11 23 10 23H8Q7 23 7 22ZM21 10Q21 9 22 9H24Q25 9 25 10V22Q25 23 24 23H22Q21 23 21 22ZM11 16H21M4 13V19M28 13V19"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="tag-home" viewBox="0 0 32 32" fill="none">
+    <path d="M5 15L16 6L27 15M8 13V25Q8 27 10 27H22Q24 27 24 25V13M13.5 27V21Q13.5 20 14.5 20H17.5Q18.5 20 18.5 21V27"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="tag-household" viewBox="0 0 32 32" fill="none">
+    <path d="M8 4H24Q26 4 26 6V26Q26 28 24 28H8Q6 28 6 26V6Q6 4 8 4ZM6 10H26M16 13.5A5.5 5.5 0 1 1 16 24.5A5.5 5.5 0 1 1 16 13.5ZM10 7H11"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="tag-karate" viewBox="0 0 32 32" fill="none">
+    <path d="M11 5L5 9V27H27V9L21 5M11 5L16 14L21 5M16 14V27M5 18H27"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="tag-physio" viewBox="0 0 32 32" fill="none">
+    <path d="M16 4A2.5 2.5 0 1 1 16 9A2.5 2.5 0 1 1 16 4ZM8 8L13 13H19L24 8M13 13V19L10 27M19 13V19L22 27M13 19H19"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="tag-sauna" viewBox="0 0 32 32" fill="none">
+    <path d="M10 5Q8 7 10 9Q12 11 10 13M16 5Q14 7 16 9Q18 11 16 13M22 5Q20 7 22 9Q24 11 22 13M5 19H27M5 25H27M9 19V27M23 19V27"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="tag-shopping" viewBox="0 0 32 32" fill="none">
+    <path d="M3 5H7L10 20H24L27 10H8.2M12 23.5A2 2 0 1 1 12 27.5A2 2 0 1 1 12 23.5ZM22 23.5A2 2 0 1 1 22 27.5A2 2 0 1 1 22 23.5Z"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="tag-sport" viewBox="0 0 32 32" fill="none">
+    <path d="M4 22V16Q4 14 6 14H9L12 9Q13 8 14 9L16 12L19 13Q23 14 25 17Q28 18.5 28 21V22Q28 24 26 24H6Q4 24 4 22ZM4 20H28"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="tag-vacation" viewBox="0 0 32 32" fill="none">
+    <path d="M17 27Q17 18 13.5 11M13.5 11Q9 6 4 9M13.5 11Q15 5 21 5M13.5 11Q20 9 25 13M13.5 11Q9 12 7 17M5 27H27"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
   </svg>
   <div class="app">
     <header class="hdr glass">
       <div class="hdr__left">
         <img class="logo" src="res/logo/mark.svg" alt="MD_Calendar" width="32" height="32">
-        <button class="hdr__title" id="title" type="button" data-tooltip="Zu heute springen (T)" disabled></button>
+        <button class="hdr__title" id="title" type="button" aria-label="Zu heute springen (T)" disabled><span class="hdr__titletext" id="titleText">MD_Calendar</span><span class="hdr__sizer" id="titleSizer" aria-hidden="true"></span></button>
         <span class="kw" id="kw" hidden></span>
-        <div class="datenav">
-          <button class="iconbtn" id="prev" type="button" aria-label="Vorherige Woche" data-tooltip="Vorherige Woche (←)" disabled><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-chevron-left"></use></svg></button>
-          <button class="iconbtn" id="next" type="button" aria-label="Nächste Woche" data-tooltip="Nächste Woche (→)" disabled><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-chevron-right"></use></svg></button>
+        <div class="datenav" data-open-only>
+          <button class="iconbtn" id="prev" type="button" aria-label="Vorherige Woche (←)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-chevron-left"></use></svg></button>
+          <button class="iconbtn" id="next" type="button" aria-label="Nächste Woche (→)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-chevron-right"></use></svg></button>
         </div>
       </div>
-      <div class="seg" role="group" aria-label="Ansicht">
+      <div class="seg" role="group" aria-label="Ansicht" data-open-only>
         <span class="seg__thumb" aria-hidden="true"></span>
-        <button id="viewWeek" type="button" aria-pressed="true" data-tooltip="Woche (W)" disabled><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-week"></use></svg><span>Woche</span></button>
-        <button id="viewMonth" type="button" aria-pressed="false" data-tooltip="Monat (M)" disabled><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-month"></use></svg><span>Monat</span></button>
-        <button type="button" aria-pressed="false" disabled><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-contacts"></use></svg><span>Kontakte</span></button>
+        <button id="viewWeek" type="button" aria-pressed="true" aria-label="Woche (W)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-week"></use></svg><span>Woche</span></button>
+        <button id="viewMonth" type="button" aria-pressed="false" aria-label="Monat (M)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-month"></use></svg><span>Monat</span></button>
+        <button id="viewContacts" type="button" aria-pressed="false" aria-label="Kontakte (K)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-contacts"></use></svg><span>Kontakte</span></button>
       </div>
-      <div class="hdr__right">
-        <button class="iconbtn" id="sound" type="button" aria-pressed="false" aria-label="Ton aus" data-tooltip="Ton aus"><svg class="ui-icon sound-on" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-volume"></use></svg><svg class="ui-icon sound-off" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-muted"></use></svg></button>
+      <div class="hdr__right" data-open-only>
         <div class="tools">
-          <button class="iconbtn" id="holidaysButton" type="button" aria-expanded="false" aria-controls="holidaysPanel" aria-label="Feiertage und Schulferien" data-tooltip="Feiertage und Schulferien" disabled><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-flag"></use></svg></button>
-          <button class="iconbtn" id="backlogToggle" type="button" aria-pressed="false" aria-controls="backlog" aria-label="Backlog" data-tooltip="Backlog (B)" disabled><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-inbox"></use></svg></button>
+          <button class="iconbtn" id="holidaysButton" type="button" aria-expanded="false" aria-controls="holidaysPanel" aria-label="Feiertage und Schulferien"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-flag"></use></svg></button>
+          <button class="iconbtn" id="searchButton" type="button" aria-expanded="false" aria-controls="searchPanel" aria-label="Suchen (F)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-search"></use></svg></button>
+          <button class="iconbtn" id="backlogToggle" type="button" aria-pressed="false" aria-controls="backlog" aria-label="Backlog (B)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-inbox"></use></svg></button>
         </div>
         <div class="edit">
           <button class="iconbtn" id="undo" type="button" aria-label="Rückgängig" disabled><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-undo"></use></svg></button>
           <button class="iconbtn" id="redo" type="button" aria-label="Wiederholen" disabled><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-redo"></use></svg></button>
-          <button class="save" id="save" type="button" aria-label="Alles gespeichert" data-tooltip="Alles gespeichert" disabled><span class="save__icon"><i class="save__dot"></i><svg class="ui-icon save__ok" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-check"></use></svg></span><span class="save__text"></span><b class="save__count"></b></button>
+          <button class="save" id="save" type="button" aria-label="Alles gespeichert"><span class="save__icon"><i class="save__dot"></i><svg class="ui-icon save__ok" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-check"></use></svg></span><span class="save__text"></span><b class="save__count"></b></button>
         </div>
-        <button class="primary" id="new" type="button" aria-label="Neuer Eintrag" data-tooltip="Neuer Eintrag (N)" disabled><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-plus"></use></svg><span>Neu</span></button>
+        <button class="primary primary--icon" id="new" type="button" aria-label="Neuer Eintrag (N)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-plus"></use></svg></button>
+        <button class="iconbtn" id="optionsButton" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="optionsMenu" aria-label="Optionen"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-more"></use></svg></button>
       </div>
     </header>
     <main class="main glass">
@@ -261,34 +471,53 @@
       </section>
       <div class="wk" id="week" hidden></div>
       <div class="month" id="month" hidden></div>
+      <div class="cx" id="contacts" hidden></div>
     </main>
     <aside class="backlog glass" id="backlog" aria-label="Backlog" aria-hidden="true" inert>
       <h2 class="backlog__title"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-inbox"></use></svg>Backlog</h2>
       <div class="bl" id="backlogGroups"></div>
     </aside>
   </div>
+  <div class="lasso" id="lasso" hidden></div>
   <section class="popover glass" id="holidaysPanel" aria-label="Feiertage und Schulferien" hidden>
     <header class="hp__head">
-      <button class="iconbtn" type="button" data-year="-1" aria-label="Vorheriges Jahr" data-tooltip="Vorheriges Jahr"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-chevron-left"></use></svg></button>
+      <button class="iconbtn" type="button" data-year="-1" aria-label="Vorheriges Jahr"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-chevron-left"></use></svg></button>
       <span class="hp__year" id="holidaysYear"></span>
-      <button class="iconbtn" type="button" data-year="1" aria-label="Nächstes Jahr" data-tooltip="Nächstes Jahr"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-chevron-right"></use></svg></button>
+      <button class="iconbtn" type="button" data-year="1" aria-label="Nächstes Jahr"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-chevron-right"></use></svg></button>
     </header>
     <div class="hp__content" id="holidaysContent"></div>
   </section>
+  <section class="popover popover--search glass" id="searchPanel" aria-label="Suche" hidden>
+    <label class="sp__field"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-search"></use></svg><input id="searchInput" placeholder="Kalender durchsuchen …" aria-label="Kalender durchsuchen" autocomplete="off" role="combobox" aria-expanded="true" aria-controls="searchResults"></label>
+    <ul class="sp__results" id="searchResults" role="listbox" aria-label="Treffer"></ul>
+  </section>
+  <div class="menu popover glass" id="optionsMenu" role="menu" aria-label="Optionen" hidden>
+    <button class="menu__item" id="sound" type="button" role="menuitem" data-muted="false"><svg class="ui-icon sound-on" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-volume"></use></svg><svg class="ui-icon sound-off" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-muted"></use></svg><span id="soundLabel">Ton aus</span></button>
+    <label class="menu__item" role="menuitem"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-import"></use></svg><span>Kalender importieren (.ics)</span><input type="file" id="icsImport" accept=".ics,text/calendar" hidden></label>
+    <button class="menu__item" id="helpButton" type="button" role="menuitem"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-keyboard"></use></svg><span>Tastenkürzel</span><kbd>?</kbd></button>
+  </div>
+  <div class="menu popover glass" id="contextMenu" role="menu" aria-label="Eintrag" hidden></div>
+  <dialog class="dlg dlg--help" id="helpDialog" aria-labelledby="helpTitle">
+    <div class="dlg__form">
+      <header class="dlg__head"><span class="dlg__kind" id="helpTitle">Tastenkürzel</span><button class="dlg__x" type="button" data-close aria-label="Schließen (Esc)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-close"></use></svg></button></header>
+      <dl class="keys" id="helpKeys"></dl>
+    </div>
+  </dialog>
   <dialog class="dlg" id="dialog" aria-labelledby="dialogKind">
     <form class="dlg__form" method="dialog" novalidate>
       <header class="dlg__head">
         <span class="dlg__kind" id="dialogKind"></span>
-        <button class="dlg__x" type="button" data-close aria-label="Schließen" data-tooltip="Schließen (Esc)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-close"></use></svg></button>
+        <button class="dlg__x" type="button" data-close aria-label="Schließen (Esc)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-close"></use></svg></button>
       </header>
       <input class="dlg__title" id="dialogTitle" placeholder="Titel" aria-label="Titel" autocomplete="off">
       <div class="dlg__grid">
         <div class="dlg__field" id="dialogDateField">
           <span class="dlg__label"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-calendar"></use></svg><span id="dialogDateLabel">Datum</span>
-            <button class="dlg__toggle" id="dialogMulti" type="button" aria-pressed="false" aria-label="Mehrtägig" data-tooltip="Mehrtägig"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-range"></use></svg></button></span>
-          <span class="dlg__range"><input class="dlg__input" id="dialogDate" placeholder="TT.MM.JJJJ" aria-label="Datum" autocomplete="off" inputmode="numeric"><span class="dlg__until" aria-hidden="true">–</span><input class="dlg__input dlg__until" id="dialogEndDate" placeholder="TT.MM.JJJJ" aria-label="Bis" autocomplete="off" inputmode="numeric"></span>
+            <button class="dlg__toggle" id="dialogMulti" type="button" aria-pressed="false" aria-label="Mehrtägig"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-range"></use></svg></button></span>
+          <span class="dlg__range"><input class="dlg__input" id="dialogDate" placeholder="TT.MM.JJJJ" aria-label="Datum" autocomplete="off" inputmode="numeric" data-picker="date"><span class="dlg__until" aria-hidden="true">–</span><input class="dlg__input dlg__until" id="dialogEndDate" placeholder="TT.MM.JJJJ" aria-label="Bis" autocomplete="off" inputmode="numeric" data-picker="date"></span>
+          <span class="dlg__hint" id="dialogDateHint"></span>
         </div>
-        <div class="dlg__field" id="dialogTimeField"><span class="dlg__label"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-clock"></use></svg>Uhrzeit</span><span class="dlg__time"><input class="dlg__input" id="dialogStart" placeholder="Beginn" aria-label="Beginn (HH:MM)" autocomplete="off" inputmode="numeric"><span aria-hidden="true">–</span><input class="dlg__input" id="dialogEnd" placeholder="Ende" aria-label="Ende (HH:MM)" autocomplete="off" inputmode="numeric"></span></div>
+        <div class="dlg__field" id="dialogTimeField"><span class="dlg__label"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-clock"></use></svg>Uhrzeit</span><span class="dlg__time"><input class="dlg__input" id="dialogStart" placeholder="Beginn" aria-label="Beginn (HH:MM)" autocomplete="off" inputmode="numeric" data-picker="time"><span aria-hidden="true">–</span><input class="dlg__input" id="dialogEnd" placeholder="Ende" aria-label="Ende (HH:MM)" autocomplete="off" inputmode="numeric" data-picker="time"></span></div>
         <div class="dlg__field dlg__field--wide" id="dialogRepeatField">
           <span class="dlg__label"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-repeat"></use></svg>Wiederholung</span>
           <span class="dlg__repeat">
@@ -298,8 +527,8 @@
           <span class="dlg__weekdays" id="dialogWeekdays" role="group" aria-label="Wochentage"></span>
           <span class="dlg__hint" id="dialogUntil"></span>
         </div>
-        <div class="dlg__field dlg__field--wide"><span class="dlg__label">Tag</span><span class="dlg__chips" id="dialogTags" role="group" aria-label="Tag"></span></div>
-        <label class="dlg__field dlg__field--wide"><span class="dlg__label"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-pin"></use></svg>Ort</span><input class="dlg__input" id="dialogLocation" placeholder="Kein Ort" autocomplete="off"></label>
+        <label class="dlg__field"><span class="dlg__label">Tag</span><select class="dlg__select" id="dialogTag" aria-label="Tag"><button type="button"><selectedcontent></selectedcontent></button></select></label>
+        <label class="dlg__field"><span class="dlg__label"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-pin"></use></svg>Ort</span><input class="dlg__input" id="dialogLocation" placeholder="Kein Ort" autocomplete="off"></label>
       </div>
       <textarea class="dlg__note" id="dialogNote" placeholder="Notiz" aria-label="Notiz" rows="3"></textarea>
       <footer class="dlg__foot">
@@ -310,6 +539,7 @@
         <span class="dlg__spacer"></span>
         <button class="btn btn--primary" id="dialogApply" type="submit">Übernehmen <kbd>↵</kbd></button>
       </footer>
+      <div class="picker" id="picker" hidden></div>
     </form>
   </dialog>
   <section class="notifications" id="notifications" aria-label="Benachrichtigungen" aria-live="polite"></section>

@@ -37,7 +37,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   function fill(cell, calendar, key, today) {
     cell.classList.toggle("is-today", key === today);
     cell.classList.toggle("is-past", key < today);
-    const room = capacity(Number(cell.parentElement?.style.getPropertyValue("--lanes")) || 0);
+    const room = capacity(Number(cell.style.getPropertyValue("--lanes")) || 0);
     const total = app.recurrence.occurrences(calendar, key).length + app.calendar.entries(calendar, key).length;
     const { html, hidden } = app.tiles.dayTiles(calendar, key, today, { limit: total <= room.all ? room.all : room.withMore, compact: true });
     /** @type {HTMLElement} */ (cell.querySelector(".mcell__list")).innerHTML = html;
@@ -48,12 +48,12 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     more.setAttribute("aria-label", `${hidden} weitere Einträge, Woche öffnen`);
   }
 
-  /** @param {string} key @param {string} month */
-  function cellMarkup(key, month) {
+  /** @param {string} key @param {string} month @param {number} lanes */
+  function cellMarkup(key, month, lanes) {
     const day = dayjs(key);
     const other = key.slice(0, 7) !== month;
     const number = key.endsWith("-01") ? day.format("D. MMM") : day.format("D");
-    return `<div class="mcell${other ? " is-other" : ""}" data-day="${key}" aria-label="${day.format("dddd, D. MMMM YYYY")}">` +
+    return `<div class="mcell${other ? " is-other" : ""}" data-day="${key}" style="--lanes:${lanes}" aria-label="${day.format("dddd, D. MMMM YYYY")}">` +
       `<div class="mcell__head"><span class="mcell__num">${number}</span><span class="mcell__badges"></span></div><div class="mcell__spacer"></div>` +
       `<div class="mcell__list day__list" data-day="${key}"></div>` +
       `<button class="more" type="button" data-more="${key}" hidden></button></div>`;
@@ -76,9 +76,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       const layout = app.calendar.segments(calendar, start, 7);
       const days = app.calendar.weekDays(start);
       return `<div class="mweek${start === currentWeek ? " is-current" : ""}">` +
-        `<span class="mweek__kw" data-tooltip="Kalenderwoche ${app.calendar.isoWeek(start)}">${app.calendar.isoWeek(start)}</span>` +
+        `<span class="mweek__kw" aria-label="Kalenderwoche ${app.calendar.isoWeek(start)}">${app.calendar.isoWeek(start)}</span>` +
         `<div class="mrow" style="--lanes:${layout.lanes}"><div class="wk__bars">${layout.segments.map(segment => app.tiles.bar(segment, today, false)).join("")}</div>` +
-        `${days.map(key => cellMarkup(key, month)).join("")}</div></div>`;
+        `${days.map((key, index) => cellMarkup(key, month, layout.dayLanes[index])).join("")}</div></div>`;
     }).join("");
     if (rebuilt) {
       shownMonth = month;

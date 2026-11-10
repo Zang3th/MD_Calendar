@@ -26,7 +26,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   const endSeries = element("dialogEndSeries");
   const apply = element("dialogApply");
   const toBacklog = element("dialogBacklog");
-  const tags = element("dialogTags");
+  const tagSelect = /** @type {HTMLSelectElement} */ (/** @type {unknown} */ (element("dialogTag")));
+  const dateHint = element("dialogDateHint");
   const weekdayNames = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
   const longNames = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
   const units = { DAILY: ["Tag", "Tage"], WEEKLY: ["Woche", "Wochen"], MONTHLY: ["Monat", "Monate"], YEARLY: ["Jahr", "Jahre"] };
@@ -39,7 +40,6 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   let repeatTouched = false;
   /** Last accepted value per validated field, restored when an input is rejected. */
   const accepted = new Map();
-  let selectedTag = "";
 
   weekdays.innerHTML = weekdayNames.map((name, index) =>
     `<button class="dlg__day" type="button" aria-pressed="false" data-weekday="${index}" aria-label="${longNames[index]}">${name}</button>`).join("");
@@ -60,16 +60,45 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return dateKey() || app.calendar.todayKey(new Date());
   }
 
-  /** Tag chips: „Kein Tag“, the configured tags and an unconfigured tag the item already has. */
-  function renderTags() {
-    const options = request?.tags || [];
+  /**
+   * Tag dropdown: „Kein Tag“, the configured tags in alphabetical order with color and icon,
+   * and an unconfigured tag the item already has, so that it is not lost.
+   * @param {string} selected
+   */
+  function renderTags(selected) {
+    const options = [...(request?.tags || [])].sort((left, right) => left.name.localeCompare(right.name, "de"));
     const names = options.map(tag => tag.name);
-    const extra = selectedTag && !names.includes(selectedTag) ? [selectedTag] : [];
-    const chip = (/** @type {string} */ name, /** @type {string} */ label, /** @type {string} */ style) =>
-      `<button class="chip" type="button" data-tag="${app.tiles.escape(name)}" aria-pressed="${name === selectedTag}"${style}>${app.tiles.escape(label)}</button>`;
-    tags.innerHTML = chip("", "Kein Tag", "") +
-      options.map(tag => chip(tag.name, tag.name, ` style="--h:${app.configFormat.hue(tag.color)}"`)).join("") +
-      extra.map(name => chip(name, name, "")).join("");
+    /** @param {string} value @param {string} text @param {MDCTag | null} tag */
+    const option = (value, text, tag) => {
+      const item = document.createElement("option");
+      item.value = value;
+      if (tag) {
+        item.style.setProperty("--h", String(app.configFormat.hue(tag.color)));
+        item.className = "has-tag";
+        const swatch = document.createElement("span");
+        swatch.className = "opt__swatch";
+        swatch.setAttribute("aria-hidden", "true");
+        swatch.innerHTML = app.tiles.tagIcon(tag.name, "opt__icon");
+        item.append(swatch);
+      }
+      const label = document.createElement("span");
+      label.textContent = text;
+      item.append(label);
+      return item;
+    };
+    // The options are replaced; the button that shows the chosen option (customizable select) stays.
+    for (const old of Array.from(tagSelect.options)) old.remove();
+    tagSelect.append(option("", "Kein Tag", null), ...options.map(tag => option(tag.name, tag.name, tag)),
+      ...(selected && !names.includes(selected) ? [option(selected, selected, null)] : []));
+    tagSelect.value = selected;
+  }
+
+  /** Spells out the chosen date, so that the preselected day is unmistakable. */
+  function updateDateHint() {
+    const startKey = dateKey();
+    const endKey = multi.getAttribute("aria-pressed") === "true" ? app.calendar.parseDate(endDate.value) : "";
+    const spelled = (/** @type {string} */ key) => dayjs(key).format("dddd, D. MMMM YYYY");
+    dateHint.textContent = !startKey ? "" : endKey && endKey !== startKey ? `${spelled(startKey)} bis ${spelled(endKey)}` : spelled(startKey);
   }
 
   /** Rebuilds the recurrence options for the current date, keeping the selection where possible. */
@@ -188,8 +217,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     title.value = next.title;
     date.value = next.date ? app.calendar.formatDate(next.date) : "";
     date.placeholder = next.inBacklog ? "Kein Datum (Backlog)" : "TT.MM.JJJJ";
-    selectedTag = next.tag;
-    renderTags();
+    renderTags(next.tag);
     endDate.value = next.kind === "multiDay" ? app.calendar.formatDate(next.end) : "";
     start.value = next.startTime;
     end.value = next.endTime;
@@ -200,6 +228,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     showRule(next.rule);
     setMulti(next.kind === "multiDay");
     updateRepeatControls();
+    updateDateHint();
     remove.hidden = next.isNew;
     toBacklog.hidden = next.kind !== "entry" || next.inBacklog;
     remove.textContent = next.kind === "series" ? "Serie löschen" : "Löschen";
@@ -211,6 +240,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   function close() {
+    app.pickers.hide();
     if (dialog.open) dialog.close();
     handlers = null;
     request = null;
@@ -218,6 +248,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   for (const input of [date, endDate, start, end, interval]) input.addEventListener("change", () => {
     if (!validate(input)) return;
+    updateDateHint();
     if (input === date || input === interval) {
       repeatTouched = repeatTouched || input === date;
       updateRepeatOptions();
@@ -236,12 +267,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     repeatTouched = true;
     button.setAttribute("aria-pressed", String(button.getAttribute("aria-pressed") !== "true"));
   });
-  multi.addEventListener("click", () => setMulti(multi.getAttribute("aria-pressed") !== "true"));
-  tags.addEventListener("click", event => {
-    const chip = event.target instanceof Element ? event.target.closest("[data-tag]") : null;
-    if (!(chip instanceof HTMLElement)) return;
-    selectedTag = chip.dataset.tag || "";
-    for (const other of tags.querySelectorAll("[data-tag]")) other.setAttribute("aria-pressed", String(other === chip));
+  multi.addEventListener("click", () => {
+    setMulti(multi.getAttribute("aria-pressed") !== "true");
+    updateDateHint();
   });
 
   /** Validates the fields and builds the result; null when an input was rejected. @param {boolean} backlogTarget @returns {MDCDialogResult | null} */
@@ -264,7 +292,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       startTime: isMulti ? "" : start.value,
       endTime: isMulti || !start.value ? "" : end.value,
       rule,
-      tag: selectedTag
+      tag: tagSelect.value
     };
   }
 
@@ -297,7 +325,13 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     // The dialog has no padding, so a click on the dialog element itself is a click on the backdrop.
     if (event.target === dialog || (event.target instanceof Element && event.target.closest("[data-close]"))) close();
   });
+  dialog.addEventListener("cancel", event => {
+    if (!app.pickers.isOpen()) return;
+    event.preventDefault();
+    app.pickers.hide();
+  });
   dialog.addEventListener("close", () => {
+    app.pickers.hide();
     handlers = null;
     request = null;
   });

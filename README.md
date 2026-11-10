@@ -4,9 +4,9 @@ A local-first calendar built around ordered to-do lists per day, with a backlog 
 
 ## Status
 
-Concept, documentation and the approved UI prototype are complete. The harness, the vendored dependencies and an empty application skeleton (`MD_Calendar.html`, `app.js`, `styles.css`) are in place. The next release is 0.1.0 "Wochenkalender" in the [Roadmap](docs/Roadmap.md).
+Releases 0.1.0 to 0.5.0 of the [Roadmap](docs/Roadmap.md) are implemented: week and month views, recurring and multi-day entries, backlog, holidays, tags with icons, the contact editor with birthdays and vCard import and export, search, shortcuts, selection with copy and paste, and the ICS import. The next release is 1.0.0 "Umstieg".
 
-To see the intended UI, open [`prototypes/03b-aurora-header.html`](prototypes/03b-aurora-header.html) in Chrome or Edge (details in [prototypes/README.md](prototypes/README.md)).
+Open `MD_Calendar.html` in Chrome or Edge and choose the calendar folder. The approved design reference is [`prototypes/03b-aurora-header.html`](prototypes/03b-aurora-header.html) (details in [prototypes/README.md](prototypes/README.md)).
 
 ## Documentation map
 
@@ -16,13 +16,13 @@ Each topic has exactly one owning document.
 |---|---|
 | Rules for agents and contributors | [AGENTS.md](AGENTS.md) |
 | Vision, problems solved, scope, out of scope, cutover | [docs/Product.md](docs/Product.md) |
-| Business model and rules: entries, day order, recurrence, backlog, tags, contacts, holidays, imports | [docs/Domain.md](docs/Domain.md) |
+| Business model and rules: entries, day order, recurrence, backlog, tags, contacts, holidays, search, selection, imports | [docs/Domain.md](docs/Domain.md) |
 | Calendar folder, files, storage rules, parsing rules, format drafts | [docs/DataFormat.md](docs/DataFormat.md) |
 | Runtime, dependencies, layers, storage adapter, saving, external changes, undo, notifications, startup, systems adopted from MD_Manager | [docs/Architecture.md](docs/Architecture.md) |
 | Visual language, color tokens, lights, borders, past dimming, typography, spacing, shapes, logo, icons, tag icons, motion, completion sound | [docs/ui/DesignSystem.md](docs/ui/DesignSystem.md) |
-| Page layout, header, save control, backlog panel, entry dialog, notifications, settings | [docs/ui/Shell.md](docs/ui/Shell.md) |
+| Page layout, header, options menu, search panel, shortcut overview, save control, backlog panel, entry dialog, notifications, settings | [docs/ui/Shell.md](docs/ui/Shell.md) |
 | Week, month and contacts views; entry tiles; day header badges | [docs/ui/Views.md](docs/ui/Views.md) |
-| Shortcuts, drag and drop, editing, undo, deleting | [docs/ui/Interaction.md](docs/ui/Interaction.md) |
+| Shortcuts, pointer gestures, creating, selection, drag and drop, editing, undo, deleting | [docs/ui/Interaction.md](docs/ui/Interaction.md) |
 | Mobile phase: plan, obstacles, interim options | [docs/Mobile.md](docs/Mobile.md) |
 | Decisions with reasons and rejected alternatives, research notes | [docs/Decisions.md](docs/Decisions.md) |
 | Unresolved questions | [docs/OpenQuestions.md](docs/OpenQuestions.md) |
@@ -59,4 +59,4 @@ npx playwright install chromium
 
 `npm run verify` runs type checking, linting, the architecture checker, the unit tests and the browser tests and stops at the first failure. It is the Definition of Done (see [AGENTS.md](AGENTS.md#harness-and-tests)).
 
-The planned application layout is described in [docs/Architecture.md](docs/Architecture.md#layers).
+The application layout is described in [docs/Architecture.md](docs/Architecture.md#layers).

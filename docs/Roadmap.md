@@ -41,7 +41,6 @@
 - [x] ~Golden File `Holidays`~
 - [x] ~Golden File `Config`~
 
-#Pin
 ## Wochenkalender
 
 #Version
@@ -160,7 +159,7 @@ Erste nutzbare Version: Ordner öffnen, Woche ansehen, Einträge pflegen und spe
 
 - [x] ~Docs aktualisieren~
 
-## Kontakte
+## Kontakte und Tags
 
 #Version
 - 0.4.0
@@ -170,64 +169,85 @@ Die Kontakte-Ansicht wird ein vollwertiger Kontakt-Editor. `Contacts.md` bleibt 
 
 ### Vorbereitung
 
-- [ ] Offene Fragen klären (29.02., Duplikate beim Import, Fotos, Spitzname im Badge)
-- [ ] Parser + Serializer für `Contacts.md` gegen die Golden File entwickeln
+- [x] ~Informieren + Recherchieren => An Best-Practices anderer Parser orientieren~
+- [x] ~Offene Fragen klären (29.02., Duplikate beim Import, Fotos, Spitzname im Badge)~
+- [x] ~Parser + Serializer für `Contacts.md` gegen die Golden File entwickeln~
 
 ### Editor
 
-- [ ] Liste mit Suche, Filtern + Sortierung umsetzen
-- [ ] Detailansicht mit allen Feldern umsetzen
-- [ ] Anlegen, Löschen, Gruppen verwalten
-- [ ] `tel:` / `mailto:` + Adresse kopieren
+- [x] ~Liste mit Suche, Filtern + Sortierung umsetzen~
+- [x] ~Detailansicht mit allen Feldern umsetzen~
+- [x] ~Anlegen, Löschen, Gruppen verwalten~
+- [x] ~`tel:` / `mailto:` + Adresse kopieren~
 
 ### Kalender
 
-- [ ] Geburtstage + Jahrestage im Tageskopf, mit Alter + „+X"
-- [ ] Klick auf Badge öffnet den Kontakt
+- [x] ~Geburtstage + Jahrestage im Tageskopf, mit Alter + „+X"~
+- [x] ~Klick auf Badge öffnet den Kontakt~
 
 ### vCard
 
-- [ ] Import mit Duplikat-Erkennung
-- [ ] Export pro Kontakt
+- [x] ~Import mit Duplikat-Erkennung~
+- [x] ~Export pro Kontakt und als ganze Liste~
+
+### Tag-Icons
+
+- [x] ~Icon-Satz für Tags gestalten (`res/tag-icons/`)~
+- [x] ~Tag-Icon auf Kachel + Balken anzeigen~
+- [x] ~Unbekannte Icon-ID in `Config.md` als Fehler melden~
+- [x] ~Tags als Dropdown-Liste zur Auswahl => Default ist leer~
 
 ### Release
 
-- [ ] Docs + README aktualisieren
-- [ ] Internen Tag setzen
+- [x] ~Docs aktualisieren~
 
 ## Suche, Shortcuts und Import
 
 #Version
 - 0.5.0
 
-### Tag-Icons
-
-- [ ] Icon-Satz für Tags gestalten (`res/tag-icons/`) => interaktiv mit Nutzer
-- [ ] Tag-Icon auf Kachel + Balken anzeigen
-- [ ] Unbekannte Icon-ID in `Config.md` als Fehler melden
-
 ### Suche
 
-- [ ] Fuzzy-Suche über den ganzen Kalender
-- [ ] Sprung zum Treffer
+- [x] ~Fuzzy-Suche über den ganzen Kalender~
+- [x] ~Sprung zum Treffer~
 
 ### Shortcuts
 
-- [ ] Weitere Shortcuts festlegen
-- [ ] Shortcuts umsetzen (T mit Scroll-Animation)
-- [ ] Hilfe-Übersicht umsetzen
+- [x] ~Weitere Shortcuts festlegen => Nutzer fragen + Vorschläge machen~
+- [x] ~Shortcuts umsetzen (T mit Scroll-Animation)~
+- [x] ~Hilfe-Übersicht umsetzen~
+- [x] ~Rechtsklick kopiert Aufgaben~
+- [x] ~Gedrückte linke Maustaste multiselektiert Aufgaben~
+- [x] ~Mausrad-Scrollen durch die Wochen und Monate aktivieren (one-at-a-time)~
 
 ### Import
 
-- [ ] ICS-Import der Google-Historie in `Calendar.md`
-- [ ] ICS-Import einzelner Einladungen
+- [x] ~ICS-Import der Google-Historie in `Calendar.md`~
+- [x] ~ICS-Import einzelner Einladungen~
+
+### Bugs und Verbesserungen
+
+- [x] ~Logo überall rahmenlos anzeigen (bspw. Browser-Tab)~
+- [x] ~Startseite nur mit minimaler Ansicht (Headerbar zeigt nicht funktionale Dinge an)~
+- [x] ~Erstmal alle Tooltips rauswerfen => einzelne werden später wieder nachgepflegt~
+- [x] ~"+ Eintrag"-Button kann raus => Doppelklick auf Tag triggert Neu-Dialog mit dem Tag als Vorauswahl~
+- [x] ~"+ Neu"-Button auf "+" kürzen~
+- [x] ~New-Menu aufräumen: Kalenderauswahl, Uhrzeitauswahl, sauber + klare Pre-Selection, Dropdown und Auswahl in passendem CSS~
+- [x] ~Notifications anzeigen wenn bspw. versucht eine Serie zu verschieben~
+- [x] ~Der aktuelle Tag ist nicht gut genug erkennbar, wenn er nicht mittig liegt. Man schaut erstmal auf das Licht in der Mitte~
+- [x] ~Mute-Button in Options-Menü rechts vom New-Button schieben~
+- [x] ~Das Holiday-Skript sollte sich an deutsche Normen und übliche Bezeichnungen für Feiertage halten~
+- [x] ~Wenn Urlaube hinterlegt sind, werden sie auch im Menü "Feiertage ..." angezeigt (oberhalb der Schulferien)~
+- [x] ~Die Aufgaben einer gesamten Woche brauchen sich nicht nach unten verschieben, wenn irgendwann am Ende der Woche ein Multi-day Event startet~
+- [x] ~Rechtsklick auf Item => Nicht erledigt, Kopieren, Löschen~
+- [x] ~Die Navigation (rechts/links) springt mit unterschiedlich langen Monatsnamen~
 
 ### Release
 
-- [ ] Docs + README aktualisieren
-- [ ] Internen Tag setzen
+- [x] ~Docs aktualisieren~
 
-## Umstieg
+#Pin
+## Umstieg und Nutzung
 
 #Version
 - 1.0.0
@@ -242,10 +262,11 @@ Ab hier ersetzt MD_Calendar den Google-Kalender. Google bleibt nur noch als Arch
 - [ ] Google-Kontakte per vCard importieren
 - [ ] Ordner ins NAS-Backup aufnehmen
 
+### Bugs und Verbesserungen
+
 ### Release
 
 - [ ] Docs + README aktualisieren
-- [ ] Internen Tag setzen
 
 ## Mobil
 

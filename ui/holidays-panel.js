@@ -11,6 +11,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   let data = { holidays: [], vacations: [] };
   let today = "";
   let year = 0;
+  /** Own vacations of a year: entries and multi-day entries with the tag „Urlaub“. @type {(year: number) => MDCPeriod[]} */
+  let personal = () => [];
 
   /** @param {string} key */
   function short(key) {
@@ -30,8 +32,13 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       `<li class="hp__row${vacation.end < today ? " is-past" : ""}"><span class="hp__date hp__date--range">${short(vacation.start)} – ${short(vacation.end)}</span>` +
       `<span class="hp__name">${escape(vacation.name)}</span></li>`).join("");
     const empty = (/** @type {string} */ text) => `<li class="hp__empty">${text}</li>`;
+    const own = personal(year);
+    const ownRows = own.map(item =>
+      `<li class="hp__row${item.end < today ? " is-past" : ""}"><span class="hp__date hp__date--range">${item.start === item.end ? short(item.start) : `${short(item.start)} – ${short(item.end)}`}</span>` +
+      `<span class="hp__name">${escape(item.title)}</span></li>`).join("");
     content.innerHTML =
       `<h3 class="hp__title">Feiertage</h3><ul class="hp__list">${holidayRows || empty(data.holidays.length ? `Keine Feiertage für ${year}.` : "Keine Holidays.md im Ordner.")}</ul>` +
+      (own.length ? `<h3 class="hp__title">Urlaub</h3><ul class="hp__list hp__list--own">${ownRows}</ul>` : "") +
       `<h3 class="hp__title">Schulferien</h3><ul class="hp__list">${vacationRows || empty(`Keine Schulferien für ${year}.`)}</ul>`;
   }
 
@@ -53,8 +60,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     if (!panel.hidden) fill();
   }
 
-  /** @param {MDCHolidays} holidays @param {string} currentDay */
-  function toggle(holidays, currentDay) {
+  /** @param {MDCHolidays} holidays @param {string} currentDay @param {(year: number) => MDCPeriod[]} vacations */
+  function toggle(holidays, currentDay, vacations) {
+    personal = vacations;
     if (!panel.hidden) {
       setOpen(false);
       return;

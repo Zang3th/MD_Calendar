@@ -28,9 +28,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     element.dataset.day = key;
     element.setAttribute("aria-label", day.format("dddd, D. MMMM YYYY"));
     element.innerHTML = `<header class="day__head"><span class="day__dow">${day.format("dddd")}</span><span class="day__num">${day.format("D")}</span><span class="day__badges"></span></header>` +
-      `<div class="day__spacer"></div><div class="day__list" data-day="${key}"></div>` +
-      `<button class="day__add" type="button" data-add="${key}" aria-label="Neuer Eintrag am ${day.format("D. MMMM")}" data-tooltip="Neuer Eintrag am ${day.format("D. MMMM")}">` +
-      `${app.tiles.icon("plus")}<span>Eintrag</span></button>`;
+      `<div class="day__spacer"></div><div class="day__list" data-day="${key}"></div>`;
     return element;
   }
 
@@ -55,6 +53,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     }
     const layout = app.calendar.segments(calendar, days[0], 7);
     board.style.setProperty("--lanes", String(layout.lanes));
+    days.forEach((key, index) => /** @type {HTMLElement} */ (sections.get(key)).style.setProperty("--lanes", String(layout.dayLanes[index])));
     bars.innerHTML = layout.segments.map(segment => app.tiles.bar(segment, today, true)).join("");
     for (const key of days) fill(/** @type {HTMLElement} */ (sections.get(key)), calendar, key, today);
     board.hidden = false;

@@ -26,7 +26,7 @@ These are the only production dependencies. They are stored locally under `vendo
 
 | Layer | Responsibility | Must not |
 |---|---|---|
-| `domain/` | Business rules and state transitions: day lists, moves, recurrence expansion, backlog, contacts, derived birthdays, search, undo history. | Access the DOM, browser APIs, files, storage adapters or SortableJS. |
+| `domain/` | Business rules and state transitions: day lists, moves, recurrence expansion, backlog, contacts, derived birthdays, search, ICS import into the calendar, undo history. | Access the DOM, browser APIs, files, storage adapters or SortableJS. |
 | `io/` | Storage adapters, Markdown parsing and serialization per file type, ICS and vCard conversion. | Access the DOM. Parsers and serializers additionally must not access files or browser APIs. |
 | `ui/` | Rendering of state, DOM events, SortableJS callbacks, panels, dialogs, notifications. | Contain business or persistence logic, or change persistent data without a domain operation. |
 | `app.js` | Wires the layers together, owns startup, saving and external change handling. | Contain business rules. |
@@ -35,23 +35,24 @@ All file access goes through the [storage adapter](#storage-adapter). Every chan
 
 dayjs is allowed in `domain/` and `io/`; it is a pure library and runs in Node.js for unit tests.
 
-Planned layout:
+Layout:
 
 ```text
-MD_Calendar.html  app.js  styles.css  (skeleton exists already)
+MD_Calendar.html  app.js  styles.css
 domain/   calendar.js  recurrence.js  backlog.js  contacts.js  search.js  history.js
 io/       storage.js  calendar-format.js  backlog-format.js  contacts-format.js
           holidays-format.js  config-format.js  ics.js  vcard.js
 ui/       tiles.js  render-week.js  render-month.js  render-contacts.js  header.js  start.js  backlog-panel.js
-          dialog.js  interactions.js  notifications.js  tooltips.js  sounds.js
+          holidays-panel.js  search-panel.js  menus.js  pickers.js  dialog.js  interactions.js
+          notifications.js  tooltips.js  sounds.js
 vendor/   sortable/  dayjs/  fonts/
-res/logo/ logo and web icon set (exists already)
-res/icons/ standalone SVG files of the UI icons (exists already)
+res/logo/ logo and web icon set
+res/icons/ standalone SVG files of the UI icons
 res/tag-icons/ standalone SVG files of the tag icons
-data/parsing/   golden files, one per file type (exist already)
-tools/    check-architecture.js  (exists already)
-tests/    unit/  e2e/  (exists already)
-types/    type declarations for checkJs  (exists already)
+data/parsing/   golden files, one per file type
+tools/    check-architecture.js
+tests/    unit/  e2e/
+types/    type declarations for checkJs
 ```
 
 ## Storage adapter
@@ -72,7 +73,7 @@ Version 1.0 has one adapter for a local folder (`io/storage.js`). Its version st
 ## Saving
 
 - Saving is explicit (`Ctrl+S` or the save control). There is no autosave and no draft recovery after a crash.
-- Every file tracks whether it has unsaved changes. Saving writes all changed files through a serialized write queue. `Calendar.md` and `Backlog.md` are written; `Holidays.md` and `Config.md` are only read.
+- Every file tracks whether it has unsaved changes. Saving writes all changed files through a serialized write queue. `Calendar.md`, `Backlog.md` and `Contacts.md` are written; `Holidays.md` and `Config.md` are only read. `Contacts.md` is written last.
 - When the latest move between the calendar and the backlog went into the backlog, `Backlog.md` is written first, otherwise `Calendar.md` (see [DataFormat](DataFormat.md#rules-for-the-calendar-file)). A missing file is created only when its content differs from an empty one.
 - Every write checks the version first. A mismatch never overwrites silently; the user chooses between reloading and overwriting.
 - Closing the page with unsaved changes triggers the browser's leave warning.
@@ -87,7 +88,7 @@ While the page is visible, the stamps of loaded files are checked every two seco
 - A write whose stamp no longer matches but whose file content is unchanged (a sync client touched the file) is retried once with the new stamp.
 - No reload happens while the entry dialog is open.
 - External changes are handled per file. A changed `Holidays.md` or `Config.md` is always reloaded.
-- „Neu laden“ reads `Calendar.md` and `Backlog.md` again and discards all local changes. Every reload of a written file starts a new undo history.
+- „Neu laden“ reads `Calendar.md`, `Backlog.md` and `Contacts.md` again and discards all local changes. Every reload of a written file starts a new undo history.
 
 ## Undo history
 
@@ -100,7 +101,7 @@ While the page is visible, the stamps of loaded files are checked every two seco
 ## Notifications
 
 - Severities: info, warning, error. Info and warnings dismiss themselves after a few seconds; errors stay until dismissed and offer copyable details.
-- Every error carries a stable code with the prefix `MDC-`.
+- Every error carries a stable code with the prefix `MDC-`. `MDC-0xx` are startup errors, `MDC-1xx` opening the folder, `MDC-2xx` saving and file checks, `MDC-3xx` configuration.
 - Unexpected errors and unhandled promise rejections are reported as errors.
 
 ## Startup

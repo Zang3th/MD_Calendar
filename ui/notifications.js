@@ -55,7 +55,6 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     button.className = "notification-icon";
     button.type = "button";
     button.setAttribute("aria-label", label);
-    button.dataset.tooltip = label;
     button.innerHTML = `<svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-${icon}"></use></svg>`;
     return button;
   }
@@ -87,9 +86,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       copy.addEventListener("click", async () => {
         try {
           await navigator.clipboard.writeText(`Fehler ${options.code || "MDC-000"}: ${title}\nDetails: ${plainText(options.details || body)}`);
-          copy.dataset.tooltip = "Kopiert";
+          copy.setAttribute("aria-label", "Kopiert");
         } catch {
-          copy.dataset.tooltip = "Kopieren fehlgeschlagen";
+          copy.setAttribute("aria-label", "Kopieren fehlgeschlagen");
         }
       });
       header.append(code, copy);

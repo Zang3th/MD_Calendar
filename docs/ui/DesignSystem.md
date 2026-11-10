@@ -132,7 +132,8 @@ Scale: 2, 4, 6, 8, 10, 12, 14, 16, 22 px. Every padding, margin and gap uses a v
 | Month | 8px between cells; cell padding 0 6px 6px; 4px between entries; entry padding 0 8px; „+N“ 4px below the entries; ISO week number 8px from the top |
 | Backlog panel | padding 16px 14px; 16px between groups; 6px between entries; counter 2px 8px |
 | Holiday overview | padding 12px; rows 6px |
-| Entry dialog | padding 22px; 16px between sections; 10px between fields; field padding 12px 14px; buttons 8px 16px, in the footer 8px 10px |
+| Entry dialog | padding 22px; 16px between sections; 10px between fields; field padding 12px 14px; buttons 8px 16px, in the footer 8px 10px; date and time picker padding 8px |
+| Menus and search panel | padding 6px (search 10px); items 8px 10px; 10px between icon and label |
 | Start card | padding 22px |
 | Contacts | 14px between list and detail; list padding 12px; detail padding 22px |
 | Chips and badges | chips 6px 12px; badges 2px 8px (month 2px 6px, portrait week 4px 8px); „+X“ 0 6px; 6px between chips |
@@ -154,7 +155,7 @@ Scale: 2, 4, 6, 8, 10, 12, 14, 16, 22 px. Every padding, margin and gap uses a v
 ## Logo: Orbit C
 
 - A bold "C" drawn as an open ring in the brand gradient (`--accent` → `--accent-2` → `--warm`), with a gold `--warm` dot in the opening that stands for "today".
-- App icon: the mark on a rounded tile in `--base` with soft background lights. Inside the UI the mark is used cut out, without a tile (`mark.svg`), for example in the header.
+- The mark is used without a tile everywhere it is shown on its own: in the header, on the start card, as favicon in the browser tab and as PWA icon. Only the iOS home screen icon and the maskable PWA icon keep the rounded tile in `--base` with soft background lights, because those platforms need an opaque square.
 - All shapes are paths; no font is involved. The assets must not be redrawn or recolored.
 - The complete web icon set lives in `res/logo/`:
 
@@ -162,9 +163,10 @@ Scale: 2, 4, 6, 8, 10, 12, 14, 16, 22 px. Every padding, margin and gap uses a v
 |---|---|
 | `logo.svg` | Master with tile |
 | `mark.svg` | Mark without tile, tightly cropped; header logo (32px) |
-| `icon.svg`, `favicon.ico`, `favicon-16/32/48.png` | Favicons |
-| `apple-touch-icon.png` | iOS home screen |
-| `icon-192.png`, `icon-512.png`, `maskable-512.png` | PWA icons |
+| `icon.svg`, `favicon.ico`, `favicon-16/32/48.png` | Favicons, mark without tile on a square canvas |
+| `apple-touch-icon.png` | iOS home screen, with tile |
+| `icon-192.png`, `icon-512.png` | PWA icons, mark without tile |
+| `maskable-512.png` | Maskable PWA icon, with tile |
 | `mask-icon.svg` | Monochrome contexts |
 | `site.webmanifest` | Web app manifest; scope and start URL point to the application root |
 | `head.html` | `<head>` tags for `MD_Calendar.html`, with paths relative to the application root |
@@ -180,6 +182,7 @@ Line icons as inline SVG with a 2px stroke and round caps and joins. No emoji an
 - Every symbol also exists as a standalone file `res/icons/<name>.svg` with identical geometry. A unit test checks that file and symbol match.
 - A toggle shows both of its icons in the markup; CSS shows one of them based on the button's `aria-pressed` state. The markup is never swapped.
 - `volume.svg` (speaker with two sound waves) and `muted.svg` (speaker with an X) are copied from MD_Manager unchanged.
+- Tooltips are not used for now; every icon button names its action through `aria-label`. The tooltip system stays in place for tooltips that are added back one by one.
 
 ## Tag icons
 
@@ -187,12 +190,33 @@ Every tag has an icon, referenced by its icon ID in `Config.md` (see [DataFormat
 
 - Tag icons are built exactly like the UI icons (see [Icons](#icons)): 32×32 canvas, shown at 16px, `currentColor`, inline `<symbol>` plus an identical standalone file.
 - They live in their own folder, `res/tag-icons/<icon-id>.svg`, and their symbols use the ID `tag-<icon-id>`, so they never collide with UI icons.
-- The icon ID is lowercase ASCII with hyphens, for example `home` or `shopping-cart`.
+- The icon ID is lowercase ASCII with hyphens, for example `home` or `shopping`.
+- On entry tiles the icon sits before the title, on multi-day bars before the bar title, and in the tag dropdown of the entry dialog on a small swatch in the tag color. On tinted tiles it uses the lightened tag hue.
+
+The set, chosen by the user from three designs per tag:
+
+| Icon ID | Meant for | Drawing |
+|---|---|---|
+| `home` | Privat | House |
+| `briefcase` | Arbeit | Office building |
+| `dumbbell` | Gym | Dumbbell |
+| `sauna` | Sauna | Steam above a bench |
+| `sport` | Sport | Running shoe |
+| `cooking` | Kochen | Pot with steam |
+| `code` | Programmieren | Angle brackets with slash |
+| `household` | Haushalt | Washing machine |
+| `shopping` | Einkaufen | Shopping cart |
+| `karate` | Karate | Gi jacket |
+| `car` | Auto | Car from the side |
+| `doctor` | Arzt | Cross in a rounded square |
+| `physio` | Physio | Stretching figure |
+| `vacation` | Urlaub | Palm tree |
 
 ## Motion
 
 - Short, interruptible, compositor-friendly transitions (transform, opacity).
 - The view switcher indicator slides between options; panels slide in.
+- A new week or month slides in briefly from the side it comes from (navigation, mouse wheel, jump to today or to a search hit).
 - Jumping to today scrolls smoothly and pulses the target day once.
 - `prefers-reduced-motion` disables non-essential motion.
 

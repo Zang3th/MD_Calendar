@@ -2,8 +2,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
 // Entry tiles, multi-day bars and day header badges shared by the views and the backlog panel (docs/ui/Views.md).
 (function (app) {
-  /** Tag name → hue in degrees, from Config.md. @type {Map<string, number>} */
-  let tagHues = new Map();
+  /** Tag name → hue in degrees and icon ID, from Config.md. @type {Map<string, {hue: number, icon: string}>} */
+  let tagStyles = new Map();
+  /** @type {MDCContacts | null} */
+  let contacts = null;
   /** Day key → holiday names, from Holidays.md. @type {Map<string, string[]>} */
   let holidaysByDay = new Map();
 
@@ -19,8 +21,14 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   /** Class and style that tint an element with its tag color; empty without a configured tag. @param {string} tag */
   function tint(tag) {
-    const hue = tagHues.get(tag);
-    return hue === undefined ? { className: "", style: "", hue: null } : { className: " has-tag", style: ` style="--h:${hue}"`, hue };
+    const style = tagStyles.get(tag);
+    return style === undefined ? { className: "", style: "", hue: null } : { className: " has-tag", style: ` style="--h:${style.hue}"`, hue: style.hue };
+  }
+
+  /** The tag icon of a configured tag, or "" (docs/ui/DesignSystem.md#tag-icons). @param {string} tag @param {string} [className] */
+  function tagIcon(tag, className = "tag-icon") {
+    const style = tagStyles.get(tag);
+    return style?.icon ? `<svg class="ui-icon ${className}" aria-hidden="true" viewBox="0 0 32 32"><use href="#tag-${style.icon}"></use></svg>` : "";
   }
 
   /**
@@ -37,6 +45,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       `<button class="ev__check" type="button" role="checkbox" aria-checked="${item.done}" aria-label="Erledigt: ${escape(item.title)}">${icon("check")}</button>` +
       `<button class="ev__open" type="button" aria-label="${escape(description)}"><span class="ev__line">` +
       (time ? `<span class="ev__time">${time}</span>` : "") +
+      tagIcon(item.tag, "ev__tag") +
       `<span class="ev__title">${escape(item.title)}</span>` +
       (series ? `<span class="ev__repeat">${icon("repeat")}</span>` : "") +
       `</span></button></div>`;
@@ -76,27 +85,52 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const range = `${dayjs(item.start).format("D. MMM")} – ${dayjs(item.end).format("D. MMM")}`;
     return `<button class="${classes}${tagged.className}" type="button" data-multi="${segment.index}" data-start="${item.start}" data-end="${item.end}" ` +
       `style="--col:${segment.column};--span:${segment.span};--lane:${segment.lane}${tagged.hue === null ? "" : `;--h:${tagged.hue}`}" ` +
-      `aria-label="${escape(item.title)}, ${range}" data-tooltip="${escape(item.title)}, ${range}">` +
-      `<span class="bar__title">${escape(item.title)}</span>${withRange ? `<span class="bar__range">${range}</span>` : ""}</button>`;
+      `aria-label="${escape(item.title)}, ${range}">${tagIcon(item.tag, "bar__tag")}<span class="bar__title">${escape(item.title)}</span>${withRange ? `<span class="bar__range">${range}</span>` : ""}</button>`;
   }
 
   /**
-   * Holiday badges of a day header: at most `max`, the last one shows „+X“ for the rest (docs/ui/Views.md#day-header).
+   * Badges of a day header: holidays first, then birthdays and anniversaries; at most `max`,
+   * the last one shows „+X“ for the rest (docs/ui/Views.md#day-header).
    * @param {string} key @param {number} max
    */
   function badges(key, max) {
-    const names = holidaysByDay.get(key) || [];
-    if (!names.length) return "";
-    const shown = names.slice(0, max);
-    const rest = names.length - shown.length;
-    const all = escape(names.join(", "));
-    return shown.map((name, index) => `<span class="badge badge--holiday" data-tooltip="${all}">` +
-      `<span class="badge__name">${escape(name)}</span>${rest && index === shown.length - 1 ? `<span class="badge__more">+${rest}</span>` : ""}</span>`).join("");
+    const holidays = (holidaysByDay.get(key) || []).map(name => ({ name, contact: -1, age: /** @type {number | null} */ (null), label: "" }));
+    const occasions = contacts ? app.contacts.occasionsOn(contacts, key).map(item => ({ name: item.name, contact: item.index, age: item.age, label: item.label })) : [];
+    const all = [...holidays, ...occasions];
+    if (!all.length) return "";
+    const shown = all.slice(0, max);
+    const rest = all.length - shown.length;
+    const describe = (/** @type {typeof all[number]} */ item) => `${item.name}${item.label ? ` (${item.label})` : ""}${item.age !== null ? ` ${item.age}` : ""}`;
+    const more = (/** @type {number} */ index) => rest && index === shown.length - 1 ? `<span class="badge__more">+${rest}</span>` : "";
+    return shown.map((item, index) => {
+      if (item.contact < 0) return `<span class="badge badge--holiday"><span class="badge__name">${escape(item.name)}</span>${more(index)}</span>`;
+      const label = `${item.label ? "Jahrestag" : "Geburtstag"}: ${describe(item)}${rest && index === shown.length - 1 ? `; außerdem ${all.slice(max).map(describe).join(", ")}` : ""}, Kontakt öffnen`;
+      return `<button class="badge badge--occasion" type="button" data-contact="${item.contact}" aria-label="${escape(label)}">${icon(item.label ? "heart" : "cake")}` +
+        `<span class="badge__name">${escape(item.name)}</span>${item.age !== null ? `<span class="badge__age">${item.age}</span>` : ""}${more(index)}</button>`;
+    }).join("");
   }
 
-  /** @param {MDCTag[]} tags */
+  /** IDs of the shipped tag icons, from the inline sprite. */
+  function tagIconIds() {
+    return Array.from(document.querySelectorAll("symbol[id^='tag-']"), symbol => symbol.id.slice(4)).sort();
+  }
+
+  /** Takes the tags of Config.md; returns the tags whose icon ID is unknown (docs/Domain.md#tags). @param {MDCTag[]} tags */
   function setTags(tags) {
-    tagHues = new Map(tags.map(tag => [tag.name, app.configFormat.hue(tag.color)]));
+    const known = new Set(tagIconIds());
+    tagStyles = new Map(tags.map(tag => [tag.name, { hue: app.configFormat.hue(tag.color), icon: known.has(tag.icon) ? tag.icon : "" }]));
+    return tags.filter(tag => !known.has(tag.icon));
+  }
+
+  /** Slides a newly shown period in from the side it comes from (docs/ui/DesignSystem.md#motion). @param {string} id @param {number} direction */
+  function slide(id, direction) {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    document.getElementById(id)?.animate([{ transform: `translateX(${direction * 24}px)`, opacity: 0.4 }, { transform: "none", opacity: 1 }], { duration: 220, easing: "cubic-bezier(.2,.8,.2,1)" });
+  }
+
+  /** @param {MDCContacts | null} next */
+  function setContacts(next) {
+    contacts = next;
   }
 
   /** @param {MDCHolidays} holidays */
@@ -113,5 +147,5 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     element.animate([{ transform: "scale(1)" }, { transform: "scale(1.015)" }, { transform: "scale(1)" }], { duration: 600, easing: "ease-out" });
   }
 
-  app.tiles = { escape, icon, tint, dayTiles, backlogTiles, bar, badges, setTags, setHolidays, pulse };
+  app.tiles = { escape, icon, tint, tagIcon, tagIconIds, dayTiles, backlogTiles, bar, badges, setTags, setContacts, setHolidays, pulse, slide };
 })(window.MDCalendar);

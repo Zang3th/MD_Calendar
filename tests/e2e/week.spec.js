@@ -46,7 +46,7 @@ test("drag and drop moves an entry as one undoable action", async ({ page, calen
   await page.locator(`${thursday} .ev`, { hasText: "B" }).dragTo(page.locator(`${friday} .ev`, { hasText: "C" }));
   await expect(titles(page, thursday)).toHaveText(["A"]);
   await expect(titles(page, friday)).toHaveText(["B", "C"]);
-  await expect(page.locator("#undo")).toHaveAttribute("data-tooltip", "Rückgängig: „B“ (Strg Z)");
+  await expect(page.locator("#undo")).toHaveAttribute("aria-label", "Rückgängig: „B“ (Strg Z)");
 
   await page.locator("#undo").click();
   await expect(titles(page, thursday)).toHaveText(["A", "B"]);

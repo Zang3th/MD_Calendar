@@ -82,14 +82,15 @@ An entry, a recurring entry and a multi-day entry can be turned into each other 
 ## Tags
 
 - Tags are defined by hand in `Config.md`, each with a color and an icon ID; the app does not create or edit tags. The icon ID names one of the tag icons (see [Design System](ui/DesignSystem.md#tag-icons)).
-- An unknown icon ID is an error. It is reported at startup through the [notifications](Architecture.md#notifications) with an `MDC-` error code.
+- An unknown or missing icon ID is an error. It is reported when `Config.md` is read, through the [notifications](Architecture.md#notifications) with the code `MDC-301`; the tag keeps its color and shows no icon.
+- The tag named „Urlaub“ marks vacations: its entries and multi-day entries are listed in the [holiday overview](ui/Views.md#holiday-overview).
 - An entry has at most one tag. Without a tag it has no color and no icon.
 
 ## Contact
 
 | Field | Rule |
 |---|---|
-| First name, last name | The display name is first name plus last name. |
+| First name, last name | The display name is first name plus last name. A contact without both shows „Ohne Namen“. |
 | Nickname | Optional. |
 | Birthday | Optional; the year is optional. |
 | Phone numbers | Any number, each with a label (for example Mobile, Home, Work). |
@@ -101,10 +102,15 @@ An entry, a recurring entry and a multi-day entry can be turned into each other 
 | Note | Optional free text. |
 | Favorite | Pinned to the top of the contact list. |
 
+- Contacts have no photos; the list and the detail show initials avatars.
+- Phone numbers, email addresses and addresses carry one of the labels Mobile (phone only), Home, Work and Other; a label from a hand-edited file is kept.
+
 ## Birthdays and anniversaries
 
 - They are derived from contacts and are never stored as calendar data.
-- A birthday shows the age the contact turns, if the birth year is known.
+- A birthday shows the age the contact turns, if the birth year is known. An anniversary shows the number of years.
+- A birthday or anniversary on 29 February shows on 28 February in years without 29 February.
+- They are shown with the first and last name of the contact, never the nickname.
 - They cannot be checked off.
 
 ## Holidays and school vacations
@@ -114,11 +120,41 @@ An entry, a recurring entry and a multi-day entry can be turned into each other 
 - Both are read-only in the app and cannot be checked off.
 - Their data is produced outside the app. The generator is not part of this repository.
 
+## Search
+
+- The search covers the whole calendar and the backlog: entries, recurring entries, multi-day entries and backlog entries, by title, location, note and tag.
+- It is tolerant: case and diacritics are ignored („muller“ finds „Müller“), and letters of a word may be missing („zhnrzt“ finds „Zahnarzt“). Every word of the query must match.
+- Hits in the title rank before hits elsewhere, matches at a word start before matches inside a word; equally good hits closer to today come first.
+- A hit on a recurring entry leads to its next occurrence from today on.
+
+## Selection, copy and paste
+
+- Several entries and occurrences can be selected together. A selection can be checked off, copied, deleted and dragged as one undoable action.
+- Checking off a selection marks all of it done; when all of it is done already, it marks all of it open.
+- Copying keeps the entries in an app-internal clipboard. Pasting inserts copies at the end of a day; copies are open. A copied occurrence becomes a normal entry with the fields of its series.
+- Deleting an occurrence in a selection deletes that occurrence only.
+
 ## Imports and exports
 
 | Source | Behavior |
 |---|---|
 | Google Calendar history (`.ics`) | Imported once at cutover into the calendar file. |
-| Invitation (`.ics`) | Imported as a single entry. |
-| Contacts (vCard) | Imported repeatedly; existing contacts are detected as duplicates. |
-| Contact (vCard) | Exported per contact. |
+| Invitation (`.ics`) | Imported the same way; usually one entry. |
+| Contacts (vCard) | Imported repeatedly; existing contacts are detected as duplicates and merged. |
+| Contacts (vCard) | Exported per contact and as the whole list. |
+
+### ICS import
+
+- An event on one day becomes an entry with its time; an event over several days becomes a multi-day entry without time.
+- An event with a rule inside the allowed subset (see [Recurring entry](#recurring-entry)) becomes a series. `COUNT` becomes the date of the last occurrence; `EXDATE` and moved instances (`RECURRENCE-ID`) become exceptions, moved instances are imported as entries. An event with any other rule is imported as one entry on its start date.
+- Entries before today are imported as done, so that the history does not show as overdue.
+- Summary, location and description become title, location and note. Cancelled events are skipped.
+- An event that already exists with the same title on the same date (series: start; multi-day entries: range) is skipped, so that importing a file twice adds nothing.
+- Times in UTC are converted to local time; times with a time zone are taken as local time.
+- The import is one undoable action.
+
+### vCard import and export
+
+- A contact matches an existing one when the name, a phone number or an email address is the same. A match is merged: values the existing contact lacks are added, nothing is overwritten. All other contacts are added.
+- The import is one undoable action; a notification reports how many contacts were added and merged.
+- Export writes vCard 3.0. Labels map to `TYPE` values (Mobile `CELL`, Home `HOME`, Work `WORK`); anniversaries are written as `X-ABDATE` with `X-ABLabel`. Groups and the favorite mark are not exported.

@@ -29,7 +29,28 @@ interface MDCalendarNamespace {
     createMultiDay(calendar: MDCCalendar, item: MDCMultiDay): MDCDayAction;
     updateMultiDay(calendar: MDCCalendar, index: number, item: MDCMultiDay): MDCDayAction | null;
     deleteMultiDay(calendar: MDCCalendar, index: number): MDCDayAction;
-    segments(calendar: MDCCalendar, start: string, count: number): { segments: MDCSegment[]; lanes: number };
+    segments(calendar: MDCCalendar, start: string, count: number): { segments: MDCSegment[]; lanes: number; dayLanes: number[] };
+    taggedPeriods(calendar: MDCCalendar, tag: string, year: number): MDCPeriod[];
+    changeOccurrences(calendar: MDCCalendar, occurrences: Array<{ index: number; key: string }>, mode: "done" | "open" | "delete"): MDCDayAction[];
+    importEvents(calendar: MDCCalendar, events: MDCIcsEvent[], today: string): { action: MDCDayAction | null; entries: number; series: number; multiDay: number; duplicates: number; simplified: number };
+  };
+  contacts: {
+    name(contact: MDCContact): string;
+    occasionsOn(contacts: MDCContacts, key: string): Array<MDCOccasion & { age: number | null }>;
+    nextBirthday(contact: MDCContact, today: string): { days: number; date: string; age: number | null } | null;
+    matches(contact: MDCContact, query: string): boolean;
+    sortName(contact: MDCContact): string;
+    create(contacts: MDCContacts, contact: MDCContact): MDCContactAction;
+    update(contacts: MDCContacts, index: number, updated: MDCContact, groupsAfter?: string[]): MDCContactAction | null;
+    remove(contacts: MDCContacts, index: number): MDCContactAction;
+    addGroup(contacts: MDCContacts, index: number, group: string): MDCContactAction | null;
+    importContacts(contacts: MDCContacts, incoming: MDCContact[]): { action: MDCContactAction | null; added: number; merged: number };
+    isLeap(year: string): boolean;
+  };
+  search: {
+    search(calendar: MDCCalendar, backlog: MDCBacklog, version: number, query: string, today: string, limit: number): MDCSearchItem[];
+    nextOccurrence(series: MDCSeries, from: string): string;
+    normalize(value: string): string;
   };
   recurrence: {
     parseRule(text: string): MDCRule | null;
@@ -60,6 +81,10 @@ interface MDCalendarNamespace {
     toggle(calendar: MDCCalendar, backlog: MDCBacklog, ref: MDCEntryRef): MDCDayAction;
     move(calendar: MDCCalendar, backlog: MDCBacklog, from: MDCEntryRef, to: MDCEntryRef): MDCDayAction | null;
     isBacklog(ref: MDCEntryRef): boolean;
+    removeEntries(calendar: MDCCalendar, backlog: MDCBacklog, refs: MDCEntryRef[], label: string): MDCDayAction;
+    toggleEntries(calendar: MDCCalendar, backlog: MDCBacklog, refs: MDCEntryRef[]): MDCDayAction;
+    moveEntries(calendar: MDCCalendar, backlog: MDCBacklog, refs: MDCEntryRef[], target: MDCEntryRef): MDCDayAction;
+    pasteEntries(calendar: MDCCalendar, backlog: MDCBacklog, entries: MDCEntry[], key: string): MDCDayAction;
   };
   calendarFormat: {
     parse(text: string): { calendar: MDCCalendar; warnings: MDCFormatWarning[] };
@@ -79,6 +104,16 @@ interface MDCalendarNamespace {
   };
   holidaysFormat: { parse(text: string): { holidays: MDCHolidays; warnings: MDCFormatWarning[] } };
   configFormat: { parse(text: string): { config: MDCConfig; warnings: MDCFormatWarning[] }; hue(color: string): number };
+  contactsFormat: {
+    parse(text: string): { contacts: MDCContacts; warnings: MDCFormatWarning[] };
+    serialize(contacts: MDCContacts): string;
+    parseBirthday(value: string): string;
+    formatBirthday(birthday: string): string;
+    emptyContact(): MDCContact;
+    displayName(contact: MDCContact): string;
+  };
+  vcard: { parse(text: string): MDCContact[]; serialize(contacts: MDCContact[]): string };
+  ics: { parse(text: string): { events: MDCIcsEvent[]; skipped: number } };
   storage: {
     pickFolder(): Promise<MDCStorageAdapter>;
     rememberedFolder(): Promise<{ name: string; granted: boolean } | null>;
@@ -93,29 +128,58 @@ interface MDCalendarNamespace {
   tooltips: { hide(): void };
   sounds: { play(): Promise<void>; setMuted(value: boolean): void; isMuted(): boolean };
   header: { update(state: MDCHeaderState): void; flashSaved(): void };
+  contactsView: {
+    init(handlers: MDCContactsHandlers): void;
+    render(contacts: MDCContacts, selected: number, today: string): void;
+    hide(): void;
+    focusField(key: string): void;
+    download(name: string, text: string, type: string): void;
+    isShown(): boolean;
+  };
+  pickers: { hide(): void; isOpen(): boolean };
+  menus: {
+    toggleOptions(): void;
+    showContext(items: MDCMenuItem[], x: number, y: number): void;
+    hideContext(): void;
+    showHelp(): void;
+    onImport(handler: (text: string, name: string) => void): void;
+    isModalOpen(): boolean;
+  };
+  searchPanel: { init(search: (query: string) => MDCSearchItem[], jump: (item: MDCSearchItem) => void): void; toggle(): void; isOpen(): boolean };
   start: { show(remembered: string | null): void; hide(): void };
   tiles: {
     escape(value: string): string;
     icon(name: string): string;
     tint(tag: string): { className: string; style: string; hue: number | null };
+    tagIcon(tag: string, className?: string): string;
+    tagIconIds(): string[];
+    setContacts(contacts: MDCContacts | null): void;
+    slide(id: string, direction: number): void;
     dayTiles(calendar: MDCCalendar, key: string, today: string, options?: { limit?: number; compact?: boolean }): { html: string; hidden: number };
     backlogTiles(entries: readonly MDCEntry[]): string;
     bar(segment: MDCSegment, today: string, withRange: boolean): string;
     badges(key: string, max: number): string;
-    setTags(tags: MDCTag[]): void;
+    setTags(tags: MDCTag[]): MDCTag[];
     setHolidays(holidays: MDCHolidays): void;
     pulse(element: HTMLElement): void;
   };
   backlogPanel: { render(backlog: MDCBacklog, open: boolean): boolean; lists(): HTMLElement[] };
-  holidaysPanel: { update(holidays: MDCHolidays, today: string): void; toggle(holidays: MDCHolidays, today: string): void; isOpen(): boolean };
+  holidaysPanel: { update(holidays: MDCHolidays, today: string): void; toggle(holidays: MDCHolidays, today: string, vacations: (year: number) => MDCPeriod[]): void; isOpen(): boolean };
   week: MDCViewRenderer;
   month: MDCViewRenderer;
   dialog: { open(request: MDCDialogRequest, handlers: MDCDialogHandlers): void; close(): void; isOpen(): boolean };
-  interactions: { init(handlers: MDCInteractionHandlers): void; bindLists(lists: HTMLElement[]): void; sortableReady(): boolean };
+  interactions: {
+    init(handlers: MDCInteractionHandlers): void;
+    bindLists(lists: HTMLElement[]): void;
+    refreshSelection(): void;
+    clearSelection(): void;
+    selected(): MDCPick[];
+    sortableReady(): boolean;
+  };
 }
 
 // UI contracts.
-type MDCView = "week" | "month";
+type MDCView = "week" | "month" | "contacts";
 type MDCViewRenderer = {
   /** Shows the period of `anchor`; returns true when the day lists were rebuilt. */
   render(calendar: MDCCalendar, anchor: string, today: string): boolean;
@@ -125,7 +189,7 @@ type MDCViewRenderer = {
   hide(): void;
 };
 type MDCSeverity = "info" | "warning" | "error";
-type MDCFileName = "Calendar.md" | "Backlog.md" | "Holidays.md" | "Config.md";
+type MDCFileName = "Calendar.md" | "Backlog.md" | "Contacts.md" | "Holidays.md" | "Config.md";
 type MDCFileText = { text: string; stamp: string } | null;
 type MDCFileState = {
   disk: MDCFileText;
@@ -188,6 +252,20 @@ type MDCDialogHandlers = {
   deleteOccurrence(): void;
   endSeries(): void;
 };
+/** A selected or clicked tile: an entry of a day or backlog group, or an occurrence of a series. */
+type MDCPick = { ref?: MDCEntryRef; series?: number; key: string };
+type MDCMenuItem = { label: string; icon: string; key?: string; danger?: boolean; run(): void };
+type MDCContactsHandlers = {
+  select(index: number): void;
+  update(index: number, updated: MDCContact, groups?: string[]): void;
+  addGroup(index: number, group: string): void;
+  remove(index: number): void;
+  importText(text: string, name: string): void;
+  exportOne(index: number): void;
+  exportAll(): void;
+  copy(text: string): void;
+  reject(message: string): void;
+};
 type MDCInteractionHandlers = {
   pickFolder(): void;
   reopenFolder(): void;
@@ -197,6 +275,17 @@ type MDCInteractionHandlers = {
   showView(view: MDCView): void;
   toggleBacklog(): void;
   toggleHolidays(): void;
+  toggleSearch(): void;
+  showHelp(): void;
+  openContact(index: number): void;
+  isContactsView(): boolean;
+  notice(title: string, body: string): void;
+  contextMenu(picks: MDCPick[], x: number, y: number, key: string): void;
+  toggleMany(picks: MDCPick[]): void;
+  removeMany(picks: MDCPick[]): void;
+  copy(picks: MDCPick[]): void;
+  paste(key: string): void;
+  moveMany(refs: MDCEntryRef[], dragged: MDCEntryRef, target: MDCEntryRef): void;
   moveMultiDay(index: number, start: string, end: string): void;
   openWeek(key: string): void;
   newEntry(key?: string): void;
@@ -310,12 +399,79 @@ type MDCBacklogGroup = { name: string; entries: MDCEntry[]; extra: string[] };
 type MDCBacklog = { newline: string; head: string[]; groups: MDCBacklogGroup[] };
 type MDCHolidays = { holidays: Array<{ date: string; name: string }>; vacations: Array<{ start: string; end: string; name: string }> };
 type MDCTag = { name: string; color: string; icon: string };
+type MDCPeriod = { start: string; end: string; title: string };
+
+// Contacts (see docs/Domain.md#contact and docs/DataFormat.md#contacts).
+type MDCLabelled = { label: string; value: string };
+type MDCContact = {
+  firstName: string;
+  lastName: string;
+  nickname: string;
+  /** YYYY-MM-DD, --MM-DD without a year, or "" */
+  birthday: string;
+  phones: MDCLabelled[];
+  emails: MDCLabelled[];
+  addresses: MDCLabelled[];
+  company: string;
+  position: string;
+  groups: string[];
+  /** Date as an ISO key */
+  anniversaries: Array<{ label: string; date: string }>;
+  favorite: boolean;
+  note: string[];
+  /** Unknown lines preserved at the end of the contact */
+  extra: string[];
+};
+type MDCContacts = {
+  newline: string;
+  /** Unknown lines and headings preserved after the file heading */
+  head: string[];
+  groups: string[];
+  contacts: MDCContact[];
+  /** Changes with every change; keys the birthday cache. */
+  revision: number;
+};
+/** A birthday (empty label) or an anniversary of a contact; `year` is "" when unknown. */
+type MDCOccasion = { index: number; name: string; label: string; year: string };
+type MDCContactAction = MDCUndoAction & { days: string[]; contacts: true; selectAfter: number; selectBefore: number };
+
+// Search (see docs/Domain.md#search).
+type MDCSearchItem = {
+  kind: "entry" | "series" | "multiDay" | "backlog";
+  title: string;
+  tag?: string;
+  /** Normalized title, and normalized title, location, note and tag */
+  words: string;
+  text: string;
+  /** Day key of the entry, series start or range start; "" in the backlog */
+  key: string;
+  end?: string;
+  ref?: MDCEntryRef;
+  series?: number;
+  multi?: number;
+};
+
+// ICS import (see docs/Domain.md#imports-and-exports).
+type MDCIcsEvent = {
+  uid: string;
+  title: string;
+  location: string;
+  note: string[];
+  start: string;
+  end: string;
+  startTime: string;
+  endTime: string;
+  rule: MDCRule | null;
+  /** The event had a rule outside the allowed subset; it is imported as a single entry. */
+  unsupportedRule: boolean;
+  except: string[];
+};
 type MDCConfig = { tags: MDCTag[] };
 /** Fields the entry dialog edits. */
 type MDCEntryFields = { title: string; start: string; end: string; location: string; note: string[] };
 
 // Undo history (see docs/Architecture.md#undo-history).
-type MDCViewState = { view: MDCView; anchor: string };
+type MDCViewState = { view: MDCView; anchor: string; contact?: number };
 type MDCUndoAction = {
   label: string;
   /** Day keys the action changes, for targeted re-rendering. */
@@ -326,6 +482,10 @@ type MDCUndoAction = {
   backlog?: boolean;
   /** For a move between Calendar.md and Backlog.md: the file that receives the entry. */
   target?: string;
+  /** Changes contacts; `selectAfter` and `selectBefore` are the contacts to show after redo and undo. */
+  contacts?: boolean;
+  selectAfter?: number;
+  selectBefore?: number;
   undo(): void;
   redo(): void;
   size?: number;

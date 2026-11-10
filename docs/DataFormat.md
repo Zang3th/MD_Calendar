@@ -68,9 +68,10 @@ The conventions follow MD_Manager: headings structure the file, `#Key` lines sta
 ### Contacts
 
 - `## Groups` lists the contact groups in display order. `## Contacts` holds one `###` heading per contact.
-- The heading is the display name. It is derived from `#FirstName` and `#LastName` and rewritten on save.
+- The heading is the display name. It is derived from `#FirstName` and `#LastName` and rewritten on save. A contact without `#FirstName` and `#LastName` takes its name from the heading (first word: first name, rest: last name); a contact without any name is written as `### Unnamed`.
 - Blocks: `#FirstName`, `#LastName`, `#Nickname`, `#Birthday`, `#Phone`, `#Email`, `#Address`, `#Company`, `#Position`, `#Groups`, `#Anniversary`, `#Favorite` (`yes`), `#Note`. Absent blocks are not written.
-- Phone numbers, email addresses and addresses are `Label: value`; anniversaries are `Label: DD.MM.YYYY`. A birthday without a year is written as `DD.MM.`.
+- Phone numbers, email addresses and addresses are `Label: value` with the labels `Mobile`, `Home`, `Work` and `Other`; anniversaries are `Label: DD.MM.YYYY`. A birthday without a year is written as `DD.MM.`.
+- `## Groups` and `## Contacts` are always written. Unknown `#Key` blocks and lines that cannot be read are reported and kept at the end of their contact; unknown lines outside a contact are kept after the file heading.
 
 ### Holidays and school vacations
 
@@ -79,5 +80,5 @@ The conventions follow MD_Manager: headings structure the file, `#Key` lines sta
 ### Configuration
 
 - The user creates the file by hand when tags are wanted; the app only reads it. Without the file there are no tags.
-- `## Tags` lists `Name: #rrggbb icon-id` in display order. The icon ID is the file name of a tag icon without `.svg`. Lines that cannot be read are reported and skipped.
+- `## Tags` lists `Name: #rrggbb icon-id`. The icon ID is the file name of a tag icon without `.svg`. Lines that cannot be read are reported and skipped. The entry dialog offers the tags in alphabetical order.
 - A tag used by an entry but missing in `Config.md` is kept in the data; the entry is shown without color.
