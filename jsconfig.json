@@ -5,7 +5,7 @@
     "strict": true,
     "noEmit": true,
     "target": "ES2022",
-    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "lib": ["ES2023", "DOM", "DOM.Iterable", "DOM.AsyncIterable"],
     "types": []
   },
   "include": [

@@ -32,7 +32,7 @@ test("a correctly layered application passes", () => {
   const root = fixture({
     "domain/calendar.js": `${header}// document.title in a comment is not code\nconst label = "window.location";\n`,
     "io/storage.js": `${header}window.showDirectoryPicker; indexedDB;\n`,
-    "io/calendar-format.js": `${header}`,
+    "io/calendar-format.js": `${header}const entry = { location: "" }; entry.location;\n`,
     "ui/interactions.js": `${header}document.body; new Sortable(document.body, {});\n`,
     "app.js": header,
     "vendor/Sortable.min.js": "",

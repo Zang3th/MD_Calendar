@@ -42,9 +42,9 @@ MD_Calendar.html  app.js  styles.css  (skeleton exists already)
 domain/   calendar.js  recurrence.js  backlog.js  contacts.js  search.js  history.js
 io/       storage.js  calendar-format.js  backlog-format.js  contacts-format.js
           holidays-format.js  config-format.js  ics.js  vcard.js
-ui/       render-week.js  render-month.js  render-contacts.js  header.js  backlog-panel.js
+ui/       tiles.js  render-week.js  render-month.js  render-contacts.js  header.js  start.js  backlog-panel.js
           dialog.js  interactions.js  notifications.js  tooltips.js  sounds.js
-vendor/   Sortable.min.js  dayjs/  fonts/  (exists already; versions in vendor/README.md)
+vendor/   sortable/  dayjs/  fonts/
 res/logo/ logo and web icon set (exists already)
 res/icons/ standalone SVG files of the UI icons (exists already)
 res/tag-icons/ standalone SVG files of the tag icons
@@ -61,16 +61,19 @@ One small interface. Domain and UI never know which adapter is active.
 | Operation | Contract |
 |---|---|
 | `listFiles()` | Names of the calendar files present in the folder. |
-| `read(name)` | File text and a version stamp. |
-| `stat(name)` | Current version stamp without reading the text. |
-| `write(name, text, expected)` | Writes only if the file still matches `expected`; otherwise fails with a conflict that carries the current file content. |
+| `read(name)` | File text and a version stamp; `null` for a missing file. |
+| `stat(name)` | Current version stamp without reading the text; `null` for a missing file. |
+| `write(name, text, expected)` | Writes only if the file still matches `expected` and returns the new stamp. `expected` is `null` to create a file that must not exist yet. A mismatch fails with a `StorageConflictError` that carries the current text and stamp (`null` for a deleted file). |
 
-Version 1.0 has one adapter for a local folder. The mobile phase adds a second adapter (see [Mobile](Mobile.md)).
+All writes run through one serialized write queue.
+
+Version 1.0 has one adapter for a local folder (`io/storage.js`). Its version stamp is the file's modification time and size. It also remembers the last opened folder handle in IndexedDB (see [Startup](#startup)). The mobile phase adds a second adapter (see [Mobile](Mobile.md)).
 
 ## Saving
 
 - Saving is explicit (`Ctrl+S` or the save control). There is no autosave and no draft recovery after a crash.
-- Every file tracks whether it has unsaved changes. Saving writes all changed files through a serialized write queue.
+- Every file tracks whether it has unsaved changes. Saving writes all changed files through a serialized write queue. `Calendar.md` and `Backlog.md` are written; `Holidays.md` and `Config.md` are only read.
+- When the latest move between the calendar and the backlog went into the backlog, `Backlog.md` is written first, otherwise `Calendar.md` (see [DataFormat](DataFormat.md#rules-for-the-calendar-file)). A missing file is created only when its content differs from an empty one.
 - Every write checks the version first. A mismatch never overwrites silently; the user chooses between reloading and overwriting.
 - Closing the page with unsaved changes triggers the browser's leave warning.
 
@@ -80,13 +83,19 @@ While the page is visible, the stamps of loaded files are checked every two seco
 
 - A changed file without local changes is reloaded and a notification says so.
 - A changed file with local changes leads to the reload-or-overwrite choice.
+- A deleted file always leads to the reload-or-overwrite choice; it is never emptied silently.
+- A write whose stamp no longer matches but whose file content is unchanged (a sync client touched the file) is retried once with the new stamp.
+- No reload happens while the entry dialog is open.
+- External changes are handled per file. A changed `Holidays.md` or `Config.md` is always reloaded.
+- „Neu laden“ reads `Calendar.md` and `Backlog.md` again and discards all local changes. Every reload of a written file starts a new undo history.
 
 ## Undo history
 
 - Every change to persistent data is one action with a label, an `undo` and a `redo` function, and the view state before and after. This covers calendar entries, backlog and contacts.
 - An operation that touches several files, such as moving an entry from the backlog into the calendar, is one action.
 - The history is capped by entry count and memory size.
-- The number of unsaved changes shown in the UI is the distance between the current history position and the position at the last save.
+- The number of unsaved changes shown in the UI is the distance between the current history position and the position at the last save. It survives trimming; when new actions discard a redo branch that contains the saved state, the discarded steps are added to the distance.
+- Reloading a file starts a new history.
 
 ## Notifications
 
@@ -97,7 +106,7 @@ While the page is visible, the stamps of loaded files are checked every two seco
 ## Startup
 
 - Startup checks that all application files, resources and required browser APIs are present. A missing requirement blocks the app with a fatal notification instead of running in a broken state.
-- The last opened folder handle is kept in IndexedDB so the folder can be reopened with one click. Whether Chrome's persistent permission ("Allow on every visit") works for `file://` is verified when the local folder adapter is built (see [Roadmap](Roadmap.md)).
+- The last opened folder handle is kept in IndexedDB so the folder can be reopened with one click. When its permission is still granted, it opens automatically (see [Shell](ui/Shell.md#start-card)). Under `file://` Chrome asks for permission again in each session; that is accepted.
 
 ## Systems adopted from MD_Manager
 

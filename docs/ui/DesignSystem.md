@@ -116,22 +116,27 @@ Overdue entries are excluded and keep full visibility.
 
 ## Spacing
 
-First draft, extracted from the approved prototype. Details are still inconsistent there and will be refined once the week view is implemented.
+Scale: 2, 4, 6, 8, 10, 12, 14, 16, 22 px. Every padding, margin and gap uses a value of the scale. The only exceptions are derived values and optical corrections:
 
-Scale: 2, 4, 6, 8, 10, 12, 14, 16, 22 px. The prototype also uses 3, 5, 7, 9 and 11 px; these are folded into the scale during refinement.
+- Day cards are laid out with 5px on each side, half of the 10px gap between cards, so that multi-day bars can use equal columns.
+- The check box of an entry sits 1px lower to align with the first text line.
+- Positions computed from other values: the backlog panel starts below the header pill (14px + header height + 14px), the main panel makes room for it (panel width + 14px), and notifications sit 28px above the window edge (page spacing plus main panel padding).
 
 | Area | Spacing |
 |---|---|
 | Page | 14px around the header pill, main panel and backlog panel; 14px between them |
-| Header pill | padding 8px 10px 8px 12px; 14px between the three groups; 10px inside a group; 2px between icon buttons |
-| Main panel | padding 16px 18px 14px |
-| Week | 10px between day cards; day header padding 0 14px 0 16px; day list padding 4px 10px 10px |
-| Entries in a day | 6px between entries; entry padding 8px 10px; 9px between check box and text |
-| Month | 8px between cells; cell padding 0 6px 6px; 3px between entries; entry padding 3px 7px |
-| Backlog panel | padding 18px 14px; 16px between groups; 6px between entries |
-| Entry dialog | padding 22px; 16px between sections; 10px between fields; field padding 12px 14px |
-| Contacts | 14px between list and detail; list padding 12px; detail padding 22px 24px |
-| Chips and badges | chips 6px 12px; badges 2px 8px; 6px between chips |
+| Header pill | padding 8px 10px 8px 12px; 14px between the three groups; 10px inside a group; 6px between icon and label in the view switcher; save control padding 0 10px, 6px between dot, label and counter |
+| Main panel | padding 16px |
+| Week | 10px between day cards; day header padding 0 14px 0 16px, 4px between weekday and date, 4px between badges; day list padding 4px 10px 10px |
+| Entries in a day | 6px between entries; entry padding 8px 10px; 8px between check box and text |
+| Month | 8px between cells; cell padding 0 6px 6px; 4px between entries; entry padding 0 8px; „+N“ 4px below the entries; ISO week number 8px from the top |
+| Backlog panel | padding 16px 14px; 16px between groups; 6px between entries; counter 2px 8px |
+| Holiday overview | padding 12px; rows 6px |
+| Entry dialog | padding 22px; 16px between sections; 10px between fields; field padding 12px 14px; buttons 8px 16px, in the footer 8px 10px |
+| Start card | padding 22px |
+| Contacts | 14px between list and detail; list padding 12px; detail padding 22px |
+| Chips and badges | chips 6px 12px; badges 2px 8px (month 2px 6px, portrait week 4px 8px); „+X“ 0 6px; 6px between chips |
+| Tooltip | padding 6px 10px |
 
 ## Shape
 

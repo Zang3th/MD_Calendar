@@ -128,7 +128,8 @@ function checkArchitecture(root) {
   const productionFiles = [...domainFiles, ...ioFiles, ...uiFiles, ...appFiles];
 
   const dom = /\b(?:document|HTMLElement|Element|Node|MutationObserver|ResizeObserver|IntersectionObserver)\b/;
-  const browser = /\b(?:window(?!\.MDCalendar\b)|navigator|location|localStorage|sessionStorage|indexedDB|AudioContext)\b/;
+  // Property accesses and object keys such as entry.location are model fields, not browser globals.
+  const browser = /(?<![.\w$])(?:window(?!\.MDCalendar\b)|navigator|location|localStorage|sessionStorage|indexedDB|AudioContext)\b(?!\s*:)/;
   const files = /\b(?:showDirectoryPicker|showOpenFilePicker|showSaveFilePicker|FileSystem\w*Handle|createWritable|getFile|FileReader)\b/;
   const sortable = /\bSortable(?:JS)?\b/;
 

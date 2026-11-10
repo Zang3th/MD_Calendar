@@ -26,6 +26,7 @@ Further shortcuts are not decided yet (see [Open Questions](../OpenQuestions.md)
 
 - Reorder normal entries within a day. Occurrences of recurring entries do not move.
 - Move an entry to another day.
+- Move a multi-day bar; drag one of its ends to change the start or end date. The duration stays when the bar is moved.
 - Move a backlog entry onto a day, and an entry from a day into any backlog group.
 - Reorder backlog entries and move them between groups.
 - Every drop is one undoable action.

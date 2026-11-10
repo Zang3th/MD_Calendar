@@ -50,14 +50,20 @@ The conventions follow MD_Manager: headings structure the file, `#Key` lines sta
 - `# Calendar`, then one `## <Month> <YYYY>` per month with entries (English month names, chronological), then `## Multi-day` and `## Recurring`. Empty months and days are not written.
 - `### DD.MM.YYYY` starts a day (date format in [Domain](Domain.md#time)). The order of its items is the entry position.
 - An entry is `- [ ]` or `- [x]`, an optional time (`HH:MM` or `HH:MM - HH:MM`), the title and an optional `#Tag` at the end of the line.
-- Indented items below an entry: `Location: …` for the location, every other item is a note line.
+- Indented items below an entry: `Location: …` as the first item is the location, every other item is a note line.
+- A trailing `#Word` on the entry line is the tag; a time is recognized only when it is valid (`00:00` to `23:59`).
+- Days are written under the month of their date, whatever heading they stood under; repeated headings of the same day are merged in file order. A day heading with an invalid date (`31.02.2026`) is not a day.
+- An unknown or malformed line is kept right after the element it followed (file heading, day heading or entry) and moves with it.
+- Line endings follow the first line ending of the file.
+- An item of `## Multi-day` or `## Recurring` that cannot be understood (a missing or invalid `#Start`, `#End` or `#Repeat`, an end before the start, a rule outside the allowed subset) is reported and written back verbatim. Unknown `#Key` blocks inside an understood item are reported and kept at its end.
+- `#Repeat` is written in a fixed order: `FREQ`, `INTERVAL` (only above 1), `BYDAY`, `BYMONTHDAY`, `UNTIL`. `#Except` and `#Done` keep their order; dates added by the app are inserted in chronological order.
 - A multi-day entry is a `###` heading with the title and an optional `#Tag`, followed by `#Start` and `#End` with one date each and optionally `#Location` and `#Note`. Multi-day entries are written ordered by start date; equal start dates keep their stored order.
 - A recurring entry is a `###` heading with the title and an optional `#Tag`, followed by `#Start` (date, optional time or time range), `#Repeat` (one `RRULE` within the rules of [Domain](Domain.md#recurring-entry); its `UNTIL` keeps the RFC 5545 form `YYYYMMDD` so that ICS stays lossless) and optionally `#Except`, `#Done`, `#Location` and `#Note`.
 
 ### Backlog
 
-- Each `##` heading is a group in display order. `Inbox` always exists. Empty groups are kept.
-- Entries use the same syntax as day entries.
+- Each `##` heading is a group in display order. `Inbox` always exists; a file without it gets it as the first group. Empty groups are kept.
+- Entries use the same syntax as day entries. Unknown lines are reported and kept after the element they followed, as in the calendar file.
 
 ### Contacts
 
@@ -68,9 +74,10 @@ The conventions follow MD_Manager: headings structure the file, `#Key` lines sta
 
 ### Holidays and school vacations
 
-- `## Holidays` lists `DD.MM.YYYY Name`, `## School vacations` lists `DD.MM.YYYY - DD.MM.YYYY Name`. The file is generated outside the app and only read.
+- `## Holidays` lists `DD.MM.YYYY Name`, `## School vacations` lists `DD.MM.YYYY - DD.MM.YYYY Name`. The file is generated outside the app (see [Decisions](Decisions.md#d13--holiday-data-generated-outside-the-app)) and only read; lines that cannot be read are reported and skipped. Names are German, as delivered by the generator.
 
 ### Configuration
 
 - The user creates the file by hand when tags are wanted; the app only reads it. Without the file there are no tags.
-- `## Tags` lists `Name: #rrggbb icon-id` in display order. The icon ID is the file name of a tag icon without `.svg`.
+- `## Tags` lists `Name: #rrggbb icon-id` in display order. The icon ID is the file name of a tag icon without `.svg`. Lines that cannot be read are reported and skipped.
+- A tag used by an entry but missing in `Config.md` is kept in the data; the entry is shown without color.

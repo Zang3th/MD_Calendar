@@ -42,7 +42,7 @@ data/parsing/ golden files that define the data format
 res/logo/     final logo and web icon set
 res/icons/    standalone SVG files of the UI icons
 res/tag-icons/ standalone SVG files of the tag icons
-vendor/       SortableJS, dayjs, Plus Jakarta Sans (versions in vendor/README.md)
+vendor/       SortableJS, dayjs, Plus Jakarta Sans
 tools/        architecture checker
 tests/        unit/ (node:test), e2e/ (Playwright)
 types/        type declarations for checkJs

@@ -72,7 +72,7 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 
 ## D13 · Holiday data generated outside the app
 
-**Decision:** `Holidays.md` is a plain file in the folder; its generator is not part of the repository.
+**Decision:** `Holidays.md` is a plain file in the folder; its generator is not part of the repository. The generator is the Python script `C:DevClaudeHubprojectsmd-calendarholidays.py`; it fetches the public holidays and school vacations of North Rhine-Westphalia from the OpenHolidays API.
 
 ## D14 · Lean tests
 
@@ -142,6 +142,37 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 
 **Decision:** The entry dialog creates multi-day entries: a small icon next to the date switches to a from–to range. → [Shell](ui/Shell.md#entry-dialog)
 **Rejected:** a separate dialog for multi-day entries.
+
+## D27 · Start card instead of an empty app
+
+**Decision:** While no folder is open, the main panel shows a start card with the folder buttons; a remembered folder with a still granted permission opens directly. → [Shell](ui/Shell.md#start-card)
+**Reasons:** one obvious first step; one click for the usual case.
+
+## D28 · External changes are never applied silently over local work
+
+**Decision:** A changed file with local changes and any deleted file lead to a persistent choice between „Neu laden“ and „Überschreiben“. → [Architecture](Architecture.md#external-changes), [Shell](ui/Shell.md#notifications)
+**Rejected:** treating a deleted file as an empty file.
+
+## D29 · Visible controls, no hover-only buttons
+
+**Decision:** The add button of a day is always visible; hover only emphasizes it. → [AGENTS.md](../AGENTS.md#user-experience)
+**Reasons:** touch has no hover; the mobile phase needs the same controls.
+**Rejected:** showing the button only on hover, as in the prototype.
+
+## D30 · Series end with the chosen occurrence; occurrences are never overdue
+
+**Decision:** „Ab hier beenden“ keeps the chosen occurrence as the last one; a whole series is deleted with „Serie löschen“. Occurrences of recurring entries are never shown as overdue. → [Domain](Domain.md#recurring-entry)
+**Reasons:** a daily series would otherwise turn every missed past day red.
+**Rejected:** ending the day before; marking all or only the latest missed occurrence as overdue.
+
+## D31 · Multi-day bars are draggable
+
+**Decision:** Dragging a bar moves it with its duration; dragging an end changes start or end. → [Interaction](ui/Interaction.md#drag-and-drop)
+
+## D32 · Tag icon on tiles and bars; holiday overview in the header
+
+**Decision:** The tag icon appears on entry tiles and multi-day bars, not on the tag chips of the dialog. The holiday overview is a floating panel opened by an icon button in the header with two lists, holidays and school vacations. → [Views](ui/Views.md)
+**Rejected:** a year calendar of twelve small months; a fourth view in the view switcher.
 
 ## Research notes
 

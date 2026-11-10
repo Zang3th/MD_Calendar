@@ -14,7 +14,7 @@ Rotating the screen switches to the default view of the new orientation. The bac
 ## Entry tile
 
 - Check box, optional time, title. A recurring entry shows a repeat icon.
-- The tile is tinted with its tag color; without a tag it uses the neutral item surface.
+- The tile is tinted with its tag color and shows the tag icon; without a tag it uses the neutral item surface and has no icon.
 - Time: in the week view (landscape) on its own small line above the title in the tag color; elsewhere inline before the title.
 - Done: 60 % opacity, title struck through, check box filled.
 - Overdue: red check box border and a red outline.
@@ -31,13 +31,18 @@ Rotating the screen switches to the default view of the new orientation. The bac
 
 ## Holiday overview
 
-A button toggles a small view that lists all public holidays and the school vacations of North Rhine-Westphalia for the current year. Placement of the button and look of the view are still open (see [Open Questions](../OpenQuestions.md)).
+An icon button in the right zone of the header toggles a small floating glass panel below the button. It shows two lists for the current year, which can be switched:
+
+- „Feiertage“: date, weekday and name of each public holiday.
+- „Schulferien“: date range and name of each school vacation of North Rhine-Westphalia.
+
+Past holidays and vacations are dimmed.
 
 ## Week, landscape
 
 - Seven day cards side by side, Monday to Sunday.
 - Each card: day header, then the day list from top to bottom, then an add button.
-- Multi-day entries are horizontal bars across the covered days, between day header and list. Overlapping bars stack in lanes, ordered by start date, then the longer bar first, then the order in the file. Bars continuing beyond the week have square ends on that side. A bar shows title and date range.
+- Multi-day entries are horizontal bars across the covered days, between day header and list. Overlapping bars stack in lanes, ordered by start date, then the longer bar first, then the order in the file. Bars continuing beyond the week have square ends on that side. A bar shows title and date range. A bar with a tag shows the tag icon before its title; a bar without a tag uses the accent gradient. Clicking a bar opens the entry dialog. Dragging a bar moves it, dragging one of its ends changes its start or end (see [Interaction](Interaction.md#drag-and-drop)).
 
 ## Week, portrait
 
@@ -50,7 +55,8 @@ A button toggles a small view that lists all public holidays and the school vaca
 - Grid of week rows, Monday to Sunday. Days outside the month are faded.
 - A slim column (20px) on the left shows the ISO week number of each row, without a column heading. The current week's number is highlighted like the KW badge in the header.
 - Each cell: date (the first of a month shows the month name), at most one badge plus „+X", compact entry list.
-- Visible entries per cell: 3 in landscape, 4 in portrait. Further entries collapse into a „+N" chip; clicking it opens the week of that day.
+- Visible entries per cell: at most 3 in landscape and 4 in portrait, fewer when the cell is too low (bar lanes, small window). Further entries collapse into a „+N" chip; clicking it opens the week of that day.
+- In narrow cells (portrait) tiles show only check box and title.
 - Multi-day bars run across the cells of each week row.
 
 ## Contacts

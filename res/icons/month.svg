@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 32 32"
+     fill="none">
+    <path d="M7 5H12Q14 5 14 7V12Q14 14 12 14H7Q5 14 5 12V7Q5 5 7 5Z
+             M20 5H25Q27 5 27 7V12Q27 14 25 14H20Q18 14 18 12V7Q18 5 20 5Z
+             M7 18H12Q14 18 14 20V25Q14 27 12 27H7Q5 27 5 25V20Q5 18 7 18Z
+             M20 18H25Q27 18 27 20V25Q27 27 25 27H20Q18 27 18 25V20Q18 18 20 18Z"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+</svg>

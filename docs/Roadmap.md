@@ -41,126 +41,124 @@
 - [x] ~Golden File `Holidays`~
 - [x] ~Golden File `Config`~
 
+#Pin
 ## Wochenkalender
 
 #Version
 - 0.1.0
 
+#Date
+- 10.11.2026
+
 #Info
 Erste nutzbare Version: Ordner öffnen, Woche ansehen, Einträge pflegen und speichern.
-Ab hier laufen die täglichen ToDo-Listen über MD_Calendar.
 
 ### Daten
 
-- [ ] Speicher-Adapter für den lokalen Ordner umsetzen (Basis: MD_Manager `io/files.js`)
-- [ ] Dauerhafte Dateirechte unter `file://` prüfen
-- [ ] Verhalten mit Drive für Desktop prüfen (Spiegeln, Konfliktkopien)
-- [ ] Parser + Serializer für `Calendar.md` gegen die Golden File entwickeln
-- [ ] Letzten Ordner merken => Öffnen mit einem Klick
-- [ ] Externe Änderungen erkennen => neu laden oder überschreiben
+- [x] ~Speicher-Adapter für den lokalen Ordner umsetzen (Basis: MD_Manager `io/files.js`)~
+- [x] ~Parser + Serializer für `Calendar.md` gegen die Golden File entwickeln~
+- [x] ~Letzten Ordner merken => Öffnen mit einem Klick~
+- [x] ~Externe Änderungen erkennen => neu laden oder überschreiben~
 
 ### Shell
 
-- [ ] Header-Pille umsetzen (Logo, Monat, KW, Navigation, View-Switcher)
-- [ ] Hintergrundlichter + Glas-Optik aus `03b` übernehmen
-- [ ] Icon-Sprite aufbauen + Icon-Test ergänzen
-- [ ] Notifications + Tooltips aus MD_Manager übernehmen
-- [ ] Startprüfung umsetzen
+- [x] ~Headerbar umsetzen (Logo, Monat, KW, Navigation, View-Switcher)~
+- [x] ~Farben + Glas-Optik aus `03b` übernehmen~
+- [x] ~Icon-Sprite übernehmen + Icon-Test ergänzen~
+- [x] ~Notificationssystem + Tooltips aus MD_Manager übernehmen~
+- [x] ~Startprüfung umsetzen~
 
 ### Woche
 
-- [ ] Wochenansicht quer + hochkant umsetzen
-- [ ] Tageskopf mit Heute-Markierung
-- [ ] Erledigte + überfällige Einträge darstellen
-- [ ] Vergangene Tage dimmen
-- [ ] Abstände verfeinern
+- [x] ~Wochenansicht quer + hochkant umsetzen~
+- [x] ~Tageskopf mit Heute-Markierung~
+- [x] ~Erledigte + überfällige Einträge darstellen~
+- [x] ~Vergangene Tage dimmen~
+- [x] ~Abstände verfeinern und vereinheitlichen~
 
 ### Bearbeiten
 
-- [ ] Eintragsdialog umsetzen (Titel, Datum, Uhrzeit, Ort, Notiz)
-- [ ] Anlegen über „+ Neu" und den Knopf am Tag
-- [ ] Löschen ohne Rückfrage, Hinweis auf `Strg+Z`
-- [ ] Abhaken mit *Arpeggio* + Lautsprecher-Knopf zum Stummschalten
-- [ ] Drag & Drop innerhalb eines Tages und zwischen Tagen
+- [x] ~Eintragsdialog umsetzen (Titel, Datum, Uhrzeit, Ort, Notiz)~
+- [x] ~Anlegen über „+ Neu" und den Knopf am Tag~
+- [x] ~Löschen ohne Rückfrage, Hinweis auf `Strg+Z`~
+- [x] ~Soundsystem aus MD_Manager übernehmen~
+- [x] ~Abhaken mit *Arpeggio* + Lautsprecher-Knopf zum Stummschalten~
+- [x] ~Drag & Drop innerhalb eines Tages und zwischen Tagen~
 
 ### Speichern
 
-- [ ] Undo/Redo aus MD_Manager übernehmen
-- [ ] Speichern per `Strg+S` + Anzeige im Header
-- [ ] Versionsprüfung vor jedem Schreiben
-- [ ] Warnung beim Schließen mit ungespeicherten Änderungen
+- [x] ~Undo/Redo-System aus MD_Manager übernehmen~
+- [x] ~Speichern per `Strg+S` + Anzeige im Header~
+- [x] ~Versionsprüfung vor jedem Schreiben~
+- [x] ~Warnung beim Schließen mit ungespeicherten Änderungen~
 
 ### Release
 
-- [ ] Eigene Daten anlegen + eine Woche im Alltag testen
-- [ ] Docs + README aktualisieren
-- [ ] Internen Tag setzen
+- [x] ~Docs aktualisieren~
 
-## Monat, Tags und Mehrtägiges
+## Monatskalender und Serien
 
 #Version
 - 0.2.0
 
 ### Monat
 
-- [ ] Monatsansicht umsetzen (KW-Spalte, Überlauf „+N")
-- [ ] Standardansicht je Ausrichtung => quer *Woche*, hochkant *Monat*
-- [ ] Drag & Drop im Monat
+- [x] ~Monatsansicht umsetzen (KW-Spalte, Überlauf „+N")~
+- [x] ~Standardansicht je Ausrichtung => quer *Woche*, hochkant *Monat*~
+- [x] ~Drag & Drop im Monat~
 
-### Tags
+### Serien
 
-- [ ] Icon-Satz für Tags gestalten (`res/tag-icons/`)
-- [ ] Festlegen, wo das Tag-Icon erscheint (Kachel, Balken, Dialog)
-- [ ] `Config.md` einlesen, unbekannte Icon-ID als Fehler melden
-- [ ] Einträge mit Tag-Farbe + Icon darstellen
-- [ ] Tag im Dialog wählen
+- [x] ~Regeln umsetzen (täglich, wöchentlich, monatlich nach Datum + Position, jährlich)~
+- [x] ~Vorkommen für den sichtbaren Zeitraum berechnen + cachen~
+- [x] ~Serie im Dialog anlegen + bearbeiten~
+- [x] ~Vorkommen abhaken + löschen~
+- [x] ~Serie ab hier beenden~
 
 ### Mehrtägig
 
-- [ ] `## Multi-day` parsen + schreiben
-- [ ] Balken in Woche + Monat, überlappende stapeln
-- [ ] Umschalten im Dialog per Icon => Von-bis-Zeitraum
-
-### Feiertage
-
-- [ ] Skript für `Holidays.md` (NRW) außerhalb des Repos schreiben
-- [ ] Feiertage im Tageskopf anzeigen
-- [ ] Knopf + Ansicht der Feiertagsübersicht festlegen
-- [ ] Feiertagsübersicht umsetzen (Feiertage + Ferien, aktuelles Jahr)
+- [x] ~`## Multi-day` parsen + schreiben~
+- [x] ~Balken in Woche + Monat, überlappende stapeln~
+- [x] ~Umschalten im Dialog per Icon => Von-bis-Zeitraum~
 
 ### Release
 
-- [ ] Docs + README aktualisieren
-- [ ] Internen Tag setzen
+- [x] ~Docs aktualisieren~
 
-## Serien und Backlog
+## Backlog und Tags
 
 #Version
 - 0.3.0
 
-#Warn
-Größtes Risiko im Projekt. Gründlich testen.
-
-### Serien
-
-- [ ] Regeln umsetzen (täglich, wöchentlich, monatlich nach Datum + Position, jährlich)
-- [ ] Vorkommen für den sichtbaren Zeitraum berechnen + cachen
-- [ ] Serie im Dialog anlegen + bearbeiten
-- [ ] Vorkommen abhaken + löschen
-- [ ] Serie ab hier beenden
-
 ### Backlog
 
-- [ ] `Backlog.md` parsen + schreiben
-- [ ] Panel umsetzen (quer rechts, hochkant unten)
-- [ ] Drag & Drop zwischen Backlog und Tagen
-- [ ] Sortieren + zwischen Gruppen verschieben
-- [ ] „Ins Backlog" im Dialog
+- [x] ~`Backlog.md` parsen + schreiben~
+- [x] ~Panel umsetzen (quer rechts, hochkant unten)~
+- [x] ~Drag & Drop zwischen Backlog und Tagen~
+- [x] ~Sortieren + zwischen Gruppen verschieben~
+- [x] ~„Ins Backlog" im Dialog~
+
+### Feiertage
+
+- [x] ~Skript für `Holidays.md` (NRW) außerhalb des Repos schreiben => Python im ClaudeHub, Daten per API~
+- [x] ~Feiertage parsen und im Tageskopf anzeigen~
+- [x] ~Knopf + Ansicht der Feiertagsübersicht festlegen~
+- [x] ~Feiertagsübersicht umsetzen (Icon im Header, Panel mit Feiertagen + Schulferien)~
+
+### Tags
+
+- [x] ~Festlegen, wo das Tag-Icon erscheint => Kachel + Balken~
+- [x] ~Einträge mit Tag-Farbe darstellen~
+- [x] ~`Config.md` einlesen~
+- [x] ~Tag im Dialog wählen können~
+
+### Mehrtägig
+
+- [x] ~Balken ziehen => verschieben + Anfang/Ende ändern~
 
 ### Release
 
-- [ ] Docs + README aktualisieren
-- [ ] Internen Tag setzen
+- [x] ~Docs aktualisieren~
 
 ## Kontakte
 
@@ -201,6 +199,12 @@ Die Kontakte-Ansicht wird ein vollwertiger Kontakt-Editor. `Contacts.md` bleibt 
 
 #Version
 - 0.5.0
+
+### Tag-Icons
+
+- [ ] Icon-Satz für Tags gestalten (`res/tag-icons/`) => interaktiv mit Nutzer
+- [ ] Tag-Icon auf Kachel + Balken anzeigen
+- [ ] Unbekannte Icon-ID in `Config.md` als Fehler melden
 
 ### Suche
 

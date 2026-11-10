@@ -26,6 +26,7 @@ An entry belongs to one day of the calendar.
 
 - All entries can be edited, including entries on past days.
 - An **open entry on a past day is overdue**. It stays on its day and is highlighted. It is never moved automatically.
+- Occurrences of recurring entries are never overdue.
 - A time does not influence the order within the day.
 
 ## Multi-day entry
@@ -61,6 +62,15 @@ Rules have no end when created. Actions on a series:
 | Check off one occurrence | Records the date as done for this series. |
 
 Single occurrences cannot be moved or renamed.
+
+- „End series from here“ sets `UNTIL` to the date of the chosen occurrence; it stays the last one.
+- A whole series can be deleted.
+- Deleting an occurrence also removes its done mark.
+- Occurrences are computed per day and cached until a series changes.
+
+## Converting entries
+
+An entry, a recurring entry and a multi-day entry can be turned into each other in the entry dialog. Title, location, note, tag and preserved lines are kept. What the new kind cannot hold is dropped: the done state of an entry, exceptions and done dates of a series, the time and rule when switching to a multi-day entry. A series or multi-day entry becomes an entry on its start date.
 
 ## Backlog
 
