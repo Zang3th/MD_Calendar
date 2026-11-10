@@ -58,3 +58,15 @@ test("drag and drop moves an entry as one undoable action", async ({ page, calen
   await page.keyboard.press("Control+z");
   await expect(titles(page, friday)).toHaveText(["C"]);
 });
+
+test("moving an entry and moving it back leaves nothing unsaved", async ({ page, calendar }) => {
+  await calendar.openApp({ "Calendar.md": "# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] A\n- [ ] B\n" });
+  await page.locator(`${thursday} .ev`, { hasText: "B" }).dragTo(page.locator(`${thursday} .ev`, { hasText: "A" }));
+  await expect(titles(page, thursday)).toHaveText(["B", "A"]);
+  await expect(page.locator("#save .save__count")).toHaveText("1");
+  await page.locator(`${thursday} .ev`, { hasText: "A" }).dragTo(page.locator(`${thursday} .ev`, { hasText: "B" }));
+  await expect(titles(page, thursday)).toHaveText(["A", "B"]);
+  await expect(page.locator("#save")).not.toHaveClass(/is-dirty/);
+  await page.keyboard.press("Control+z");
+  await expect(page.locator("#save .save__count")).toHaveText("1");
+});

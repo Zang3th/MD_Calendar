@@ -100,6 +100,9 @@ Erste nutzbare Version: Ordner öffnen, Woche ansehen, Einträge pflegen und spe
 #Version
 - 0.2.0
 
+#Date
+- 10.11.2026
+
 ### Monat
 
 - [x] ~Monatsansicht umsetzen (KW-Spalte, Überlauf „+N")~
@@ -128,6 +131,9 @@ Erste nutzbare Version: Ordner öffnen, Woche ansehen, Einträge pflegen und spe
 
 #Version
 - 0.3.0
+
+#Date
+- 10.11.2026
 
 ### Backlog
 
@@ -163,6 +169,9 @@ Erste nutzbare Version: Ordner öffnen, Woche ansehen, Einträge pflegen und spe
 
 #Version
 - 0.4.0
+
+#Date
+- 10.11.2026
 
 #Info
 Die Kontakte-Ansicht wird ein vollwertiger Kontakt-Editor. `Contacts.md` bleibt die Datenquelle.
@@ -205,6 +214,9 @@ Die Kontakte-Ansicht wird ein vollwertiger Kontakt-Editor. `Contacts.md` bleibt 
 
 #Version
 - 0.5.0
+
+#Date
+- 10.11.2026
 
 ### Suche
 
@@ -250,7 +262,7 @@ Die Kontakte-Ansicht wird ein vollwertiger Kontakt-Editor. `Contacts.md` bleibt 
 ## Umstieg und Nutzung
 
 #Version
-- 1.0.0
+- 0.6.0
 
 #Info
 Ab hier ersetzt MD_Calendar den Google-Kalender. Google bleibt nur noch als Archiv.
@@ -263,6 +275,22 @@ Ab hier ersetzt MD_Calendar den Google-Kalender. Google bleibt nur noch als Arch
 - [ ] Ordner ins NAS-Backup aufnehmen
 
 ### Bugs und Verbesserungen
+
+- [x] ~Tag-Icons für Spielen + Finanzen ergänzen~
+- [x] ~Header: Pfeile + KW raus, „+“, Undo, Redo + Speichern wie MD_Manager~
+- [x] ~Header rechts: Hilfe, Ton, Ferien, Backlog => Optionsmenü entfällt~
+- [x] ~Suche nur per `F`, als Leiste unten mittig~
+- [x] ~Hilfe als Panel wie die Ferienansicht, mit Tastenkappen in drei Spalten~
+- [x] ~Heute auf `H`~
+- [x] ~Kalender importieren nur noch auf der Startseite~
+- [x] ~Notifications knapp, zentriert + nur so breit wie nötig~
+- [x] ~Ordner-Meldung eindeutig („Ordner „…“ geöffnet“)~
+- [x] ~Kontextmenü ohne Tastenkürzel~
+- [x] ~Kein Hover-Highlight in reinen Anzeige-Panels~
+- [x] ~Wiederholungs-Icon größer + vertikal zentriert~
+- [x] ~Hintergrundlicht in der Mitte entfernt~
+- [x] ~Rahmen von Header + Hintergrund entfernt~
+- [x] ~Undo-Zähler: unveränderter Stand gilt als gespeichert~
 
 ### Release
 

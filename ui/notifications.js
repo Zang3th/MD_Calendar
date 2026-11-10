@@ -110,7 +110,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         text.append(value);
       }
     }
-    notification.append(header, text);
+    // Most notifications say everything in their title; an empty body is left out.
+    notification.append(header);
+    if (text.childNodes.length && text.textContent) notification.append(text);
 
     if (options.actions?.length) {
       const actions = document.createElement("div");

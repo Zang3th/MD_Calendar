@@ -25,7 +25,6 @@ test("the month view collapses long days into „+N“ and opens their week", as
   await cell.locator(".more").click();
   await expect(page.locator("#week")).toBeVisible();
   await expect(page.locator('.day[data-day="2026-11-18"] .ev__title')).toHaveText(["A", "B", "C", "D", "E"]);
-  await expect(page.locator("#kw")).toHaveText("KW 47");
 });
 
 test("drag and drop in the month moves an entry below the occurrences of the target day", async ({ page, calendar }) => {

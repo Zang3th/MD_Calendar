@@ -138,15 +138,13 @@ interface MDCalendarNamespace {
   };
   pickers: { hide(): void; isOpen(): boolean };
   menus: {
-    toggleOptions(): void;
     showContext(items: MDCMenuItem[], x: number, y: number): void;
     hideContext(): void;
-    showHelp(): void;
-    onImport(handler: (text: string, name: string) => void): void;
+    showHelp(open?: boolean): void;
     isModalOpen(): boolean;
   };
   searchPanel: { init(search: (query: string) => MDCSearchItem[], jump: (item: MDCSearchItem) => void): void; toggle(): void; isOpen(): boolean };
-  start: { show(remembered: string | null): void; hide(): void };
+  start: { show(remembered: string | null): void; hide(): void; onImport(handler: (text: string, name: string) => void): void };
   tiles: {
     escape(value: string): string;
     icon(name: string): string;
@@ -254,7 +252,7 @@ type MDCDialogHandlers = {
 };
 /** A selected or clicked tile: an entry of a day or backlog group, or an occurrence of a series. */
 type MDCPick = { ref?: MDCEntryRef; series?: number; key: string };
-type MDCMenuItem = { label: string; icon: string; key?: string; danger?: boolean; run(): void };
+type MDCMenuItem = { label: string; icon: string; danger?: boolean; run(): void };
 type MDCContactsHandlers = {
   select(index: number): void;
   update(index: number, updated: MDCContact, groups?: string[]): void;
@@ -279,7 +277,7 @@ type MDCInteractionHandlers = {
   showHelp(): void;
   openContact(index: number): void;
   isContactsView(): boolean;
-  notice(title: string, body: string): void;
+  notice(title: string): void;
   contextMenu(picks: MDCPick[], x: number, y: number, key: string): void;
   toggleMany(picks: MDCPick[]): void;
   removeMany(picks: MDCPick[]): void;

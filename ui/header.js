@@ -1,24 +1,19 @@
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
-// Header pill: title, KW badge, navigation, view switcher, tools, undo, redo, save control, „+“ and options (docs/ui/Shell.md#header).
+// Header pill: title, „+“, undo, redo, save control, view switcher, help, sound, holidays, backlog (docs/ui/Shell.md#header).
 (function (app) {
   const flashDuration = 1500;
   const element = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
   const title = /** @type {HTMLButtonElement} */ (element("title"));
   const titleText = element("titleText");
   const titleSizer = element("titleSizer");
-  const kw = element("kw");
   const save = element("save");
   const saveText = /** @type {HTMLElement} */ (save.querySelector(".save__text"));
   const saveCount = /** @type {HTMLElement} */ (save.querySelector(".save__count"));
   const sound = element("sound");
-  const soundLabel = element("soundLabel");
   const undo = /** @type {HTMLButtonElement} */ (element("undo"));
   const redo = /** @type {HTMLButtonElement} */ (element("redo"));
-  const prev = element("prev");
-  const next = element("next");
   const newButton = element("new");
-  const datenav = /** @type {HTMLElement} */ (document.querySelector(".datenav"));
   const views = /** @type {Array<[HTMLButtonElement, MDCView]>} */ ([[element("viewWeek"), "week"], [element("viewMonth"), "month"], [element("viewContacts"), "contacts"]]);
   const thumb = /** @type {HTMLElement} */ (document.querySelector(".seg__thumb"));
   const backlogToggle = element("backlogToggle");
@@ -45,16 +40,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     title.disabled = !state.open;
     const week = state.view === "week";
     const contacts = state.view === "contacts";
-    kw.hidden = !state.open || !week;
-    datenav.hidden = !state.open || contacts;
-    if (state.open) {
-      const days = app.calendar.weekDays(state.anchor);
-      titleText.textContent = contacts ? "Kontakte" : dayjs(week ? days[0] : state.anchor).format("MMMM YYYY");
-      kw.textContent = `KW ${app.calendar.isoWeek(days[0])}`;
-      kw.setAttribute("aria-label", `Kalenderwoche ${app.calendar.isoWeek(days[0])}`);
-    } else titleText.textContent = "MD_Calendar";
-    label(prev, week ? "Vorherige Woche (←)" : "Vorheriger Monat (←)");
-    label(next, week ? "Nächste Woche (→)" : "Nächster Monat (→)");
+    if (state.open) titleText.textContent = contacts ? "Kontakte" : dayjs(week ? app.calendar.weekStart(state.anchor) : state.anchor).format("MMMM YYYY");
+    else titleText.textContent = "MD_Calendar";
     label(newButton, contacts ? "Neuer Kontakt (N)" : "Neuer Eintrag (N)");
     views.forEach(([button, view], index) => {
       button.setAttribute("aria-pressed", String(state.view === view));
@@ -76,8 +63,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     if (state.conflict) label(save, "Die Datei wurde außerhalb geändert: neu laden oder überschreiben");
     else label(save, dirty ? `${state.unsaved} ungespeicherte Änderung${state.unsaved === 1 ? "" : "en"} speichern (Strg S)` : "Alles gespeichert");
 
-    sound.dataset.muted = String(state.muted);
-    soundLabel.textContent = state.muted ? "Ton an" : "Ton aus";
+    sound.setAttribute("aria-pressed", String(state.muted));
+    label(sound, state.muted ? "Ton an" : "Ton aus");
   }
 
   /** Shows „Gespeichert“ for a moment after a successful save. */

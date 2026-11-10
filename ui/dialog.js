@@ -47,7 +47,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   /** @param {string} message */
   function reject(message) {
-    app.notifications.show("warning", "Ungültige Eingabe", message);
+    app.notifications.show("warning", message, "");
   }
 
   /** The start date as a day key, the last accepted one, or "" without a date (backlog). */
@@ -183,16 +183,16 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       normalized = "";
     } else if (input === date || input === endDate) {
       const key = app.calendar.parseDate(value);
-      if (!key) message = `„${value}“ ist kein gültiges Datum (TT.MM.JJJJ).`;
-      else if (input === endDate && key < dateKey()) message = "Das Ende liegt vor dem Beginn.";
+      if (!key) message = "Ungültiges Datum (TT.MM.JJJJ)";
+      else if (input === endDate && key < dateKey()) message = "Ende vor Beginn";
       else normalized = app.calendar.formatDate(key);
     } else if (input === interval) {
-      if (!/^[1-9]\d{0,2}$/.test(value)) message = `„${value}“ ist kein gültiges Intervall (1 bis 999).`;
+      if (!/^[1-9]\d{0,2}$/.test(value)) message = "Intervall: 1 bis 999";
     } else if (value) {
       normalized = app.calendar.parseTime(value);
-      if (!normalized) message = `„${value}“ ist keine gültige Uhrzeit (HH:MM).`;
-      else if (input === end && !start.value.trim()) message = "Eine Endzeit braucht eine Beginnzeit.";
-      else if (input === end && normalized < start.value.trim()) message = "Die Endzeit liegt vor der Beginnzeit.";
+      if (!normalized) message = "Ungültige Uhrzeit (HH:MM)";
+      else if (input === end && !start.value.trim()) message = "Endzeit ohne Beginn";
+      else if (input === end && normalized < start.value.trim()) message = "Endzeit vor Beginn";
     }
     if (message) {
       reject(message);

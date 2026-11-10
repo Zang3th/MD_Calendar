@@ -226,14 +226,14 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     if (name === "birthday") {
       const birthday = trimmed ? app.contactsFormat.parseBirthday(trimmed) : "";
       if (trimmed && !birthday) {
-        handlers?.reject(`„${trimmed}“ ist kein gültiger Geburtstag (TT.MM.JJJJ oder TT.MM.).`);
+        handlers?.reject("Ungültiger Geburtstag (TT.MM.JJJJ oder TT.MM.)");
         return;
       }
       contact.birthday = birthday;
     } else if (name === "anniversaryDate") {
       const date = app.calendar.parseDate(trimmed);
       if (!date) {
-        handlers?.reject(`„${trimmed}“ ist kein gültiges Datum (TT.MM.JJJJ).`);
+        handlers?.reject("Ungültiges Datum (TT.MM.JJJJ)");
         return;
       }
       contact.anniversaries[index].date = date;

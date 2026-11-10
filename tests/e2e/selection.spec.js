@@ -44,3 +44,16 @@ test("double-clicking a day opens a new entry for that day", async ({ page, cale
   await expect(page.locator("#dialogDate")).toHaveValue("13.11.2026");
   await expect(page.locator("#dialogDateHint")).toHaveText("Freitag, 13. November 2026");
 });
+
+test("an ICS file chosen on the start card is imported into the folder opened next", async ({ page, calendar }) => {
+  await page.goto(`${calendar.origin}/MD_Calendar.html`);
+  await expect(page.locator("body")).toHaveAttribute("data-startup-state", "ready");
+  await page.locator("#icsImport").setInputFiles({
+    name: "einladung.ics", mimeType: "text/calendar",
+    buffer: Buffer.from("BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:x\r\nDTSTART;VALUE=DATE:20261113\r\nDTEND;VALUE=DATE:20261114\r\nSUMMARY:Einladung\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n")
+  });
+  await expect(page.locator("#startImport")).toContainText("einladung.ics");
+  await page.locator("#pick").click();
+  await expect(page.locator(`${friday} .ev__title`)).toHaveText(["Einladung"]);
+  await expect(page.locator("#icsImport")).toBeHidden();
+});

@@ -82,8 +82,6 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     pick: current => current.pickFolder(),
     reopen: current => current.reopenFolder(),
     title: current => current.today(),
-    prev: current => current.previous(),
-    next: current => current.next(),
     viewWeek: current => current.showView("week"),
     viewMonth: current => current.showView("month"),
     viewContacts: current => current.showView("contacts"),
@@ -94,8 +92,6 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     sound: current => current.toggleSound(),
     backlogToggle: current => current.toggleBacklog(),
     holidaysButton: current => current.toggleHolidays(),
-    searchButton: current => current.toggleSearch(),
-    optionsButton: () => app.menus.toggleOptions(),
     helpButton: current => current.showHelp()
   };
 
@@ -159,7 +155,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   /** Shortcut keys without modifiers (docs/ui/Interaction.md#keyboard-shortcuts). @type {Record<string, (current: MDCInteractionHandlers) => void>} */
   const keys = {
-    t: current => current.today(),
+    h: current => current.today(),
     n: current => current.newEntry(current.isContactsView() ? undefined : hoveredDay || undefined),
     w: current => current.showView("week"),
     m: current => current.showView("month"),
@@ -330,7 +326,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     seriesDrag.shown = true;
     suppressClick = true;
     window.setTimeout(() => { suppressClick = false; }, 0);
-    handlers?.notice("Serientermine lassen sich nicht verschieben", "Ändere den Beginn der Serie im Dialog oder lösche einzelne Termine.");
+    handlers?.notice("Serientermine sind nicht verschiebbar");
   });
   document.addEventListener("pointerup", () => { seriesDrag = null; });
 

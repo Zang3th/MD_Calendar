@@ -55,9 +55,9 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 **Decision:** The design direction is "Aurora" with all controls in a floating header pill (prototype `03b`), scheme Nord (fixed, see D19). → [Design System](ui/DesignSystem.md), [Shell](ui/Shell.md)
 **Process:** six directions were compared (Precision, Notebook, Aurora, Console, Editorial, Bento); Aurora was refined over several rounds (portrait week rows, header pill instead of a sidebar).
 
-## D10 · Borders kept, past periods dimmed
+## D10 · Borders kept inside, none on header and main panel; past periods dimmed
 
-**Decision:** All 1px borders stay; past periods are dimmed except overdue entries.
+**Decision:** The header pill and the main panel have no border and no light edge; all other surfaces keep their 1px borders. Past periods are dimmed except overdue entries.
 **Rejected:** "reduced" (top light edge on outer glass, no inner borders) and "none" (structure dissolves on the Nord background). → [Design System](ui/DesignSystem.md#borders)
 
 ## D11 · Birthdays and holidays in the day header
@@ -102,9 +102,9 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 **Reasons:** the files must stay readable and easy to edit by hand, also on a phone.
 **Rejected:** visible or hidden IDs per entry (for example HTML comments).
 
-## D19 · No user settings; mute in the options menu
+## D19 · No user settings; mute in the header
 
-**Decision:** The UI is fixed by the application: scheme Nord, lights in the corners at full size and intensity without drift, all borders, dimmed past periods. The only user control is a speaker toggle in the options menu right of **+** that mutes the completion sound, with the icons and behavior of MD_Manager; its state is not stored. → [Design System](ui/DesignSystem.md), [Shell](ui/Shell.md#sound-toggle)
+**Decision:** The UI is fixed by the application: scheme Nord, two lights in the corners at full size and intensity without drift and none in the middle, the borders of D10, dimmed past periods. The only user control is a speaker toggle in the header that mutes the completion sound, with the icons and behavior of MD_Manager; its state is not stored. → [Design System](ui/DesignSystem.md), [Shell](ui/Shell.md#sound-toggle)
 **Rejected:** a settings dialog opened from the logo; selectable schemes, adjustable lights and style options; storing the mute state in `Config.md` (it would make muting an undoable, unsaved change).
 
 ## D20 · English data format
@@ -200,12 +200,12 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 
 ## D38 · Further shortcuts
 
-**Decision:** `F` search, `K` contacts, `?` shortcut overview, `Space`, `Del`, `Ctrl+A`, `Ctrl+C`, `Ctrl+V` for the selection, `N` on the day under the pointer, and the mouse wheel switches one week or month per gesture. → [Interaction](ui/Interaction.md#keyboard-shortcuts)
+**Decision:** `F` opens the search bar at the bottom edge (there is no search button), `K` contacts, `?` help panel, `Space`, `Del`, `Ctrl+A`, `Ctrl+C`, `Ctrl+V` for the selection, `N` on the day under the pointer, and the mouse wheel switches one week or month per gesture. → [Interaction](ui/Interaction.md#keyboard-shortcuts)
 **Rejected:** `Ctrl+K` and `/` for the search.
 
 ## D39 · Imported history is done
 
-**Decision:** The ICS import marks entries before today as done, so that years of history do not show as overdue. Events already present are skipped. → [Domain](Domain.md#ics-import)
+**Decision:** The ICS import marks entries before today as done, so that years of history do not show as overdue. Events already present are skipped. The import is offered only on the start card and runs into the folder opened next. → [Domain](Domain.md#ics-import), [Shell](ui/Shell.md#start-card)
 **Rejected:** importing everything open.
 
 ## D40 · No tooltips for now

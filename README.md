@@ -4,7 +4,7 @@ A local-first calendar built around ordered to-do lists per day, with a backlog 
 
 ## Status
 
-Releases 0.1.0 to 0.5.0 of the [Roadmap](docs/Roadmap.md) are implemented: week and month views, recurring and multi-day entries, backlog, holidays, tags with icons, the contact editor with birthdays and vCard import and export, search, shortcuts, selection with copy and paste, and the ICS import. The next release is 1.0.0 "Umstieg".
+Releases 0.1.0 to 0.5.0 of the [Roadmap](docs/Roadmap.md) are implemented: week and month views, recurring and multi-day entries, backlog, holidays, tags with icons, the contact editor with birthdays and vCard import and export, search, shortcuts, selection with copy and paste, and the ICS import. The next release is 0.6.0 "Umstieg und Nutzung".
 
 Open `MD_Calendar.html` in Chrome or Edge and choose the calendar folder. The approved design reference is [`prototypes/03b-aurora-header.html`](prototypes/03b-aurora-header.html) (details in [prototypes/README.md](prototypes/README.md)).
 
@@ -20,7 +20,7 @@ Each topic has exactly one owning document.
 | Calendar folder, files, storage rules, parsing rules, format drafts | [docs/DataFormat.md](docs/DataFormat.md) |
 | Runtime, dependencies, layers, storage adapter, saving, external changes, undo, notifications, startup, systems adopted from MD_Manager | [docs/Architecture.md](docs/Architecture.md) |
 | Visual language, color tokens, lights, borders, past dimming, typography, spacing, shapes, logo, icons, tag icons, motion, completion sound | [docs/ui/DesignSystem.md](docs/ui/DesignSystem.md) |
-| Page layout, header, options menu, search panel, shortcut overview, save control, backlog panel, entry dialog, notifications, settings | [docs/ui/Shell.md](docs/ui/Shell.md) |
+| Page layout, header, search bar, help, save control, backlog panel, entry dialog, notifications, settings | [docs/ui/Shell.md](docs/ui/Shell.md) |
 | Week, month and contacts views; entry tiles; day header badges | [docs/ui/Views.md](docs/ui/Views.md) |
 | Shortcuts, pointer gestures, creating, selection, drag and drop, editing, undo, deleting | [docs/ui/Interaction.md](docs/ui/Interaction.md) |
 | Mobile phase: plan, obstacles, interim options | [docs/Mobile.md](docs/Mobile.md) |

@@ -68,7 +68,7 @@ One small interface. Domain and UI never know which adapter is active.
 
 All writes run through one serialized write queue.
 
-Version 1.0 has one adapter for a local folder (`io/storage.js`). Its version stamp is the file's modification time and size. It also remembers the last opened folder handle in IndexedDB (see [Startup](#startup)). The mobile phase adds a second adapter (see [Mobile](Mobile.md)).
+Until the mobile phase there is one adapter for a local folder (`io/storage.js`). Its version stamp is the file's modification time and size. It also remembers the last opened folder handle in IndexedDB (see [Startup](#startup)). The mobile phase adds a second adapter (see [Mobile](Mobile.md)).
 
 ## Saving
 
@@ -95,7 +95,7 @@ While the page is visible, the stamps of loaded files are checked every two seco
 - Every change to persistent data is one action with a label, an `undo` and a `redo` function, and the view state before and after. This covers calendar entries, backlog and contacts.
 - An operation that touches several files, such as moving an entry from the backlog into the calendar, is one action.
 - The history is capped by entry count and memory size.
-- The number of unsaved changes shown in the UI is the distance between the current history position and the position at the last save. It survives trimming; when new actions discard a redo branch that contains the saved state, the discarded steps are added to the distance.
+- The number of unsaved changes shown in the UI is the distance between the current history position and the position at the last save. When the data serializes to exactly the files on disk again (an entry moved up and back down), the current position becomes the saved one and the count is 0, as MD_Manager compares with the saved text. It survives trimming; when new actions discard a redo branch that contains the saved state, the discarded steps are added to the distance.
 - Reloading a file starts a new history.
 
 ## Notifications

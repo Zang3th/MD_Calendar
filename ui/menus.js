@@ -1,27 +1,29 @@
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
-// Options menu, context menu and the shortcut overview (docs/ui/Shell.md#options-menu, docs/ui/Interaction.md).
+// Context menu and the help panel (docs/ui/Interaction.md, docs/ui/Shell.md#help).
 (function (app) {
-  const optionsButton = /** @type {HTMLButtonElement} */ (document.getElementById("optionsButton"));
-  const options = /** @type {HTMLElement} */ (document.getElementById("optionsMenu"));
   const context = /** @type {HTMLElement} */ (document.getElementById("contextMenu"));
-  const help = /** @type {HTMLDialogElement} */ (document.getElementById("helpDialog"));
-  const helpKeys = /** @type {HTMLElement} */ (document.getElementById("helpKeys"));
-  const icsInput = /** @type {HTMLInputElement} */ (document.getElementById("icsImport"));
+  const help = /** @type {HTMLElement} */ (document.getElementById("helpPanel"));
+  const helpContent = /** @type {HTMLElement} */ (document.getElementById("helpContent"));
+  const helpButton = /** @type {HTMLButtonElement} */ (document.getElementById("helpButton"));
   /** @type {Array<{run(): void}>} */
   let contextItems = [];
-  /** @type {((text: string, name: string) => void) | null} */
-  let importHandler = null;
 
-  /** Shortcut overview; the same list as docs/ui/Interaction.md#keyboard-shortcuts. */
-  const shortcuts = [
-    ["Ansicht", [["W", "Woche"], ["M", "Monat"], ["K", "Kontakte"], ["B", "Backlog ein- oder ausblenden"], ["T", "Zu heute springen"], ["← →", "Vorherige oder nächste Woche bzw. Monat"], ["Mausrad", "Eine Woche bzw. einen Monat weiter"]]],
-    ["Einträge", [["N", "Neuer Eintrag am Tag unter dem Mauszeiger (in Kontakte: neuer Kontakt)"], ["Doppelklick", "Neuer Eintrag an diesem Tag"], ["F", "Suchen"], ["Rechtsklick", "Erledigt, Kopieren, Löschen, Einfügen"]]],
-    ["Auswahl", [["Ziehen auf freier Fläche", "Einträge markieren"], ["Strg + Klick", "Eintrag zur Auswahl hinzufügen oder entfernen"], ["Strg A", "Alle Einträge der Ansicht markieren"], ["Leertaste", "Markierte erledigt oder offen"], ["Strg C · Strg V", "Kopieren · am Tag unter dem Mauszeiger einfügen"], ["Entf", "Markierte löschen"], ["Esc", "Auswahl aufheben, Dialog oder Panel schließen"]]],
-    ["Bearbeiten", [["Strg S", "Speichern"], ["Strg Z", "Rückgängig"], ["Strg Y · Strg ⇧ Z", "Wiederholen"], ["Enter", "Dialog bestätigen, Feld abschließen"], ["?", "Diese Übersicht"]]]
+  /**
+   * The main shortcuts by task, laid out like the quick reference of MD_Manager: action left, keys right as key caps.
+   * "+" joins the keys of one combination.
+   * The full list is in docs/ui/Interaction.md.
+   */
+  const columns = [
+    [["Navigation", [["Woche", "W"], ["Monat", "M"], ["Kontakte", "K"], ["Heute", "H"], ["Backlog", "B"], ["Suchen", "F"]]]],
+    [["Einträge", [["Neu", "N"], ["Erledigt", "Leertaste"], ["Kopieren", "Strg+C"], ["Einfügen", "Strg+V"], ["Löschen", "Entf"]]]],
+    [["Bearbeiten", [["Speichern", "Strg+S"], ["Rückgängig", "Strg+Z"], ["Wiederholen", "Strg+Y"]]]]
   ];
-  helpKeys.innerHTML = shortcuts.map(([group, rows]) => `<div class="keys__group"><h3 class="hp__title">${group}</h3>` +
-    /** @type {string[][]} */ (rows).map(([key, text]) => `<div class="keys__row"><dt>${key.split(" · ").map(part => `<kbd>${part}</kbd>`).join(" ")}</dt><dd>${text}</dd></div>`).join("") + `</div>`).join("");
+  /** @param {string} keys */
+  const caps = keys => keys.split("+").map(key => `<kbd>${key}</kbd>`).join("<span>+</span>");
+  // Groups sit in three columns side by side, so that the panel never scrolls.
+  helpContent.innerHTML = columns.map(groups => `<div class="help__column">` + groups.map(([group, rows]) => `<h3 class="hp__title">${group}</h3><dl class="keys">` +
+    /** @type {string[][]} */ (rows).map(([action, keys]) => `<div class="keys__row"><dt>${action}</dt><dd>${caps(keys)}</dd></div>`).join("") + `</dl>`).join("") + `</div>`).join("");
 
   /** Places a floating element at a point or below an anchor, kept inside the window. @param {HTMLElement} element @param {number} x @param {number} y */
   function placeAt(element, x, y) {
@@ -31,29 +33,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     element.style.top = `${Math.round(Math.max(8, Math.min(y, window.innerHeight - box.height - 8)))}px`;
   }
 
-  /** @param {boolean} open */
-  function setOptions(open) {
-    optionsButton.setAttribute("aria-expanded", String(open));
-    if (!open) {
-      options.hidden = true;
-      return;
-    }
-    const bounds = optionsButton.getBoundingClientRect();
-    options.hidden = false;
-    options.style.top = `${Math.round(bounds.bottom + 10)}px`;
-    options.style.left = `${Math.round(bounds.right - options.offsetWidth)}px`;
-    /** @type {HTMLElement | null} */ (options.querySelector(".menu__item"))?.focus();
-  }
-
-  function toggleOptions() {
-    setOptions(options.hidden);
-  }
-
   /** @param {MDCMenuItem[]} items @param {number} x @param {number} y */
   function showContext(items, x, y) {
     contextItems = items;
     context.innerHTML = items.map((item, index) => `<button class="menu__item${item.danger ? " menu__item--danger" : ""}" type="button" role="menuitem" data-item="${index}">` +
-      `${app.tiles.icon(item.icon)}<span>${app.tiles.escape(item.label)}</span>${item.key ? `<kbd>${item.key}</kbd>` : ""}</button>`).join("");
+      `${app.tiles.icon(item.icon)}<span>${app.tiles.escape(item.label)}</span></button>`).join("");
     placeAt(context, x, y);
     /** @type {HTMLElement | null} */ (context.querySelector(".menu__item"))?.focus();
   }
@@ -63,9 +47,15 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     contextItems = [];
   }
 
-  function showHelp() {
-    setOptions(false);
-    if (!help.open) help.showModal();
+  /** Opens the help below its button, like the holiday overview; a second call closes it. @param {boolean} [open] */
+  function showHelp(open = help.hidden) {
+    help.hidden = !open;
+    helpButton.setAttribute("aria-expanded", String(open));
+    if (!open) return;
+    // One layout read to place the panel below its button, then writes only.
+    const bounds = helpButton.getBoundingClientRect();
+    help.style.top = `${Math.round(bounds.bottom + 10)}px`;
+    help.style.right = `${Math.round(window.innerWidth - bounds.right)}px`;
   }
 
   context.addEventListener("click", event => {
@@ -75,38 +65,23 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     hideContext();
     item?.run();
   });
-  // The options menu stays open for the sound toggle, so that its state change is visible.
-  options.addEventListener("click", event => {
-    if (event.target instanceof Element && event.target.closest("#helpButton")) setOptions(false);
-  });
-  icsInput.addEventListener("change", () => {
-    const file = icsInput.files?.[0];
-    icsInput.value = "";
-    setOptions(false);
-    if (file && importHandler) {
-      const handler = importHandler;
-      void file.text().then(text => handler(text, file.name));
-    }
-  });
-  help.addEventListener("click", event => {
-    if (event.target === help || (event.target instanceof Element && event.target.closest("[data-close]"))) help.close();
-  });
   document.addEventListener("pointerdown", event => {
     if (!(event.target instanceof Node)) return;
     if (!context.hidden && !context.contains(event.target)) hideContext();
-    if (!options.hidden && !options.contains(event.target) && !optionsButton.contains(event.target)) setOptions(false);
+    if (!help.hidden && !help.contains(event.target) && !helpButton.contains(event.target)) showHelp(false);
   });
   document.addEventListener("keydown", event => {
-    const open = !context.hidden ? context : !options.hidden ? options : null;
-    if (!open) return;
-    const items = /** @type {HTMLElement[]} */ (Array.from(open.querySelectorAll(".menu__item")));
+    if (event.key === "Escape" && !help.hidden) {
+      showHelp(false);
+      helpButton.focus();
+    }
+  });
+  document.addEventListener("keydown", event => {
+    if (context.hidden) return;
+    const items = /** @type {HTMLElement[]} */ (Array.from(context.querySelectorAll(".menu__item")));
     const index = items.indexOf(/** @type {HTMLElement} */ (document.activeElement));
-    if (event.key === "Escape") {
-      if (open === options) {
-        setOptions(false);
-        optionsButton.focus();
-      } else hideContext();
-    } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+    if (event.key === "Escape") hideContext();
+    else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       items[(index + (event.key === "ArrowDown" ? 1 : items.length - 1)) % items.length]?.focus();
     } else return;
     event.preventDefault();
@@ -114,16 +89,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }, true);
   window.addEventListener("resize", () => {
     hideContext();
-    setOptions(false);
+    showHelp(false);
   });
 
-  /** @param {(text: string, name: string) => void} handler */
-  function onImport(handler) {
-    importHandler = handler;
-  }
-
   app.menus = {
-    toggleOptions, showContext, hideContext, showHelp, onImport,
-    isModalOpen: () => help.open || !context.hidden || !options.hidden
+    showContext, hideContext, showHelp,
+    isModalOpen: () => !context.hidden
   };
 })(window.MDCalendar);

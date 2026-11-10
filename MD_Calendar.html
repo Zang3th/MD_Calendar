@@ -156,6 +156,16 @@
           stroke-linecap="round"
           stroke-linejoin="round"/>
     </symbol>
+    <symbol id="icon-help" viewBox="0 0 32 32" fill="none">
+    <g transform="translate(0 .5)">
+    <path d="M10 11C10.5 7.5 13 6 16 6C19.75 6 22 8 22 11C22 14 20.25 15.25 18.25 16.5C16.75 17.5 16 18.5 16 20
+             M16 25H16.01"
+          stroke="currentColor"
+          stroke-width="4"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </g>
+    </symbol>
     <symbol id="icon-import" viewBox="0 0 32 32" fill="none">
     <path d="M9 5H19L25 11V25Q25 27 23 27H9Q7 27 7 25V7Q7 5 9 5ZM16 13V22M12 18L16 22L20 18"
           stroke="currentColor"
@@ -166,13 +176,6 @@
     <symbol id="icon-inbox" viewBox="0 0 32 32" fill="none">
     <path d="M5 17L9 7H23L27 17V23Q27 26 24 26H8Q5 26 5 23Z
              M5 17H11L13 20.5H19L21 17H27"
-          stroke="currentColor"
-          stroke-width="3"
-          stroke-linecap="round"
-          stroke-linejoin="round"/>
-    </symbol>
-    <symbol id="icon-keyboard" viewBox="0 0 32 32" fill="none">
-    <path d="M6 9H26Q28 9 28 11V21Q28 23 26 23H6Q4 23 4 21V11Q4 9 6 9ZM9 13.5H9.5M13 13.5H13.5M17 13.5H17.5M21.5 13.5H23M10 18.5H22"
           stroke="currentColor"
           stroke-width="3"
           stroke-linecap="round"
@@ -194,10 +197,6 @@
           stroke-width="3"
           stroke-linecap="round"
           stroke-linejoin="round"/>
-    </symbol>
-    <symbol id="icon-more" viewBox="0 0 32 32">
-    <path fill="currentColor"
-          d="M8 13.5A2.5 2.5 0 1 1 8 18.5A2.5 2.5 0 1 1 8 13.5ZM16 13.5A2.5 2.5 0 1 1 16 18.5A2.5 2.5 0 1 1 16 13.5ZM24 13.5A2.5 2.5 0 1 1 24 18.5A2.5 2.5 0 1 1 24 13.5Z"/>
     </symbol>
     <symbol id="icon-muted" viewBox="0 0 32 32" fill="none">
     <g transform="translate(-.5 0)">
@@ -370,6 +369,26 @@
           stroke-linecap="round"
           stroke-linejoin="round"/>
     </symbol>
+    <symbol id="tag-finance" viewBox="0 0 32 32" fill="none">
+    <path d="M16 5C21 5 25 6.5 25 8.5C25 10.5 21 12 16 12C11 12 7 10.5 7 8.5C7 6.5 11 5 16 5ZM7 8.5V13.5C7 15.5 11 17 16 17C21 17 25 15.5 25 13.5V8.5M7 13.5V18.5C7 20.5 11 22 16 22C21 22 25 20.5 25 18.5V13.5M7 18.5V23.5C7 25.5 11 27 16 27C21 27 25 25.5 25 23.5V18.5"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="tag-games" viewBox="0 0 32 32" fill="none">
+    <path d="M8 5H24Q27 5 27 8V24Q27 27 24 27H8Q5 27 5 24V8Q5 5 8 5Z"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+
+    <path d="M11 11H11.01M21 11H21.01M16 16H16.01M11 21H11.01M21 21H21.01"
+          stroke="currentColor"
+          stroke-width="4"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
     <symbol id="tag-home" viewBox="0 0 32 32" fill="none">
     <path d="M5 15L16 6L27 15M8 13V25Q8 27 10 27H22Q24 27 24 25V13M13.5 27V21Q13.5 20 14.5 20H17.5Q18.5 20 18.5 21V27"
           stroke="currentColor"
@@ -431,11 +450,12 @@
     <header class="hdr glass">
       <div class="hdr__left">
         <img class="logo" src="res/logo/mark.svg" alt="MD_Calendar" width="32" height="32">
-        <button class="hdr__title" id="title" type="button" aria-label="Zu heute springen (T)" disabled><span class="hdr__titletext" id="titleText">MD_Calendar</span><span class="hdr__sizer" id="titleSizer" aria-hidden="true"></span></button>
-        <span class="kw" id="kw" hidden></span>
-        <div class="datenav" data-open-only>
-          <button class="iconbtn" id="prev" type="button" aria-label="Vorherige Woche (←)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-chevron-left"></use></svg></button>
-          <button class="iconbtn" id="next" type="button" aria-label="Nächste Woche (→)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-chevron-right"></use></svg></button>
+        <button class="hdr__title" id="title" type="button" aria-label="Heute (H)" disabled><span class="hdr__titletext" id="titleText">MD_Calendar</span><span class="hdr__sizer" id="titleSizer" aria-hidden="true"></span></button>
+        <div class="edit" data-open-only>
+          <button class="primary primary--icon" id="new" type="button" aria-label="Neuer Eintrag (N)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-plus"></use></svg></button>
+          <button class="iconbtn" id="undo" type="button" aria-label="Rückgängig" disabled><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-undo"></use></svg></button>
+          <button class="iconbtn" id="redo" type="button" aria-label="Wiederholen" disabled><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-redo"></use></svg></button>
+          <button class="save" id="save" type="button" aria-label="Alles gespeichert"><span class="save__icon"><i class="save__dot"></i><svg class="ui-icon save__ok" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-check"></use></svg></span><span class="save__text"></span><b class="save__count"></b></button>
         </div>
       </div>
       <div class="seg" role="group" aria-label="Ansicht" data-open-only>
@@ -445,18 +465,10 @@
         <button id="viewContacts" type="button" aria-pressed="false" aria-label="Kontakte (K)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-contacts"></use></svg><span>Kontakte</span></button>
       </div>
       <div class="hdr__right" data-open-only>
-        <div class="tools">
-          <button class="iconbtn" id="holidaysButton" type="button" aria-expanded="false" aria-controls="holidaysPanel" aria-label="Feiertage und Schulferien"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-flag"></use></svg></button>
-          <button class="iconbtn" id="searchButton" type="button" aria-expanded="false" aria-controls="searchPanel" aria-label="Suchen (F)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-search"></use></svg></button>
-          <button class="iconbtn" id="backlogToggle" type="button" aria-pressed="false" aria-controls="backlog" aria-label="Backlog (B)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-inbox"></use></svg></button>
-        </div>
-        <div class="edit">
-          <button class="iconbtn" id="undo" type="button" aria-label="Rückgängig" disabled><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-undo"></use></svg></button>
-          <button class="iconbtn" id="redo" type="button" aria-label="Wiederholen" disabled><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-redo"></use></svg></button>
-          <button class="save" id="save" type="button" aria-label="Alles gespeichert"><span class="save__icon"><i class="save__dot"></i><svg class="ui-icon save__ok" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-check"></use></svg></span><span class="save__text"></span><b class="save__count"></b></button>
-        </div>
-        <button class="primary primary--icon" id="new" type="button" aria-label="Neuer Eintrag (N)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-plus"></use></svg></button>
-        <button class="iconbtn" id="optionsButton" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="optionsMenu" aria-label="Optionen"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-more"></use></svg></button>
+        <button class="iconbtn" id="helpButton" type="button" aria-expanded="false" aria-controls="helpPanel" aria-label="Hilfe (?)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-help"></use></svg></button>
+        <button class="iconbtn" id="sound" type="button" aria-pressed="false" aria-label="Ton aus"><svg class="ui-icon sound-on" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-volume"></use></svg><svg class="ui-icon sound-off" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-muted"></use></svg></button>
+        <button class="iconbtn" id="holidaysButton" type="button" aria-expanded="false" aria-controls="holidaysPanel" aria-label="Feiertage und Schulferien"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-flag"></use></svg></button>
+        <button class="iconbtn" id="backlogToggle" type="button" aria-pressed="false" aria-controls="backlog" aria-label="Backlog (B)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-inbox"></use></svg></button>
       </div>
     </header>
     <main class="main glass">
@@ -467,7 +479,9 @@
         <div class="start__actions">
           <button class="primary" id="reopen" type="button" hidden></button>
           <button class="btn btn--ghost" id="pick" type="button">Ordner öffnen</button>
+          <label class="btn btn--ghost start__import"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-import"></use></svg><span>Kalender importieren (.ics)</span><input type="file" id="icsImport" accept=".ics,text/calendar" hidden></label>
         </div>
+        <p class="start__note" id="startImport" hidden></p>
       </section>
       <div class="wk" id="week" hidden></div>
       <div class="month" id="month" hidden></div>
@@ -487,22 +501,15 @@
     </header>
     <div class="hp__content" id="holidaysContent"></div>
   </section>
-  <section class="popover popover--search glass" id="searchPanel" aria-label="Suche" hidden>
+  <section class="search glass" id="searchPanel" aria-label="Suche" hidden>
     <label class="sp__field"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-search"></use></svg><input id="searchInput" placeholder="Kalender durchsuchen …" aria-label="Kalender durchsuchen" autocomplete="off" role="combobox" aria-expanded="true" aria-controls="searchResults"></label>
     <ul class="sp__results" id="searchResults" role="listbox" aria-label="Treffer"></ul>
   </section>
-  <div class="menu popover glass" id="optionsMenu" role="menu" aria-label="Optionen" hidden>
-    <button class="menu__item" id="sound" type="button" role="menuitem" data-muted="false"><svg class="ui-icon sound-on" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-volume"></use></svg><svg class="ui-icon sound-off" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-muted"></use></svg><span id="soundLabel">Ton aus</span></button>
-    <label class="menu__item" role="menuitem"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-import"></use></svg><span>Kalender importieren (.ics)</span><input type="file" id="icsImport" accept=".ics,text/calendar" hidden></label>
-    <button class="menu__item" id="helpButton" type="button" role="menuitem"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-keyboard"></use></svg><span>Tastenkürzel</span><kbd>?</kbd></button>
-  </div>
   <div class="menu popover glass" id="contextMenu" role="menu" aria-label="Eintrag" hidden></div>
-  <dialog class="dlg dlg--help" id="helpDialog" aria-labelledby="helpTitle">
-    <div class="dlg__form">
-      <header class="dlg__head"><span class="dlg__kind" id="helpTitle">Tastenkürzel</span><button class="dlg__x" type="button" data-close aria-label="Schließen (Esc)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-close"></use></svg></button></header>
-      <dl class="keys" id="helpKeys"></dl>
-    </div>
-  </dialog>
+  <section class="popover glass" id="helpPanel" aria-label="Tastenkürzel" hidden>
+    <header class="hp__head hp__head--center"><span class="hp__year">Tastenkürzel</span></header>
+    <div class="hp__content" id="helpContent"></div>
+  </section>
   <dialog class="dlg" id="dialog" aria-labelledby="dialogKind">
     <form class="dlg__form" method="dialog" novalidate>
       <header class="dlg__head">

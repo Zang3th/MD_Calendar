@@ -12,10 +12,10 @@ Single-key shortcuts are ignored while a text field has focus.
 | `M` | Month view |
 | `K` | Contacts view |
 | `B` | Show or hide the backlog panel |
-| `T` | Jump to today: the period slides in, the day scrolls into view and is highlighted once |
+| `H` | Jump to today: the period slides in, the day scrolls into view and is highlighted once |
 | `N` | New entry on the day under the pointer, otherwise on the preselected day (in the contacts view: new contact) |
-| `F` | Open the search |
-| `?` | Open the shortcut overview |
+| `F` | Open the search bar at the bottom edge |
+| `?` | Show or hide the help |
 | `←` / `→` | Previous or next week or month |
 | `Space` | Check off the selection (all open: done; all done: open) |
 | `Del` | Delete the selection |
@@ -28,7 +28,7 @@ Single-key shortcuts are ignored while a text field has focus.
 | `Esc` | Close the picker, dialog, menu or panel; otherwise clear the selection |
 | `Enter` | Confirm the dialog; in an inline field, finish editing |
 
-The arrows, `Space`, `Del` and `Ctrl+A` do nothing in the contacts view. The shortcut overview (see [Shell](Shell.md#shortcut-overview)) lists all of them.
+The arrows, `Space`, `Del` and `Ctrl+A` do nothing in the contacts view. The help (see [Shell](Shell.md#help)) lists the main ones.
 
 ## Pointer
 
@@ -41,7 +41,7 @@ The arrows, `Space`, `Del` and `Ctrl+A` do nothing in the contacts view. The sho
 | `Ctrl`+click on an entry | Adds it to the selection or removes it |
 | Mouse wheel over the week or month | One week or month per wheel gesture; a day list that can still scroll in that direction scrolls first |
 
-A click on free space clears the selection. Context menus close with Escape or a click outside; arrow keys move between their items.
+A click on free space clears the selection. Context menus show only icon and label, no shortcut hints; they close with Escape or a click outside, and arrow keys move between their items.
 
 ## Creating entries
 
@@ -85,4 +85,4 @@ Rules in [Domain](../Domain.md#selection-copy-and-paste).
 ## Deleting
 
 - Entries and contacts are deleted without a confirmation dialog.
-- A notification confirms the deletion and points to `Ctrl+Z`.
+- A notification confirms the deletion („„Titel“ gelöscht“); `Ctrl+Z` restores it.

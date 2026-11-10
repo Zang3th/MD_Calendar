@@ -24,7 +24,7 @@ test("contacts are edited inline with undo, focus moves on, and saving writes Co
   await page.keyboard.press("Enter");
   await page.locator('[data-key="birthday"]').fill("31.02.");
   await page.keyboard.press("Enter");
-  await expect(page.locator(".notification", { hasText: "kein gültiger Geburtstag" })).toBeVisible();
+  await expect(page.locator(".notification", { hasText: "Ungültiger Geburtstag" })).toBeVisible();
   await expect(page.locator('[data-key="birthday"]')).toHaveValue("12.11.1990");
 
   await page.keyboard.press("Control+z");

@@ -13,6 +13,7 @@ While no folder is open, the main panel shows a centered card with the logo, „
 
 - Without a remembered folder: „Ordner öffnen“.
 - With a remembered folder: „„<Ordnername>“ öffnen“ (one click, asks for permission if needed) and „Anderen Ordner wählen“.
+- „Kalender importieren (.ics)“ chooses an `.ics` file; the card then says that it is imported after opening the folder, and it is imported into the folder opened next (see [Domain](../Domain.md#ics-import)). The import is only offered here, never while a calendar is open.
 - If the browser still grants access to the remembered folder, it opens at startup without the card.
 
 ## Header
@@ -21,43 +22,34 @@ Three zones in one row. The center zone is always exactly centered.
 
 | Zone | Content, left to right |
 |---|---|
-| Left | Logo · current month and year (for example „November 2026") · KW badge (number only; only in the week view) · previous and next arrows |
+| Left | Logo · current month and year (for example „November 2026") · **+** · undo · redo · save control |
 | Center | View switcher **Woche · Monat · Kontakte** with a sliding indicator; the three options have the same width |
-| Right | Holiday overview · search · backlog toggle · undo · redo · save control · **+** · options |
+| Right | Help · sound toggle · holiday overview · backlog toggle |
+
+- **+**, undo, redo and the save control follow the title as one group, in the order of MD_Manager. There are no arrows and no KW badge; weeks and months change with `←`/`→`, the mouse wheel and a click on the title (today).
 
 - There is no "today" button. Clicking the month title jumps to today.
-- The title keeps the width of its longest text (the longest month name, „Kontakte“), so that the arrows next to it do not move when the month changes.
-- The right zone uses plain icon buttons without separators or nested frames; groups are formed by spacing. A surface appears on hover.
+- The title keeps the width of its longest text (the longest month name, „Kontakte“), so that the buttons next to it do not move when the month changes.
+- The right zone uses plain icon buttons without separators or nested frames. A surface appears on hover.
+- Help (question mark from MD_Manager) toggles the [help panel](#help).
 - The backlog toggle shows no count. It is highlighted while the backlog panel is open.
-- In the contacts view the title reads „Kontakte"; KW badge and arrows are hidden.
+- In the contacts view the title reads „Kontakte".
 - The holiday overview button (flag icon) opens the panel described in [Views](Views.md#holiday-overview).
 - **+** is an icon-only primary button. It creates an entry, in the contacts view a contact.
 - Portrait: everything stays in one row; the view switcher shows icons only.
 
-### Options menu
-
-The icon button with three dots right of **+** opens a small menu below it:
-
-| Item | Action |
-|---|---|
-| „Ton aus“ / „Ton an“ | The [sound toggle](#sound-toggle); the menu stays open so that the change is visible. |
-| „Kalender importieren (.ics)“ | Opens an `.ics` file and imports it (see [Domain](../Domain.md#ics-import)); the result is reported in a notification. |
-| „Tastenkürzel“ | Opens the shortcut overview (also `?`). |
-
-Escape or a click outside closes the menu; arrow keys move between the items.
-
 ### Search
 
-The search button and `F` open a floating panel below the button with a search field and up to 30 hits while typing (rules in [Domain](../Domain.md#search)). Each hit shows its tag icon or kind icon, the title and its date („Serie · ab …“, a range for multi-day entries, „Backlog“). Arrow keys choose a hit, Enter or a click jumps to it: the view shows its week or month and the hit pulses once; a backlog hit opens the backlog panel. Escape or a click outside closes the panel.
+There is no search button. `F` opens a search bar centered at the bottom edge of the window, above the notifications; at first it shows only the field. While typing, up to 30 hits appear above the field (rules in [Domain](../Domain.md#search)); without hits it says „Keine Treffer“. Each hit shows its tag icon or kind icon, the title and its date („Serie · ab …“, a range for multi-day entries, „Backlog“). Arrow keys choose a hit, Enter or a click jumps to it: the view shows its week or month and the hit pulses once; a backlog hit opens the backlog panel. Escape or a click outside closes the bar.
 
-### Shortcut overview
+### Help
 
-A dialog lists all shortcuts and pointer gestures of [Interaction](Interaction.md) in four groups: Ansicht, Einträge, Auswahl, Bearbeiten. It opens with `?` or from the options menu and closes with Escape, the close button or a click on the backdrop.
+The help button and `?` toggle a small floating glass panel below the button, built like the [holiday overview](Views.md#holiday-overview), with the title „Tastenkürzel“. The rows follow the quick reference of MD_Manager: a short action on the left, the keys on the right as key caps (`Strg` + `C`). The panel lists only the main shortcuts, in three columns side by side so that it never scrolls: Navigation (W, M, K, H, B, F) | Einträge (N, Leertaste, Strg+C, Strg+V, Entf) | Bearbeiten (Strg+S, Strg+Z, Strg+Y). Selection, mouse gestures and paging are left out. Below 760px window width the columns stack. Like the rows of the holiday overview, its rows are not interactive and have no hover highlight. Escape or a click outside closes it.
 
 ### Sound toggle
 
-- An item of the [options menu](#options-menu) with a speaker icon: with sound waves while the completion sound is on, with an X while it is muted. Icons and behavior follow MD_Manager (see [Icons](DesignSystem.md#icons)).
-- The label names the action and switches with the state: „Ton aus" while the sound is on, „Ton an" while it is muted.
+- An icon button in the header with a speaker: with sound waves while the completion sound is on, with an X while it is muted. Icons and behavior follow MD_Manager (see [Icons](DesignSystem.md#icons)).
+- Muted is the pressed state (`aria-pressed="true"`). The accessible name names the action and switches with the state: „Ton aus" while the sound is on, „Ton an" while it is muted.
 - Muting also stops a sound that is still playing.
 - As in MD_Manager the state is not stored: every start begins with the sound on. Toggling is not an undoable action and is not an unsaved change.
 
@@ -100,10 +92,11 @@ Clicking the control saves.
 
 ## Notifications
 
-- Appear above the main panel, centered at the bottom edge.
-- Used for results and hints, for example import results, reloads after external changes, deletions („Strg Z macht es rückgängig"), copying, the attempt to drag an occurrence of a series, and errors.
+- Appear above the main panel, centered at the bottom edge. Each notification is only as wide as its text, up to 440px; longer text wraps. Title, body and buttons are centered.
+- Used for results and hints, for example import results, reloads after external changes, deletions, copying, the attempt to drag an occurrence of a series, and errors.
+- Notifications are short: the title carries the one important fact („„Lena anrufen“ gelöscht“, „3 Einträge kopiert“, „Calendar.md neu geladen“, „Ungültige Uhrzeit (HH:MM)“). A body line appears only for an extra fact the title cannot hold, such as skipped events of an import or the unknown tag icons. Notifications name no shortcuts and give no instructions; errors keep their code and copyable details.
 - When a file changed or was deleted outside the app while local changes exist, a warning stays until the user chooses „Neu laden“ (discard local changes) or „Überschreiben“ (save local changes over the file). Meanwhile the save control stays in its unsaved state and saving shows the choice again.
 
 ## Settings
 
-There are no user settings. Scheme, background lights, borders and past dimming are fixed (see [Design System](DesignSystem.md)). The only user control besides the views is the [sound toggle](#sound-toggle) in the options menu.
+There are no user settings. Scheme, background lights, borders and past dimming are fixed (see [Design System](DesignSystem.md)). The only user control besides the views is the [sound toggle](#sound-toggle) in the header.

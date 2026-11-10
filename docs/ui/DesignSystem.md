@@ -19,8 +19,7 @@ The visual language of MD_Calendar. The values below are authoritative; the appr
 | `--base` | `#0e1520` | Page background |
 | `--g1` | `rgba(94,129,190,.58)` | Background light 1 |
 | `--g2` | `rgba(110,200,225,.34)` | Background light 2 |
-| `--g3` | `rgba(180,142,200,.20)` | Background light 3 |
-| `--accent` | `#8fd8ee` | Primary accent: today, selection, focus, KW badge |
+| `--accent` | `#8fd8ee` | Primary accent: today, selection, focus, current week number |
 | `--accent-2` | `#c9a2e0` | Secondary accent: holidays, gradients |
 | `--warm` | `#f3cf7e` | Birthdays, anniversaries, favorites |
 | `--panel` | `#182235` | Opaque tint for floating panels and dialogs |
@@ -82,7 +81,7 @@ Tag colors come from the configuration. The UI derives tints from the tag hue wi
 
 ## Background lights
 
-Three soft radial lights in the scheme colors `--g1` to `--g3`.
+Two soft radial lights in the scheme colors `--g1` and `--g2`, one in the top left and one in the bottom right corner. There is no light in the middle, so that nothing competes with the highlighted day.
 
 | Property | Value |
 |---|---|
@@ -93,7 +92,7 @@ Three soft radial lights in the scheme colors `--g1` to `--g3`.
 
 ## Borders
 
-All surfaces keep their 1px borders.
+The header pill and the main panel have no border; they stand out by their glass fill and shadow. All other surfaces keep their 1px borders.
 
 ## Past periods
 
@@ -125,7 +124,7 @@ Scale: 2, 4, 6, 8, 10, 12, 14, 16, 22 px. Every padding, margin and gap uses a v
 | Area | Spacing |
 |---|---|
 | Page | 14px around the header pill, main panel and backlog panel; 14px between them |
-| Header pill | padding 8px 10px 8px 12px; 14px between the three groups; 10px inside a group; 6px between icon and label in the view switcher; save control padding 0 10px, 6px between dot, label and counter |
+| Header pill | padding 8px 10px 8px 12px; 14px between the three groups; 10px between title and **+**, 4px after **+**, no gap between undo, redo and save; 4px between the right zone buttons; 6px between icon and label in the view switcher; save control padding 0 10px, 6px between dot, label and counter |
 | Main panel | padding 16px |
 | Week | 10px between day cards; day header padding 0 14px 0 16px, 4px between weekday and date, 4px between badges; day list padding 4px 10px 10px |
 | Entries in a day | 6px between entries; entry padding 8px 10px; 8px between check box and text |
@@ -133,7 +132,7 @@ Scale: 2, 4, 6, 8, 10, 12, 14, 16, 22 px. Every padding, margin and gap uses a v
 | Backlog panel | padding 16px 14px; 16px between groups; 6px between entries; counter 2px 8px |
 | Holiday overview | padding 12px; rows 6px |
 | Entry dialog | padding 22px; 16px between sections; 10px between fields; field padding 12px 14px; buttons 8px 16px, in the footer 8px 10px; date and time picker padding 8px |
-| Menus and search panel | padding 6px (search 10px); items 8px 10px; 10px between icon and label |
+| Menus and search bar | padding 6px (search 8px, 28px above the window edge like the notifications); items 8px 10px; 10px between icon and label |
 | Start card | padding 22px |
 | Contacts | 14px between list and detail; list padding 12px; detail padding 22px |
 | Chips and badges | chips 6px 12px; badges 2px 8px (month 2px 6px, portrait week 4px 8px); „+X“ 0 6px; 6px between chips |
@@ -181,7 +180,7 @@ Line icons as inline SVG with a 2px stroke and round caps and joins. No emoji an
 - Optical centering and pixel alignment are done with a `translate` group inside the symbol (for example `translate(.5 .5)` or `translate(-.625 0)`), never with CSS offsets.
 - Every symbol also exists as a standalone file `res/icons/<name>.svg` with identical geometry. A unit test checks that file and symbol match.
 - A toggle shows both of its icons in the markup; CSS shows one of them based on the button's `aria-pressed` state. The markup is never swapped.
-- `volume.svg` (speaker with two sound waves) and `muted.svg` (speaker with an X) are copied from MD_Manager unchanged.
+- `volume.svg` (speaker with two sound waves), `muted.svg` (speaker with an X) and `help.svg` (question mark) are copied from MD_Manager unchanged.
 - Tooltips are not used for now; every icon button names its action through `aria-label`. The tooltip system stays in place for tooltips that are added back one by one.
 
 ## Tag icons
@@ -200,6 +199,8 @@ The set, chosen by the user from three designs per tag:
 | `home` | Privat | House |
 | `briefcase` | Arbeit | Office building |
 | `dumbbell` | Gym | Dumbbell |
+| `finance` | Finanzen | Stack of coins |
+| `games` | Spielen | Die |
 | `sauna` | Sauna | Steam above a bench |
 | `sport` | Sport | Running shoe |
 | `cooking` | Kochen | Pot with steam |

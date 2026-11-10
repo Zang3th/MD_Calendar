@@ -1,8 +1,9 @@
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
-// Search panel below the search button: fuzzy results while typing, Enter or click jumps to the hit (docs/ui/Shell.md#search).
+// Search bar centered at the bottom edge, opened with F: fuzzy results above it while typing, Enter or click jumps (docs/ui/Shell.md#search).
 (function (app) {
-  const button = /** @type {HTMLButtonElement} */ (document.getElementById("searchButton"));
+  /** @type {Element | null} */
+  let returnFocus = null;
   const panel = /** @type {HTMLElement} */ (document.getElementById("searchPanel"));
   const input = /** @type {HTMLInputElement} */ (document.getElementById("searchInput"));
   const list = /** @type {HTMLElement} */ (document.getElementById("searchResults"));
@@ -30,18 +31,20 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       ? results.map((item, index) => `<li class="sp__hit" role="option" id="searchHit${index}" data-hit="${index}" aria-selected="${index === active}">` +
         `${item.tag && app.tiles.tagIcon(item.tag) ? `<span class="sp__tagwrap"${app.tiles.tint(item.tag).style}>${app.tiles.tagIcon(item.tag, "sp__tag")}</span>` : app.tiles.icon(kinds[item.kind][0])}<span class="sp__title">${app.tiles.escape(item.title)}</span>` +
         `<span class="sp__when">${kinds[item.kind][1] && item.kind !== "backlog" ? `${kinds[item.kind][1]} · ` : ""}${when(item)}</span></li>`).join("")
-      : input.value.trim() ? `<li class="sp__empty">Keine Treffer</li>` : `<li class="sp__empty">Titel, Ort, Notiz oder Tag – Tippfehler sind erlaubt.</li>`;
+      : input.value.trim() ? `<li class="sp__empty">Keine Treffer</li>` : "";
+    list.hidden = !list.childElementCount;
     input.setAttribute("aria-activedescendant", results.length ? `searchHit${active}` : "");
   }
 
   /** @param {boolean} open */
   function setOpen(open) {
+    if (open) returnFocus = document.activeElement;
     panel.hidden = !open;
-    button.setAttribute("aria-expanded", String(open));
-    if (!open) return;
-    const bounds = button.getBoundingClientRect();
-    panel.style.top = `${Math.round(bounds.bottom + 10)}px`;
-    panel.style.right = `${Math.round(Math.max(14, window.innerWidth - bounds.right - 120))}px`;
+    if (!open) {
+      if (returnFocus instanceof HTMLElement && returnFocus.isConnected) returnFocus.focus();
+      returnFocus = null;
+      return;
+    }
     input.select();
     input.focus();
     fill();
@@ -67,10 +70,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       input.setAttribute("aria-activedescendant", `searchHit${active}`);
       list.querySelector(`[data-hit="${active}"]`)?.scrollIntoView({ block: "nearest" });
     } else if (event.key === "Enter") pick(active);
-    else if (event.key === "Escape") {
-      setOpen(false);
-      button.focus();
-    } else return;
+    else if (event.key === "Escape") setOpen(false);
+    else return;
     event.preventDefault();
   });
   list.addEventListener("click", event => {
@@ -78,10 +79,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     if (hit) pick(Number(hit.dataset.hit));
   });
   document.addEventListener("pointerdown", event => {
-    if (panel.hidden || !(event.target instanceof Node) || panel.contains(event.target) || button.contains(event.target)) return;
+    if (panel.hidden || !(event.target instanceof Node) || panel.contains(event.target)) return;
     setOpen(false);
   });
-  window.addEventListener("resize", () => setOpen(false));
 
   /** @param {(query: string) => MDCSearchItem[]} search @param {(item: MDCSearchItem) => void} jump */
   function init(search, jump) {

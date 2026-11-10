@@ -47,8 +47,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       (time ? `<span class="ev__time">${time}</span>` : "") +
       tagIcon(item.tag, "ev__tag") +
       `<span class="ev__title">${escape(item.title)}</span>` +
+      `</span></button>` +
+      // Outside the text lines, so that it stays centered on the whole tile (docs/ui/Views.md#entry-tile).
       (series ? `<span class="ev__repeat">${icon("repeat")}</span>` : "") +
-      `</span></button></div>`;
+      `</div>`;
   }
 
   /**

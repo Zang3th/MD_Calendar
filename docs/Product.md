@@ -29,7 +29,7 @@ Around the day lists sit:
 
 ## Scope
 
-In scope for version 1.0:
+In scope for the desktop releases up to the cutover (0.6.0):
 
 - Week and month views for landscape and portrait, ordered day lists with drag and drop
 - Entries with optional time, location, note and one tag; multi-day entries

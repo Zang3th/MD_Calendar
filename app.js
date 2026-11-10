@@ -74,7 +74,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   async function initialize() {
     const missingComponents = requiredComponents.filter(([, available]) => !available()).map(([file]) => file);
     if (missingComponents.length) {
-      blockStartup("Anwendungsdateien fehlen", "Stelle den vollständigen Anwendungsordner wieder her und lade die Seite neu.", `Fehlende Komponenten: ${missingComponents.join(", ")}.`, "MDC-001");
+      blockStartup("Anwendungsdateien fehlen", "Anwendungsordner wiederherstellen, dann neu laden.", `Fehlende Komponenten: ${missingComponents.join(", ")}.`, "MDC-001");
       return;
     }
     dayjs.extend(dayjs_plugin_isoWeek);
@@ -82,7 +82,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
     const missingApis = app.storage.missingApis();
     if (missingApis.length) {
-      blockStartup("Browser nicht unterstützt", "MD_Calendar braucht Chrome oder Edge.", `Der Browser bietet die benötigten Funktionen nicht: ${missingApis.join(", ")}.`, "MDC-002");
+      blockStartup("Browser nicht unterstützt", "Chrome oder Edge nötig.", `Der Browser bietet die benötigten Funktionen nicht: ${missingApis.join(", ")}.`, "MDC-002");
       return;
     }
 
@@ -91,7 +91,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     if (!(await fontLoaded())) missingResources.push("vendor/fonts/PlusJakartaSans-latin.woff2");
     if (!(await imageLoaded(document.querySelector(".logo")))) missingResources.push("res/logo/mark.svg");
     if (missingResources.length) {
-      blockStartup("Anwendungsressourcen fehlen", "Stelle den vollständigen Anwendungsordner wieder her und lade die Seite neu.", `Nicht geladen: ${missingResources.join(", ")}.`, "MDC-003");
+      blockStartup("Anwendungsressourcen fehlen", "Anwendungsordner wiederherstellen, dann neu laden.", `Nicht geladen: ${missingResources.join(", ")}.`, "MDC-003");
       return;
     }
     await startApplication();
@@ -147,7 +147,25 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       return writableFiles.some(name => files[name].external);
     }
 
+    /** Data version for the search index; changes with every action and every reload. */
+    let dataVersion = 0;
+    /** The data version last compared with the files on disk. */
+    let comparedVersion = -1;
+
+    /**
+     * When the data equals the files on disk again (for example after moving an entry up and back down),
+     * the current state counts as saved and no unsaved change is shown, as in MD_Manager.
+     */
+    function syncSavedState() {
+      if (!calendar || !backlog || !contacts || comparedVersion === dataVersion || hasConflict()) return;
+      comparedVersion = dataVersion;
+      if (app.history.unsaved(history) === 0) return;
+      const unchanged = writableFiles.every(name => serialized(name) === (files[name].disk ? files[name].disk.text : files[name].baseline));
+      if (unchanged) app.history.markSaved(history);
+    }
+
     function updateHeader() {
+      syncSavedState();
       app.header.update({
         open: Boolean(calendar),
         view,
@@ -219,11 +237,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       if (!warnings.length) return;
       const lines = warnings.map(warning => warning.lineNumber);
       const shown = lines.slice(0, 8).join(", ") + (lines.length > 8 ? " …" : "");
-      const kept = files[name].writable ? "nicht verstanden und unverändert erhalten" : "nicht verstanden und übersprungen";
-      app.notifications.show("warning", "Nicht verstandene Zeilen", [
-        { value: name },
-        `: ${warnings.length === 1 ? "Zeile" : `${warnings.length} Zeilen`} ${shown} ${warnings.length === 1 ? "wird" : "werden"} ${kept}.`
-      ]);
+      app.notifications.show("warning", `${name}: ${warnings.length === 1 ? "Zeile" : "Zeilen"} ${shown} unverständlich`, "");
     }
 
     /** Parses one file into the model; writable files start a new history. @param {MDCFileName} name @param {MDCFileText} file */
@@ -261,7 +275,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         warnings = parsed.warnings;
         const unknown = app.tiles.setTags(config.tags);
         if (unknown.length) {
-          app.notifications.show("error", "Unbekannte Tag-Icons", [{ value: name }, `: ${unknown.map(tag => tag.icon ? `„${tag.name}“ nutzt das unbekannte Icon „${tag.icon}“` : `„${tag.name}“ hat kein Icon`).join(", ")}. Diese Tags erscheinen ohne Icon.`], {
+          app.notifications.show("error", "Unbekannte Tag-Icons", unknown.map(tag => `${tag.name}: ${tag.icon || "kein Icon"}`).join(", "), {
             code: "MDC-301",
             details: `Bekannte Icon-IDs: ${app.tiles.tagIconIds().join(", ")}.`
           });
@@ -286,14 +300,19 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       clearConflict();
       names.forEach((name, index) => useFile(name, texts[index]));
       render();
-      app.notifications.show("info", "Ordner geöffnet", [{ value: opened.name }, files["Calendar.md"].disk ? " ist bereit." : ` enthält noch keine ${calendarFile}; sie entsteht mit dem ersten Eintrag.`]);
+      if (pendingImport) {
+        const { text, name } = pendingImport;
+        pendingImport = null;
+        importCalendar(text, name);
+      }
+      app.notifications.show("info", `Ordner „${opened.name}“ geöffnet`, "");
     }
 
     /** @param {unknown} error @param {string} code */
     function reportOpenError(error, code) {
       if (error instanceof DOMException && error.name === "AbortError") return;
       const details = error instanceof Error ? error.message : String(error);
-      app.notifications.show("error", "Ordner nicht geöffnet", "Der Ordner konnte nicht geöffnet werden.", { details, code });
+      app.notifications.show("error", "Ordner nicht geöffnet", "", { details, code });
     }
 
     /** Updates what an action changed. @param {MDCUndoAction} action */
@@ -354,12 +373,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       if (conflictNotice?.isOpen()) return;
       const changed = writableFiles.filter(name => files[name].external);
       const deleted = changed.filter(name => files[name].external?.text === null);
-      conflictNotice = app.notifications.show("warning", deleted.length ? "Datei gelöscht" : "Datei außerhalb geändert", [
-        { value: changed.join(", ") },
-        deleted.length
-          ? `${deleted.length === changed.length ? "" : " wurde geändert oder"} wurde gelöscht. Deine Änderungen sind noch offen.`
-          : " wurde außerhalb von MD_Calendar geändert. Deine Änderungen sind noch nicht gespeichert."
-      ], {
+      conflictNotice = app.notifications.show("warning", `${changed.join(", ")} ${deleted.length === changed.length ? "gelöscht" : deleted.length ? "geändert oder gelöscht" : "außerhalb geändert"}`, "", {
         persistent: true,
         actions: [
           { label: "Neu laden", run: () => { void reloadWritable(); }, primary: false },
@@ -378,7 +392,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       clearConflict();
       writableFiles.forEach((name, index) => useFile(name, texts[index]));
       render();
-      app.notifications.show("info", "Neu geladen", "Kalender, Backlog und Kontakte wurden neu geladen.");
+      app.notifications.show("info", "Neu geladen", "");
     }
 
     /** @param {MDCFileName} name */
@@ -448,7 +462,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       }
       if (saving) await saving;
       saving = writeAll(force).catch(error => {
-        app.notifications.show("error", "Speichern fehlgeschlagen", "Die Änderungen konnten nicht gespeichert werden.", {
+        app.notifications.show("error", "Speichern fehlgeschlagen", "", {
           details: error instanceof Error ? error.message : String(error),
           code: "MDC-201"
         });
@@ -478,11 +492,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
           if (!state.writable) {
             useFile(name, file);
             render();
-            app.notifications.show("info", "Neu geladen", [{ value: name }, " wurde außerhalb geändert und neu geladen."]);
+            app.notifications.show("info", `${name} neu geladen`, "");
           } else if (file && app.history.unsaved(history) === 0 && !hasConflict()) {
             useFile(name, file);
             render();
-            app.notifications.show("info", "Neu geladen", [{ value: name }, " wurde außerhalb geändert und neu geladen."]);
+            app.notifications.show("info", `${name} neu geladen`, "");
           } else {
             state.external = { text: file?.text ?? null, stamp: file?.stamp ?? null };
             clearConflict();
@@ -491,7 +505,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         }
       } catch (error) {
         if (current === session) {
-          app.notifications.show("error", "Dateiprüfung fehlgeschlagen", "Externe Änderungen konnten nicht geprüft werden.", {
+          app.notifications.show("error", "Dateiprüfung fehlgeschlagen", "", {
             details: error instanceof Error ? error.message : String(error),
             code: "MDC-202"
           });
@@ -515,14 +529,12 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       return view === "week" ? app.calendar.weekStart(anchor) : `${anchor.slice(0, 7)}-01`;
     }
 
-    /** Data version for the search index; changes with every action and every reload. */
-    let dataVersion = 0;
     /** Copied entries; pasting inserts open copies (docs/ui/Interaction.md#copy-and-paste). @type {MDCEntry[]} */
     let clipboard = [];
 
     /** @param {string} title */
     function confirmDeleted(title) {
-      app.notifications.show("info", "Gelöscht", [{ value: title }, " wurde gelöscht. Strg Z macht es rückgängig."]);
+      app.notifications.show("info", `„${title}“ gelöscht`, "");
     }
 
     function inboxIndex() {
@@ -642,7 +654,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         endSeries: () => {
           if (!calendar) return;
           execute(app.calendar.endSeries(calendar, index, key));
-          app.notifications.show("info", "Serie beendet", [{ value: series.title }, ` endet mit dem ${app.calendar.formatDate(key)}. Strg Z macht es rückgängig.`]);
+          app.notifications.show("info", `„${series.title}“ endet am ${app.calendar.formatDate(key)}`, "");
         }
       });
     }
@@ -768,16 +780,14 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
           : [];
       });
       if (!clipboard.length) return;
-      app.notifications.show("info", "Kopiert", clipboard.length === 1
-        ? [{ value: clipboard[0].title }, " ist kopiert. Rechtsklick auf einen Tag oder Strg V fügt ein."]
-        : `${clipboard.length} Einträge sind kopiert. Rechtsklick auf einen Tag oder Strg V fügt ein.`);
+      app.notifications.show("info", clipboard.length === 1 ? `„${clipboard[0].title}“ kopiert` : `${clipboard.length} Einträge kopiert`, "");
     }
 
     /** Inserts open copies of the clipboard at the end of a day. @param {string} key */
     function paste(key) {
       if (!calendar || !backlog || view === "contacts") return;
       if (!clipboard.length) {
-        app.notifications.show("info", "Nichts kopiert", "Kopiere zuerst Einträge mit Rechtsklick oder Strg C.");
+        app.notifications.show("info", "Nichts zum Einfügen", "");
         return;
       }
       execute(app.backlog.pasteEntries(calendar, backlog, clipboard, key || visibleDay()));
@@ -810,26 +820,32 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
     app.searchPanel.init(query => calendar && backlog ? app.search.search(calendar, backlog, dataVersion, query, today, 30) : [], jumpTo);
 
-    app.menus.onImport((text, name) => {
+    /** An ICS file chosen on the start card; it is imported once the folder is open. @type {{text: string, name: string} | null} */
+    let pendingImport = null;
+
+    app.start.onImport((text, name) => { pendingImport = { text, name }; });
+
+    /** @param {string} text @param {string} name */
+    function importCalendar(text, name) {
       if (!calendar) return;
       const { events, skipped } = app.ics.parse(text);
       if (!events.length) {
-        app.notifications.show("warning", "Keine Termine gefunden", [{ value: name }, " enthält keine lesbaren Termine."]);
+        app.notifications.show("warning", `Keine Termine in „${name}“`, "");
         return;
       }
       const result = app.calendar.importEvents(calendar, events, today);
       if (!result.action) {
-        app.notifications.show("info", "Nichts Neues", [{ value: name }, `: alle ${result.duplicates} Termine sind schon im Kalender.`]);
+        app.notifications.show("info", "Alle Termine schon vorhanden", "");
         return;
       }
       if (view === "contacts") view = portrait.matches ? "month" : "week";
       execute(result.action);
       if (events.length === 1) showDay(events[0].start);
-      const parts = [`${result.entries} Einträge`, result.series ? `${result.series} Serien` : "", result.multiDay ? `${result.multiDay} mehrtägige` : "",
-        result.duplicates ? `${result.duplicates} schon vorhanden` : "", skipped ? `${skipped} übersprungen` : "",
-        result.simplified ? `${result.simplified} mit nicht unterstützter Wiederholung als Einzeltermin` : ""].filter(Boolean);
-      app.notifications.show("info", "Kalender importiert", [{ value: name }, `: ${parts.join(", ")}. Strg Z macht es rückgängig.`]);
-    });
+      const imported = result.entries + result.series + result.multiDay;
+      const notes = [result.duplicates + skipped ? `${result.duplicates + skipped} übersprungen` : "",
+        result.simplified ? `${result.simplified} Serien als Einzeltermin` : ""].filter(Boolean);
+      app.notifications.show("info", `${imported} ${imported === 1 ? "Termin" : "Termine"} importiert`, notes.join(", "));
+    }
 
     app.contactsView.init({
       select(index) {
@@ -853,12 +869,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         const found = app.vcard.parse(text);
         const result = app.contacts.importContacts(contacts, found);
         if (!found.length) {
-          app.notifications.show("warning", "Keine Kontakte gefunden", [{ value: name }, " enthält keine lesbare vCard."]);
+          app.notifications.show("warning", `Keine Kontakte in „${name}“`, "");
           return;
         }
         execute(result.action);
-        const unchanged = found.length - result.added - result.merged;
-        app.notifications.show("info", "vCard importiert", `${result.added} neu, ${result.merged} zusammengeführt${unchanged ? `, ${unchanged} unverändert` : ""}. Strg Z macht es rückgängig.`);
+        app.notifications.show("info", `${result.added} neu, ${result.merged} zusammengeführt`, "");
       },
       exportOne(index) {
         const contact = contacts?.contacts[index];
@@ -866,15 +881,15 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       },
       exportAll() {
         if (contacts?.contacts.length) download("Contacts.vcf", app.vcard.serialize(contacts.contacts));
-        else app.notifications.show("info", "Nichts zu exportieren", "Es gibt noch keine Kontakte.");
+        else app.notifications.show("info", "Keine Kontakte", "");
       },
       copy(text) {
         void navigator.clipboard.writeText(text).then(
-          () => app.notifications.show("info", "Kopiert", "Die Adresse ist in der Zwischenablage."),
-          () => app.notifications.show("warning", "Nicht kopiert", "Die Zwischenablage ist nicht verfügbar."));
+          () => app.notifications.show("info", "Adresse kopiert", ""),
+          () => app.notifications.show("warning", "Kopieren nicht möglich", ""));
       },
       reject(message) {
-        app.notifications.show("warning", "Ungültige Eingabe", message);
+        app.notifications.show("warning", message, "");
         renderContacts();
       }
     });
@@ -888,7 +903,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         try {
           const opened = await app.storage.reopenFolder();
           if (opened) await openFolder(opened);
-          else app.notifications.show("warning", "Kein Zugriff", "Ohne Erlaubnis kann der Ordner nicht geöffnet werden.");
+          else app.notifications.show("warning", "Kein Zugriff auf den Ordner", "");
         } catch (error) {
           reportOpenError(error, "MDC-102");
         }
@@ -926,19 +941,19 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       },
       showHelp() { app.menus.showHelp(); },
       isContactsView: () => view === "contacts",
-      notice(title, body) { app.notifications.show("info", title, body); },
+      notice(title) { app.notifications.show("info", title, ""); },
       contextMenu(picks, x, y, key) {
         if (!calendar || !backlog) return;
         /** @type {MDCMenuItem[]} */
         const items = [];
         if (picks.length) {
           const open = picks.some(pick => !pickDone(pick));
-          items.push({ label: open ? "Erledigt" : "Nicht erledigt", icon: "check", key: "Leertaste", run: () => toggleMany(picks) });
-          items.push({ label: picks.length > 1 ? `${picks.length} Einträge kopieren` : "Kopieren", icon: "copy", key: "Strg C", run: () => copy(picks) });
-          items.push({ label: picks.length > 1 ? `${picks.length} Einträge löschen` : "Löschen", icon: "trash", key: "Entf", danger: true, run: () => removeMany(picks) });
+          items.push({ label: open ? "Erledigt" : "Nicht erledigt", icon: "check", run: () => toggleMany(picks) });
+          items.push({ label: picks.length > 1 ? `${picks.length} Einträge kopieren` : "Kopieren", icon: "copy", run: () => copy(picks) });
+          items.push({ label: picks.length > 1 ? `${picks.length} Einträge löschen` : "Löschen", icon: "trash", danger: true, run: () => removeMany(picks) });
         } else {
-          items.push({ label: "Neuer Eintrag", icon: "plus", key: "N", run: () => newEntry(key) });
-          if (clipboard.length) items.push({ label: clipboard.length > 1 ? `${clipboard.length} Einträge einfügen` : "Einfügen", icon: "clipboard", key: "Strg V", run: () => paste(key) });
+          items.push({ label: "Neuer Eintrag", icon: "plus", run: () => newEntry(key) });
+          if (clipboard.length) items.push({ label: clipboard.length > 1 ? `${clipboard.length} Einträge einfügen` : "Einfügen", icon: "clipboard", run: () => paste(key) });
         }
         app.menus.showContext(items, x, y);
       },
@@ -1007,7 +1022,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     try {
       remembered = await app.storage.rememberedFolder();
     } catch (error) {
-      blockStartup("Browserspeicher nicht verfügbar", "Erlaube den Browserspeicher für diese Seite und lade sie neu.", error instanceof Error ? error.message : String(error), "MDC-004");
+      blockStartup("Browserspeicher gesperrt", "Browserspeicher erlauben, dann neu laden.", error instanceof Error ? error.message : String(error), "MDC-004");
       return;
     }
     if (remembered?.granted) {
@@ -1027,6 +1042,6 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   void initialize().catch(error => {
-    blockStartup("Start fehlgeschlagen", "MD_Calendar konnte nicht starten. Lade die Seite neu.", error instanceof Error ? error.stack || error.message : String(error), "MDC-005");
+    blockStartup("Start fehlgeschlagen", "Seite neu laden.", error instanceof Error ? error.stack || error.message : String(error), "MDC-005");
   });
 })(window.MDCalendar);

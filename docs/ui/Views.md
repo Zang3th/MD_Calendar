@@ -13,7 +13,7 @@ Rotating the screen switches to the default view of the new orientation. The bac
 
 ## Entry tile
 
-- Check box, optional time, tag icon, title. A recurring entry shows a repeat icon at the end.
+- Check box, optional time, tag icon, title. A recurring entry shows a repeat icon (16px, 13px in the month view) at the right end, vertically centered on the whole tile.
 - The tile is tinted with its tag color and shows the tag icon; without a tag it uses the neutral item surface and has no icon.
 - Time: in the week view (landscape) on its own small line above the title in the tag color; elsewhere inline before the title.
 - Done: 60 % opacity, title struck through, check box filled.
@@ -54,7 +54,7 @@ Past holidays and vacations are dimmed.
 ## Month
 
 - Grid of week rows, Monday to Sunday. Days outside the month are faded.
-- A slim column (20px) on the left shows the ISO week number of each row, without a column heading. The current week's number is highlighted like the KW badge in the header.
+- A slim column (20px) on the left shows the ISO week number of each row, without a column heading. The current week's number is highlighted in the accent color.
 - Each cell: date (the first of a month shows the month name), at most one badge plus „+X", compact entry list.
 - Visible entries per cell: at most 3 in landscape and 4 in portrait, fewer when the cell is too low (bar lanes, small window). Further entries collapse into a „+N" chip; clicking it opens the week of that day.
 - In narrow cells (portrait) tiles show only check box and title.
