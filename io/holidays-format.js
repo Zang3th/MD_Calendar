@@ -1,8 +1,9 @@
+import { markdown } from "@zang3th/md-libs/core";
+
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
 // Parser for Holidays.md; the file is generated outside the app and only read (see docs/DataFormat.md#holidays-and-school-vacations).
 (function (app) {
-  const byteOrderMark = String.fromCharCode(0xFEFF);
   const holidayPattern = /^- (\d{2}\.\d{2}\.\d{4}) (.+)$/;
   const vacationPattern = /^- (\d{2}\.\d{2}\.\d{4}) - (\d{2}\.\d{2}\.\d{4}) (.+)$/;
 
@@ -17,7 +18,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const warnings = [];
     /** @type {"holidays" | "vacations" | null} */
     let section = null;
-    text.replace(byteOrderMark, "").split(/\r?\n/).forEach((line, index) => {
+    markdown.split(text).lines.forEach((line, index) => {
       if (line.trim() === "" || line === "# Holidays") return;
       if (line === "## Holidays") { section = "holidays"; return; }
       if (line === "## School vacations") { section = "vacations"; return; }

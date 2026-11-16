@@ -1,28 +1,29 @@
+import { dates } from "@zang3th/md-libs/core";
+
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
 // Dates and day list operations (see docs/Domain.md).
 // Days are addressed by ISO keys (YYYY-MM-DD); entries by their day and position.
 (function (app) {
-  const isoFormat = "YYYY-MM-DD";
-
   /**
    * Converts DD.MM.YYYY into an ISO day key, or "" when the date does not exist.
    * @param {string} value
    */
   function parseDate(value) {
-    const match = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(value.trim());
-    if (!match) return "";
-    const day = Number(match[1]);
-    const month = Number(match[2]);
-    const year = Number(match[3]);
-    const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
-    if (month < 1 || month > 12 || day < 1 || day > daysInMonth) return "";
-    return `${match[3]}-${match[2]}-${match[1]}`;
+    return /^\d{2}\.\d{2}\.\d{4}$/.test(value.trim()) ? dates.parse(value)?.key ?? "" : "";
   }
 
-  /** @param {string} key */
-  function formatDate(key) {
-    return `${key.slice(8, 10)}.${key.slice(5, 7)}.${key.slice(0, 4)}`;
+  /** German names for displayed dates, as the dayjs locale `de` had them. @type {import("@zang3th/md-libs/core").dates.MDLDateNames} */
+  const names = {
+    days: ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"],
+    daysShort: ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"],
+    months: ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"],
+    monthsShort: ["Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sept.", "Okt.", "Nov.", "Dez."]
+  };
+
+  /** A day for display, e.g. `formatDay(key, "dddd, D. MMMM YYYY")` (tokens: MD_Libs dates.formatPattern). @param {string} key @param {string} pattern */
+  function formatDay(key, pattern) {
+    return dates.formatPattern(key, pattern, names);
   }
 
   /**
@@ -34,35 +35,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return match ? `${match[1].padStart(2, "0")}:${match[2]}` : "";
   }
 
-  /** @param {Date} now */
-  function todayKey(now) {
-    return dayjs(now).format(isoFormat);
-  }
-
-  /** @param {string} key @param {number} days */
-  function addDays(key, days) {
-    return dayjs(key).add(days, "day").format(isoFormat);
-  }
-
-  /** First day of the month `months` after the month of `key`. @param {string} key @param {number} months */
-  function addMonths(key, months) {
-    return dayjs(`${key.slice(0, 7)}-01`).add(months, "month").format(isoFormat);
-  }
-
-  /** @param {string} key */
-  function weekStart(key) {
-    return dayjs(key).startOf("isoWeek").format(isoFormat);
-  }
-
   /** @param {string} key */
   function weekDays(key) {
-    const start = weekStart(key);
-    return Array.from({ length: 7 }, (_, index) => addDays(start, index));
-  }
-
-  /** @param {string} key */
-  function isoWeek(key) {
-    return dayjs(key).isoWeek();
+    const start = dates.weekStart(key);
+    return Array.from({ length: 7 }, (_, index) => dates.addDays(start, index));
   }
 
   /** @param {MDCCalendar} calendar @param {string} key @returns {readonly MDCEntry[]} */
@@ -224,7 +200,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   /** @param {string} start @param {string} end */
   function daysBetween(start, end) {
     const days = [];
-    for (let key = start; key <= end && days.length < 400; key = addDays(key, 1)) days.push(key);
+    for (let key = start; key <= end && days.length < 400; key = dates.addDays(key, 1)) days.push(key);
     return days;
   }
 
@@ -246,9 +222,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return listAction(calendar, calendar.series, current.title, [], { index, item: current }, null);
   }
 
-  /** @param {string[]} dates @param {string} key */
-  function toggled(dates, key) {
-    return dates.includes(key) ? dates.filter(date => date !== key) : [...dates, key].sort();
+  /** @param {string[]} list @param {string} key */
+  function toggled(list, key) {
+    return list.includes(key) ? list.filter(date => date !== key) : [...list, key].sort();
   }
 
   /** @param {MDCCalendar} calendar @param {number} index @param {string} key */
@@ -299,14 +275,14 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
    * @returns {{segments: MDCSegment[], lanes: number, dayLanes: number[]}}
    */
   function segments(calendar, start, count) {
-    const end = addDays(start, count - 1);
-    const startNumber = dayCount(start);
+    const end = dates.addDays(start, count - 1);
+    const startNumber = dates.dayNumber(start);
     /** @type {MDCSegment[]} */
     const result = [];
     calendar.multiDay.forEach((item, index) => {
       if ("raw" in item || item.end < start || item.start > end) return;
-      const column = Math.max(0, dayCount(item.start) - startNumber);
-      const last = Math.min(count - 1, dayCount(item.end) - startNumber);
+      const column = Math.max(0, dates.dayNumber(item.start) - startNumber);
+      const last = Math.min(count - 1, dates.dayNumber(item.end) - startNumber);
       result.push({ item, index, column, span: last - column + 1, lane: 0, continuesBefore: item.start < start, continuesAfter: item.end > end });
     });
     result.sort((left, right) => left.item.start.localeCompare(right.item.start) || right.item.end.localeCompare(left.item.end) || left.index - right.index);
@@ -431,7 +407,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     for (const key of Array.from(calendar.days.keys()).filter(day => day.startsWith(prefix)).sort()) {
       for (const entry of entries(calendar, key)) {
         if (entry.tag !== tag) continue;
-        const previous = singles.find(period => period.title === entry.title && addDays(period.end, 1) === key);
+        const previous = singles.find(period => period.title === entry.title && dates.addDays(period.end, 1) === key);
         if (previous) previous.end = key;
         else singles.push({ start: key, end: key, title: entry.title });
       }
@@ -439,13 +415,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return [...periods, ...singles].sort((left, right) => left.start.localeCompare(right.start));
   }
 
-  /** Days since 1970-01-01. @param {string} key */
-  function dayCount(key) {
-    return Date.UTC(Number(key.slice(0, 4)), Number(key.slice(5, 7)) - 1, Number(key.slice(8, 10))) / 86400000;
-  }
-
   app.calendar = {
-    parseDate, formatDate, parseTime, todayKey, addDays, addMonths, weekStart, weekDays, isoWeek,
+    parseDate, formatDate: dates.format, formatDay, parseTime, todayKey: dates.today, addDays: dates.addDays, addMonths: dates.monthStart,
+    weekStart: dates.weekStart, weekDays, isoWeek: dates.isoWeek,
     entries, dayList, createEntry, updateEntry, deleteEntry, toggleDone, moveEntry, isOverdue,
     combine, createSeries, updateSeries, deleteSeries, toggleOccurrence, deleteOccurrence, endSeries,
     createMultiDay, updateMultiDay, deleteMultiDay, segments, taggedPeriods, changeOccurrences, importEvents

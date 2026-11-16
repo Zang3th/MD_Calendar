@@ -47,8 +47,9 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 
 ## D8 · Technology
 
-**Decision:** Plain JavaScript with JSDoc, classic scripts, runs from `file://`; dependencies SortableJS and dayjs only. → [Architecture](Architecture.md)
-**Rejected:** Tauri or Electron (toolchain and build step), a local server (an extra process to start), TypeScript with a build step, Temporal (support not guaranteed), a Markdown library (the files have a fixed structure).
+**Decision:** Plain JavaScript with JSDoc as ES modules, bundled by esbuild into one classic script that runs from `file://`; `dist/` is not committed and `npm run build` creates it; dependencies SortableJS and MD_Libs from npm only, no date library; MD_Libs provides the build and the shared application core. → [Architecture](Architecture.md#runtime)
+**Reasons:** dependencies come from npm with exact versions instead of copied files; code shared with MD_Manager moves into MD_Libs, which needs a bundler; ES modules do not load from `file://`, a bundled classic script does.
+**Rejected:** Tauri or Electron (toolchain), a local server (an extra process to start), committing `dist/` (generated files in every diff), TypeScript syntax (JSDoc with `checkJs` is checked as strictly), Temporal (support not guaranteed), dayjs and `Intl.DateTimeFormat` (day keys without time zones need only a small date module; `Intl` names differ between platforms), a Markdown library (the files have a fixed structure).
 
 ## D9 · UI: Aurora with header pill, Nord scheme
 

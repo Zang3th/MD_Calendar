@@ -1,3 +1,6 @@
+
+import { popover } from "@zang3th/md-libs/ui";
+
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
 // Holiday overview: a floating panel below its header button with the holidays and school vacations of one year
@@ -7,6 +10,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   const panel = /** @type {HTMLElement} */ (document.getElementById("holidaysPanel"));
   const yearLabel = /** @type {HTMLElement} */ (document.getElementById("holidaysYear"));
   const content = /** @type {HTMLElement} */ (document.getElementById("holidaysContent"));
+  const floating = popover.create({
+    window, element: panel, button, dismiss: "pointerdown",
+    onClose: reason => { if (reason === "escape") button.focus(); }
+  });
   /** @type {MDCHolidays} */
   let data = { holidays: [], vacations: [] };
   let today = "";
@@ -16,7 +23,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   /** @param {string} key */
   function short(key) {
-    return dayjs(key).format("DD.MM.");
+    return app.calendar.formatDay(key, "DD.MM.");
   }
 
   function fill() {
@@ -27,7 +34,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const escape = app.tiles.escape;
     const holidayRows = holidays.map(holiday =>
       `<li class="hp__row${holiday.date < today ? " is-past" : ""}"><span class="hp__date">${short(holiday.date)}</span>` +
-      `<span class="hp__day">${dayjs(holiday.date).format("dd")}</span><span class="hp__name">${escape(holiday.name)}</span></li>`).join("");
+      `<span class="hp__day">${app.calendar.formatDay(holiday.date, "dd")}</span><span class="hp__name">${escape(holiday.name)}</span></li>`).join("");
     const vacationRows = vacations.map(vacation =>
       `<li class="hp__row${vacation.end < today ? " is-past" : ""}"><span class="hp__date hp__date--range">${short(vacation.start)} – ${short(vacation.end)}</span>` +
       `<span class="hp__name">${escape(vacation.name)}</span></li>`).join("");
@@ -44,9 +51,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   /** @param {boolean} open */
   function setOpen(open) {
-    panel.hidden = !open;
-    button.setAttribute("aria-expanded", String(open));
-    if (!open) return;
+    if (!open) {
+      floating.close();
+      return;
+    }
+    floating.open();
     // One layout read to place the panel below its button, then writes only.
     const bounds = button.getBoundingClientRect();
     panel.style.top = `${Math.round(bounds.bottom + 10)}px`;
@@ -79,16 +88,6 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     if (!(target instanceof HTMLElement)) return;
     year += Number(target.dataset.year);
     fill();
-  });
-  document.addEventListener("pointerdown", event => {
-    if (panel.hidden || !(event.target instanceof Node) || panel.contains(event.target) || button.contains(event.target)) return;
-    setOpen(false);
-  });
-  document.addEventListener("keydown", event => {
-    if (event.key === "Escape" && !panel.hidden) {
-      setOpen(false);
-      button.focus();
-    }
   });
   window.addEventListener("resize", () => setOpen(false));
 

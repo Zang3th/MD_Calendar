@@ -1,12 +1,11 @@
 {
+  "extends": "./node_modules/@zang3th/md-libs/config/jsconfig.app.json",
   "compilerOptions": {
-    "allowJs": true,
-    "checkJs": true,
-    "strict": true,
-    "noEmit": true,
-    "target": "ES2022",
-    "lib": ["ES2023", "DOM", "DOM.Iterable", "DOM.AsyncIterable"],
-    "types": []
+    "paths": {
+      "sortablejs/Sortable.min.js": [
+        "./types/sortable.d.ts"
+      ]
+    }
   },
   "include": [
     "app.js",
@@ -15,5 +14,11 @@
     "ui/**/*.js",
     "types/globals.d.ts"
   ],
-  "exclude": ["vendor", "node_modules", "playwright-report", "test-results"]
+  "exclude": [
+    "vendor",
+    "node_modules",
+    "dist",
+    "playwright-report",
+    "test-results"
+  ]
 }

@@ -1,8 +1,9 @@
+import { markdown } from "@zang3th/md-libs/core";
+
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
 // Parser for Config.md; the file is maintained by hand and only read (see docs/DataFormat.md#configuration).
 (function (app) {
-  const byteOrderMark = String.fromCharCode(0xFEFF);
   const tagPattern = /^- ([^:#]+): #([0-9a-fA-F]{6})(?: ([a-z0-9]+(?:-[a-z0-9]+)*))?$/;
 
   /**
@@ -15,7 +16,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     /** @type {MDCFormatWarning[]} */
     const warnings = [];
     let inTags = false;
-    text.replace(byteOrderMark, "").split(/\r?\n/).forEach((line, index) => {
+    markdown.split(text).lines.forEach((line, index) => {
       if (line.trim() === "" || line === "# Config") return;
       if (line.startsWith("## ")) {
         inTags = line === "## Tags";

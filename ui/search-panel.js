@@ -1,3 +1,6 @@
+
+import { popover } from "@zang3th/md-libs/ui";
+
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
 // Search bar centered at the bottom edge, opened with F: fuzzy results above it while typing, Enter or click jumps (docs/ui/Shell.md#search).
@@ -15,12 +18,20 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   /** @type {MDCSearchItem[]} */
   let results = [];
   let active = 0;
+  // Escape is handled by the input together with the arrow keys.
+  const floating = popover.create({
+    window, element: panel, dismiss: "pointerdown", escape: false,
+    onClose: () => {
+      if (returnFocus instanceof HTMLElement && returnFocus.isConnected) returnFocus.focus();
+      returnFocus = null;
+    }
+  });
 
   /** @param {MDCSearchItem} item */
   function when(item) {
     if (item.kind === "backlog") return "Backlog";
-    const date = dayjs(item.key).format("dd, DD.MM.YYYY");
-    if (item.kind === "multiDay" && item.end) return `${date} – ${dayjs(item.end).format("DD.MM.YYYY")}`;
+    const date = app.calendar.formatDay(item.key, "dd, DD.MM.YYYY");
+    if (item.kind === "multiDay" && item.end) return `${date} – ${app.calendar.formatDay(item.end, "DD.MM.YYYY")}`;
     return item.kind === "series" ? `ab ${date}` : date;
   }
 
@@ -38,13 +49,12 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   /** @param {boolean} open */
   function setOpen(open) {
-    if (open) returnFocus = document.activeElement;
-    panel.hidden = !open;
     if (!open) {
-      if (returnFocus instanceof HTMLElement && returnFocus.isConnected) returnFocus.focus();
-      returnFocus = null;
+      floating.close();
       return;
     }
+    returnFocus = document.activeElement;
+    floating.open();
     input.select();
     input.focus();
     fill();
@@ -77,10 +87,6 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   list.addEventListener("click", event => {
     const hit = event.target instanceof Element ? /** @type {HTMLElement | null} */ (event.target.closest("[data-hit]")) : null;
     if (hit) pick(Number(hit.dataset.hit));
-  });
-  document.addEventListener("pointerdown", event => {
-    if (panel.hidden || !(event.target instanceof Node) || panel.contains(event.target)) return;
-    setOpen(false);
   });
 
   /** @param {(query: string) => MDCSearchItem[]} search @param {(item: MDCSearchItem) => void} jump */

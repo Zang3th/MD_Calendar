@@ -2,7 +2,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const load = require("./load-classic");
 
-const app = load("vendor/dayjs/dayjs.min.js", "vendor/dayjs/plugin/isoWeek.js", "domain/calendar.js", "domain/recurrence.js", "domain/backlog.js", "domain/search.js",
+const app = load("domain/calendar.js", "domain/recurrence.js", "domain/backlog.js", "domain/search.js",
   "io/calendar-format.js", "io/backlog-format.js", "io/ics.js");
 
 /** @param {unknown} value */
@@ -13,17 +13,25 @@ function plain(value) {
 const calendarText = "# Calendar\n\n## November 2026\n\n### 02.11.2026\n- [ ] Zahnarzt Müller\n\n### 20.11.2026\n- [ ] Zahnarzttermin vereinbaren\n  - Location: Praxis\n\n" +
   "## Recurring\n\n### Physio #Physio\n#Start\n- 05.11.2026\n#Repeat\n- FREQ=WEEKLY;BYDAY=TH\n";
 
-test("search finds substrings, umlauts and letter sequences, best and closest first", () => {
+// Matching and ranking are tested in MD_Libs core/search; these tests cover the calendar index and its options.
+test("search covers title, location and tag of every kind, ignores diacritics and needs every word", () => {
   const { calendar } = app.calendarFormat.parse(calendarText);
   const { backlog } = app.backlogFormat.parse("# Backlog\n\n## Inbox\n- [ ] Arzt anrufen\n");
   const titles = (/** @type {string} */ query) => plain(app.search.search(calendar, backlog, 1, query, "2026-11-12", 10)).map((/** @type {any} */ hit) => hit.title);
-  assert.deepEqual(titles("zahnarzt"), ["Zahnarzttermin vereinbaren", "Zahnarzt Müller"]);
+  assert.deepEqual(titles("zahnarzt"), ["Zahnarzt Müller", "Zahnarzttermin vereinbaren"]);
   assert.deepEqual(titles("muller"), ["Zahnarzt Müller"]);
-  assert.deepEqual(titles("zhnrzt"), ["Zahnarzttermin vereinbaren", "Zahnarzt Müller"]);
+  assert.deepEqual(titles("zhnrzt"), ["Zahnarzt Müller", "Zahnarzttermin vereinbaren"]);
   assert.deepEqual(titles("praxis"), ["Zahnarzttermin vereinbaren"]);
   assert.deepEqual(titles("arzt anrufen"), ["Arzt anrufen"]);
   assert.deepEqual(titles("physio"), ["Physio"]);
   assert.equal(app.search.nextOccurrence(calendar.series[0], "2026-11-13"), "2026-11-19");
+});
+
+test("equally good hits closer to today come first; a title hit outranks a hit elsewhere", () => {
+  const { calendar } = app.calendarFormat.parse("# Calendar\n\n## November 2026\n\n### 01.11.2026\n- [ ] Yoga\n\n### 03.11.2026\n- [ ] Lauf\n  - Location: Yoga-Halle\n\n### 13.11.2026\n- [ ] Yoga\n");
+  const { backlog } = app.backlogFormat.parse("# Backlog\n");
+  const hits = plain(app.search.search(calendar, backlog, 2, "yoga", "2026-11-12", 10)).map((/** @type {any} */ hit) => [hit.title, hit.key]);
+  assert.deepEqual(hits, [["Yoga", "2026-11-13"], ["Yoga", "2026-11-01"], ["Lauf", "2026-11-03"]]);
 });
 
 test("ICS events become entries, multi-day entries and series; past ones are done; duplicates are skipped", () => {

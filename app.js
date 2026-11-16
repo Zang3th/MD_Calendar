@@ -1,95 +1,83 @@
+// Entry point of the bundle (docs/Architecture.md#runtime): the imports replace the former script tags
+// and keep their order: libraries, domain, io, ui, then this file.
+import "sortablejs/Sortable.min.js";
+import { dates, history as undoHistory, markdown } from "@zang3th/md-libs/core";
+import { audio, session, startup } from "@zang3th/md-libs/platform";
+import "./domain/calendar.js";
+import "./domain/recurrence.js";
+import "./domain/backlog.js";
+import "./domain/contacts.js";
+import "./domain/search.js";
+import "./io/calendar-format.js";
+import "./io/backlog-format.js";
+import "./io/holidays-format.js";
+import "./io/config-format.js";
+import "./io/contacts-format.js";
+import "./io/vcard.js";
+import "./io/ics.js";
+import "./io/storage.js";
+import "./ui/notifications.js";
+import "./ui/tooltips.js";
+import "./ui/header.js";
+import "./ui/start.js";
+import "./ui/tiles.js";
+import "./ui/render-week.js";
+import "./ui/render-month.js";
+import "./ui/render-contacts.js";
+import "./ui/backlog-panel.js";
+import "./ui/holidays-panel.js";
+import "./ui/pickers.js";
+import "./ui/dialog.js";
+import "./ui/menus.js";
+import "./ui/search-panel.js";
+import "./ui/interactions.js";
+
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
 // Wires the layers together; owns startup, saving and external change handling (docs/Architecture.md).
 (function (app) {
+  // Completion sound, played with MD_Libs platform/audio: the Arpeggio (docs/ui/DesignSystem.md#completion-sound-arpeggio).
+  /** @type {import("@zang3th/md-libs/platform").audio.MDLSound} */
+  const completionSound = {
+    gain: .09,
+    dry: .7,
+    wet: .3,
+    voices: [
+      { start: 0, points: [{ time: 0, frequency: 1046.50 }], attack: .004, hold: .020, release: .320, gain: .70 },
+      { start: .055, points: [{ time: 0, frequency: 1318.51 }], attack: .004, hold: .020, release: .320, gain: .70 },
+      { start: .110, points: [{ time: 0, frequency: 1567.98 }], attack: .004, hold: .040, release: .550, gain: .75 }
+    ]
+  };
+  const synth = audio.create({ window, AudioContext });
+  app.sounds = { play: () => synth.play(completionSound), setMuted: synth.setMuted, isMuted: synth.isMuted };
+
   const calendarFile = "Calendar.md";
   const backlogFile = "Backlog.md";
   const contactsFile = "Contacts.md";
-  const externalCheckInterval = 2000;
 
-  /** @type {Array<[string, () => boolean]>} */
-  const requiredComponents = [
-    ["vendor/dayjs", () => typeof dayjs === "function" && typeof dayjs_plugin_isoWeek === "function"],
-    ["vendor/sortable/Sortable.min.js", () => Boolean(app.interactions?.sortableReady())],
-    ["domain/calendar.js", () => Boolean(app.calendar)],
-    ["domain/history.js", () => Boolean(app.history)],
-    ["domain/backlog.js", () => Boolean(app.backlog)],
-    ["domain/contacts.js", () => Boolean(app.contacts)],
-    ["domain/search.js", () => Boolean(app.search)],
-    ["io/calendar-format.js", () => Boolean(app.calendarFormat)],
-    ["io/backlog-format.js", () => Boolean(app.backlogFormat)],
-    ["io/holidays-format.js", () => Boolean(app.holidaysFormat)],
-    ["io/config-format.js", () => Boolean(app.configFormat)],
-    ["io/contacts-format.js", () => Boolean(app.contactsFormat)],
-    ["io/vcard.js", () => Boolean(app.vcard)],
-    ["io/ics.js", () => Boolean(app.ics)],
-    ["io/storage.js", () => Boolean(app.storage)],
-    ["ui/notifications.js", () => Boolean(app.notifications)],
-    ["ui/tooltips.js", () => Boolean(app.tooltips)],
-    ["ui/sounds.js", () => Boolean(app.sounds)],
-    ["ui/header.js", () => Boolean(app.header)],
-    ["ui/start.js", () => Boolean(app.start)],
-    ["domain/recurrence.js", () => Boolean(app.recurrence)],
-    ["ui/tiles.js", () => Boolean(app.tiles)],
-    ["ui/render-week.js", () => Boolean(app.week)],
-    ["ui/render-month.js", () => Boolean(app.month)],
-    ["ui/render-contacts.js", () => Boolean(app.contactsView)],
-    ["ui/pickers.js", () => Boolean(app.pickers)],
-    ["ui/menus.js", () => Boolean(app.menus)],
-    ["ui/search-panel.js", () => Boolean(app.searchPanel)],
-    ["ui/backlog-panel.js", () => Boolean(app.backlogPanel)],
-    ["ui/holidays-panel.js", () => Boolean(app.holidaysPanel)],
-    ["ui/dialog.js", () => Boolean(app.dialog)],
-    ["ui/interactions.js", () => Boolean(app.interactions)]
-  ];
+  /** @returns {MDCHistory} */
+  function createHistory() {
+    return undoHistory.create();
+  }
 
   /** @param {string} title @param {string} body @param {string} details @param {string} code */
   function blockStartup(title, body, details, code) {
-    if (app.notifications) app.notifications.fatal(title, body, details, code);
-    else {
-      document.body.dataset.startupState = "blocked";
-      document.body.classList.add("startup-blocked");
-      document.body.append(`${title}: ${body} (${code})`);
-    }
-  }
-
-  /** @param {HTMLImageElement | null} image */
-  function imageLoaded(image) {
-    if (!image) return Promise.resolve(false);
-    if (image.complete) return Promise.resolve(image.naturalWidth > 0);
-    return new Promise(resolve => {
-      image.addEventListener("load", () => resolve(true), { once: true });
-      image.addEventListener("error", () => resolve(false), { once: true });
-    });
-  }
-
-  async function fontLoaded() {
-    try {
-      return (await document.fonts.load('600 16px "Plus Jakarta Sans"', "Äb")).length > 0;
-    } catch {
-      return false;
-    }
+    app.notifications.fatal(title, body, details, code);
   }
 
   async function initialize() {
-    const missingComponents = requiredComponents.filter(([, available]) => !available()).map(([file]) => file);
-    if (missingComponents.length) {
-      blockStartup("Anwendungsdateien fehlen", "Anwendungsordner wiederherstellen, dann neu laden.", `Fehlende Komponenten: ${missingComponents.join(", ")}.`, "MDC-001");
-      return;
-    }
-    dayjs.extend(dayjs_plugin_isoWeek);
-    dayjs.locale("de");
-
     const missingApis = app.storage.missingApis();
     if (missingApis.length) {
       blockStartup("Browser nicht unterstützt", "Chrome oder Edge nötig.", `Der Browser bietet die benötigten Funktionen nicht: ${missingApis.join(", ")}.`, "MDC-002");
       return;
     }
 
-    const missingResources = [];
-    if (!getComputedStyle(document.documentElement).getPropertyValue("--base").trim()) missingResources.push("styles.css");
-    if (!(await fontLoaded())) missingResources.push("vendor/fonts/PlusJakartaSans-latin.woff2");
-    if (!(await imageLoaded(document.querySelector(".logo")))) missingResources.push("res/logo/mark.svg");
+    const missingResources = await startup.missingResources({
+      document,
+      styles: { token: "--base", file: "styles.css" },
+      fonts: [{ font: '600 16px "Plus Jakarta Sans"', text: "Äb", file: "vendor/fonts/PlusJakartaSans-latin.woff2" }],
+      images: [{ image: document.querySelector(".logo"), file: "res/logo/mark.svg" }]
+    });
     if (missingResources.length) {
       blockStartup("Anwendungsressourcen fehlen", "Anwendungsordner wiederherstellen, dann neu laden.", `Nicht geladen: ${missingResources.join(", ")}.`, "MDC-003");
       return;
@@ -98,8 +86,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   async function startApplication() {
-    /** @type {MDCStorageAdapter | null} */
-    let folder = null;
+    /** Saving and external-change handling of the open folder (MD_Libs platform/session). @type {MDCSession | null} */
+    let fileSession = null;
     /** @type {MDCCalendar | null} */
     let calendar = null;
     /** @type {MDCBacklog | null} */
@@ -112,19 +100,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     let holidays = { holidays: [], vacations: [] };
     /** @type {MDCConfig} */
     let config = { tags: [] };
-    let history = app.history.create();
-    /**
-     * Per file: the text and stamp as last read or written (null while the file does not exist),
-     * the text an unchanged model serializes to, and a differing version on disk while local changes exist.
-     * @type {Record<MDCFileName, MDCFileState>}
-     */
-    const files = {
-      "Calendar.md": { disk: null, baseline: "", external: null, writable: true },
-      "Backlog.md": { disk: null, baseline: "", external: null, writable: true },
-      "Contacts.md": { disk: null, baseline: "", external: null, writable: true },
-      "Holidays.md": { disk: null, baseline: "", external: null, writable: false },
-      "Config.md": { disk: null, baseline: "", external: null, writable: false }
-    };
+    let history = createHistory();
+    const fileNames = /** @type {MDCFileName[]} */ (["Calendar.md", "Backlog.md", "Contacts.md", "Holidays.md", "Config.md"]);
     const writableFiles = /** @type {MDCFileName[]} */ (["Calendar.md", "Backlog.md", "Contacts.md"]);
     /** The file that received the latest move between Calendar.md and Backlog.md; it is written first. */
     /** @type {MDCFileName} */
@@ -137,45 +114,25 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     /** Default view per orientation (docs/ui/Views.md#default-view). @type {MDCView} */
     let view = portrait.matches ? "month" : "week";
     let backlogOpen = false;
-    let session = 0;
-    /** @type {Promise<void> | null} */
-    let saving = null;
-    let checking = false;
     let midnightTimer = 0;
 
     function hasConflict() {
-      return writableFiles.some(name => files[name].external);
+      return Boolean(fileSession?.hasConflict);
     }
 
     /** Data version for the search index; changes with every action and every reload. */
     let dataVersion = 0;
-    /** The data version last compared with the files on disk. */
-    let comparedVersion = -1;
-
-    /**
-     * When the data equals the files on disk again (for example after moving an entry up and back down),
-     * the current state counts as saved and no unsaved change is shown, as in MD_Manager.
-     */
-    function syncSavedState() {
-      if (!calendar || !backlog || !contacts || comparedVersion === dataVersion || hasConflict()) return;
-      comparedVersion = dataVersion;
-      if (app.history.unsaved(history) === 0) return;
-      const unchanged = writableFiles.every(name => serialized(name) === (files[name].disk ? files[name].disk.text : files[name].baseline));
-      if (unchanged) app.history.markSaved(history);
-    }
+    /** Serialized writable files of the current data version. @type {{version: number, texts: Partial<Record<MDCFileName, string>>}} */
+    let serializedTexts = { version: -1, texts: {} };
 
     function updateHeader() {
-      syncSavedState();
       app.header.update({
         open: Boolean(calendar),
         view,
         anchor,
         backlogOpen,
-        unsaved: app.history.unsaved(history),
-        canUndo: app.history.canUndo(history),
-        canRedo: app.history.canRedo(history),
-        undoLabel: app.history.undoLabel(history),
-        redoLabel: app.history.redoLabel(history),
+        unsaved: fileSession ? fileSession.unsaved : 0,
+        history,
         muted: app.sounds.isMuted(),
         conflict: hasConflict()
       });
@@ -215,10 +172,15 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       updateHeader();
     }
 
+    /** The period one page of the current calendar view shows. */
+    function viewPeriod() {
+      return view === "week" ? "week" : "month";
+    }
+
     /** Whether two anchors show the same period in the current view. @param {string} left @param {string} right */
     function samePeriod(left, right) {
       if (view === "contacts") return true;
-      return view === "week" ? app.calendar.weekStart(left) === app.calendar.weekStart(right) : left.slice(0, 7) === right.slice(0, 7);
+      return dates.periodStart(left, viewPeriod()) === dates.periodStart(right, viewPeriod());
     }
 
     function scheduleMidnight() {
@@ -240,37 +202,31 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       app.notifications.show("warning", `${name}: ${warnings.length === 1 ? "Zeile" : "Zeilen"} ${shown} unverständlich`, "");
     }
 
-    /** Parses one file into the model; writable files start a new history. @param {MDCFileName} name @param {MDCFileText} file */
-    function useFile(name, file) {
-      const state = files[name];
+    /** Parses one file (`null`: missing) into the model; writable files start a new history. @param {MDCFileName} name @param {string | null} text */
+    function useFile(name, text) {
       dataVersion += 1;
-      state.disk = file;
-      state.external = null;
       /** @type {MDCFormatWarning[]} */
       let warnings = [];
       if (name === "Calendar.md") {
-        const parsed = app.calendarFormat.parse(file?.text ?? "# Calendar\n");
+        const parsed = app.calendarFormat.parse(text ?? "# Calendar\n");
         calendar = parsed.calendar;
-        state.baseline = app.calendarFormat.serialize(calendar);
         warnings = parsed.warnings;
       } else if (name === "Backlog.md") {
-        const parsed = app.backlogFormat.parse(file?.text ?? "# Backlog\n");
+        const parsed = app.backlogFormat.parse(text ?? "# Backlog\n");
         backlog = parsed.backlog;
-        state.baseline = app.backlogFormat.serialize(backlog);
         warnings = parsed.warnings;
       } else if (name === "Contacts.md") {
-        const parsed = app.contactsFormat.parse(file?.text ?? "# Contacts\n");
+        const parsed = app.contactsFormat.parse(text ?? "# Contacts\n");
         contacts = parsed.contacts;
-        state.baseline = app.contactsFormat.serialize(contacts);
         warnings = parsed.warnings;
       } else if (name === "Holidays.md") {
-        const parsed = app.holidaysFormat.parse(file?.text ?? "");
+        const parsed = app.holidaysFormat.parse(text ?? "");
         holidays = parsed.holidays;
         app.tiles.setHolidays(holidays);
         app.holidaysPanel.update(holidays, today);
         warnings = parsed.warnings;
       } else {
-        const parsed = app.configFormat.parse(file?.text ?? "");
+        const parsed = app.configFormat.parse(text ?? "");
         config = parsed.config;
         warnings = parsed.warnings;
         const unknown = app.tiles.setTags(config.tags);
@@ -281,8 +237,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
           });
         }
       }
-      if (state.writable) history = app.history.create();
-      if (file) reportWarnings(name, warnings);
+      if (writableFiles.includes(name)) history = createHistory();
+      if (text === null) return;
+      reportWarnings(name, warnings);
+      const invalid = markdown.invalidCharacter(text);
+      if (invalid) app.notifications.show("warning", `${name}: Zeile ${invalid.line} enthält ein unlesbares Zeichen`, "");
     }
 
     function clearConflict() {
@@ -290,15 +249,62 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       conflictNotice = null;
     }
 
+    /**
+     * Reads every file of the folder into the model and starts its session: it checks for external changes
+     * while the page is visible and no dialog is open, and asks before the page is left with unsaved changes.
+     * @param {MDCStorageAdapter} opened
+     */
+    async function startSession(opened) {
+      let previous = fileSession;
+      const started = await session.open({
+        adapter: opened,
+        files: Object.fromEntries(fileNames.map(name => [name, {
+          writable: writableFiles.includes(name),
+          serialize: () => serialized(name),
+          load: (/** @type {string | null} */ text) => {
+            // Once the new files load, a check of the previous folder still in flight must not apply anything.
+            previous?.destroy();
+            previous = null;
+            useFile(name, text);
+          }
+        }])),
+        history: () => history,
+        order: () => firstFile === calendarFile ? [calendarFile, backlogFile, contactsFile] : [backlogFile, calendarFile, contactsFile],
+        reloadWhenClean: true,
+        window,
+        // While the dialog is open it refers to an entry by position; a reload would make that reference stale.
+        shouldCheck: () => !app.dialog.isOpen(),
+        confirmLeave: true
+      });
+      started.on("change", updateHeader);
+      started.on("conflict", () => {
+        clearConflict();
+        showConflict();
+      });
+      started.on("blocked", showConflict);
+      started.on("saved", ({ files }) => {
+        clearConflict();
+        updateHeader();
+        if (files.length) app.header.flashSaved();
+      });
+      started.on("reloaded", ({ file }) => {
+        render();
+        app.notifications.show("info", `${file} neu geladen`, "");
+      });
+      started.on("checkError", ({ error }) => {
+        app.notifications.show("error", "Dateiprüfung fehlgeschlagen", "", {
+          details: error instanceof Error ? error.message : String(error),
+          code: "MDC-202"
+        });
+      });
+      fileSession = started;
+    }
+
     /** @param {MDCStorageAdapter} opened */
     async function openFolder(opened) {
-      const names = /** @type {MDCFileName[]} */ (Object.keys(files));
-      const texts = await Promise.all(names.map(name => opened.read(name)));
-      session += 1;
-      folder = opened;
+      await startSession(opened);
       app.start.hide();
       clearConflict();
-      names.forEach((name, index) => useFile(name, texts[index]));
       render();
       if (pendingImport) {
         const { text, name } = pendingImport;
@@ -345,7 +351,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         selectedContact = selectAfter;
       }
       dataVersion += 1;
-      app.history.execute(history, { ...action, beforeViewState: action.contacts ? { ...before, view: "contacts" } : before, afterViewState: after });
+      history.execute({ ...action, beforeViewState: action.contacts ? { ...before, view: "contacts" } : before, afterViewState: after });
       if (action.target) firstFile = /** @type {MDCFileName} */ (action.target);
       if (action.contacts && view !== "contacts") {
         view = "contacts";
@@ -354,7 +360,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       return true;
     }
 
-    /** Returns to the view of an undone or redone action. @param {MDCUndoEntry | null} entry @param {boolean} undone */
+    /** Returns to the view of an undone or redone action. @param {MDCUndoAction | null} entry @param {boolean} undone */
     function showUndone(entry, undone) {
       if (!entry || !calendar) return;
       dataVersion += 1;
@@ -370,148 +376,48 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     }
 
     function showConflict() {
-      if (conflictNotice?.isOpen()) return;
-      const changed = writableFiles.filter(name => files[name].external);
-      const deleted = changed.filter(name => files[name].external?.text === null);
-      conflictNotice = app.notifications.show("warning", `${changed.join(", ")} ${deleted.length === changed.length ? "gelöscht" : deleted.length ? "geändert oder gelöscht" : "außerhalb geändert"}`, "", {
+      if (conflictNotice?.isOpen() || !fileSession) return;
+      const changed = fileSession.conflicts;
+      const deleted = changed.filter(conflict => conflict.text === null);
+      conflictNotice = app.notifications.show("warning", `${changed.map(conflict => conflict.file).join(", ")} ${deleted.length === changed.length ? "gelöscht" : deleted.length ? "geändert oder gelöscht" : "außerhalb geändert"}`, "", {
         persistent: true,
         actions: [
-          { label: "Neu laden", run: () => { void reloadWritable(); }, primary: false },
+          { label: "Neu laden", run: reloadWritable, primary: false },
           { label: "Überschreiben", run: () => { void save(true); }, primary: true }
         ]
       });
       updateHeader();
     }
 
-    /** Discards local changes and reads Calendar.md and Backlog.md again. */
-    async function reloadWritable() {
-      if (!folder) return;
-      const current = session;
-      const texts = await Promise.all(writableFiles.map(name => /** @type {MDCStorageAdapter} */ (folder).read(name)));
-      if (current !== session) return;
+    /** Discards local changes in Calendar.md, Backlog.md and Contacts.md and applies the versions on disk. */
+    function reloadWritable() {
+      if (!fileSession?.reload()) return;
       clearConflict();
-      writableFiles.forEach((name, index) => useFile(name, texts[index]));
       render();
       app.notifications.show("info", "Neu geladen", "");
     }
 
     /** @param {MDCFileName} name */
     function serialized(name) {
-      if (name === "Contacts.md") return app.contactsFormat.serialize(/** @type {MDCContacts} */ (contacts));
-      return name === "Calendar.md" ? app.calendarFormat.serialize(/** @type {MDCCalendar} */ (calendar)) : app.backlogFormat.serialize(/** @type {MDCBacklog} */ (backlog));
-    }
-
-    /**
-     * Writes one file with the version check. Returns false when it ended in a conflict.
-     * @param {MDCFileName} name @param {string} text @param {boolean} force @param {boolean} [retried]
-     * @returns {Promise<boolean>}
-     */
-    async function writeFile(name, text, force, retried = false) {
-      const state = files[name];
-      const expected = force && state.external ? state.external.stamp : state.disk?.stamp ?? null;
-      try {
-        state.disk = { text, stamp: await /** @type {MDCStorageAdapter} */ (folder).write(name, text, expected) };
-        state.external = null;
-        return true;
-      } catch (error) {
-        const conflict = /** @type {MDCStorageConflictError} */ (error);
-        if (conflict.name !== "StorageConflictError") throw error;
-        if (!force && !retried && conflict.text !== null && conflict.stamp !== null && conflict.text === state.disk?.text) {
-          // Only the stamp changed (for example a sync client touched the file); the content is ours.
-          state.disk = { text: conflict.text, stamp: conflict.stamp };
-          return writeFile(name, text, force, true);
-        }
-        state.external = { text: conflict.text, stamp: conflict.stamp };
-        return false;
-      }
-    }
-
-    /** Writes every changed file, the target of the latest move between the files first. @param {boolean} force */
-    async function writeAll(force) {
-      if (!folder || !calendar || !backlog) return;
-      const current = session;
-      const position = history.position;
-      const order = /** @type {MDCFileName[]} */ (firstFile === calendarFile ? [calendarFile, backlogFile, contactsFile] : [backlogFile, calendarFile, contactsFile]);
-      let written = false;
-      let complete = true;
-      for (const name of order) {
-        const state = files[name];
-        const text = serialized(name);
-        if (!(force && state.external) && text === (state.disk ? state.disk.text : state.baseline)) continue;
-        const ok = await writeFile(name, text, force);
-        if (current !== session) return;
-        written = written || ok;
-        complete = complete && ok;
-      }
-      if (!complete) {
-        showConflict();
-        return;
-      }
-      clearConflict();
-      app.history.markSaved(history, position);
-      updateHeader();
-      if (written) app.header.flashSaved();
+      if (serializedTexts.version !== dataVersion) serializedTexts = { version: dataVersion, texts: {} };
+      const cached = serializedTexts.texts[name];
+      if (cached !== undefined) return cached;
+      const text = name === "Contacts.md" ? app.contactsFormat.serialize(/** @type {MDCContacts} */ (contacts))
+        : name === "Calendar.md" ? app.calendarFormat.serialize(/** @type {MDCCalendar} */ (calendar)) : app.backlogFormat.serialize(/** @type {MDCBacklog} */ (backlog));
+      serializedTexts.texts[name] = text;
+      return text;
     }
 
     /** @param {boolean} [force] */
     async function save(force = false) {
-      if (!folder || !calendar) return;
-      if (hasConflict() && !force) {
-        showConflict();
-        return;
-      }
-      if (saving) await saving;
-      saving = writeAll(force).catch(error => {
+      if (!fileSession || !calendar) return;
+      try {
+        await fileSession.save(force);
+      } catch (error) {
         app.notifications.show("error", "Speichern fehlgeschlagen", "", {
           details: error instanceof Error ? error.message : String(error),
           code: "MDC-201"
         });
-      }).finally(() => { saving = null; });
-      await saving;
-    }
-
-    async function checkExternal() {
-      // While the dialog is open it refers to an entry by position; a reload would make that reference stale.
-      if (!folder || !calendar || checking || saving || document.hidden || app.dialog.isOpen()) return;
-      checking = true;
-      const current = session;
-      const opened = folder;
-      try {
-        for (const name of /** @type {MDCFileName[]} */ (Object.keys(files))) {
-          const state = files[name];
-          const stamp = await opened.stat(name);
-          if (current !== session || saving) return;
-          if (stamp === (state.disk?.stamp ?? null) || (state.external && stamp === state.external.stamp)) continue;
-          const file = await opened.read(name);
-          if (current !== session || saving) return;
-          if (file && state.disk && file.text === state.disk.text) {
-            state.disk = file;
-            continue;
-          }
-          if (!file && !state.disk) continue;
-          if (!state.writable) {
-            useFile(name, file);
-            render();
-            app.notifications.show("info", `${name} neu geladen`, "");
-          } else if (file && app.history.unsaved(history) === 0 && !hasConflict()) {
-            useFile(name, file);
-            render();
-            app.notifications.show("info", `${name} neu geladen`, "");
-          } else {
-            state.external = { text: file?.text ?? null, stamp: file?.stamp ?? null };
-            clearConflict();
-            showConflict();
-          }
-        }
-      } catch (error) {
-        if (current === session) {
-          app.notifications.show("error", "Dateiprüfung fehlgeschlagen", "", {
-            details: error instanceof Error ? error.message : String(error),
-            code: "MDC-202"
-          });
-        }
-      } finally {
-        checking = false;
       }
     }
 
@@ -526,7 +432,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     /** The first visible day of the shown period, or today when it is visible. */
     function visibleDay() {
       if (samePeriod(today, anchor)) return today;
-      return view === "week" ? app.calendar.weekStart(anchor) : `${anchor.slice(0, 7)}-01`;
+      return dates.periodStart(anchor, viewPeriod());
     }
 
     /** Copied entries; pasting inserts open copies (docs/ui/Interaction.md#copy-and-paste). @type {MDCEntry[]} */
@@ -993,8 +899,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         if (!calendar || !item || "raw" in item) return;
         execute(app.calendar.updateMultiDay(calendar, index, { ...item, start, end }));
       },
-      undo() { showUndone(app.history.undo(history), true); },
-      redo() { showUndone(app.history.redo(history), false); },
+      undo() { showUndone(history.undo()?.action ?? null, true); },
+      redo() { showUndone(history.redo()?.action ?? null, false); },
       save() { void save(); },
       toggleSound() {
         app.sounds.setMuted(!app.sounds.isMuted());
@@ -1002,14 +908,6 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       }
     });
 
-    window.addEventListener("beforeunload", event => {
-      if (!calendar || (app.history.unsaved(history) === 0 && !hasConflict())) return;
-      event.preventDefault();
-      event.returnValue = "";
-    });
-    window.setInterval(() => { void checkExternal(); }, externalCheckInterval);
-    window.addEventListener("focus", () => { void checkExternal(); });
-    document.addEventListener("visibilitychange", () => { void checkExternal(); });
     scheduleMidnight();
     portrait.addEventListener("change", () => {
       // Rotating the screen switches to the default view of the new orientation.

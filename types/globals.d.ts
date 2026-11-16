@@ -4,6 +4,7 @@ interface MDCalendarNamespace {
   calendar: {
     parseDate(value: string): string;
     formatDate(key: string): string;
+    formatDay(key: string, pattern: string): string;
     parseTime(value: string): string;
     todayKey(now: Date): string;
     addDays(key: string, days: number): string;
@@ -50,7 +51,6 @@ interface MDCalendarNamespace {
   search: {
     search(calendar: MDCCalendar, backlog: MDCBacklog, version: number, query: string, today: string, limit: number): MDCSearchItem[];
     nextOccurrence(series: MDCSeries, from: string): string;
-    normalize(value: string): string;
   };
   recurrence: {
     parseRule(text: string): MDCRule | null;
@@ -60,18 +60,6 @@ interface MDCalendarNamespace {
     describe(rule: MDCRule, start: string): string;
     weekday(key: string): number;
     weekdays: string[];
-  };
-  history: {
-    create(): MDCHistory;
-    execute(history: MDCHistory, action: MDCUndoAction): boolean;
-    undo(history: MDCHistory): MDCUndoEntry | null;
-    redo(history: MDCHistory): MDCUndoEntry | null;
-    markSaved(history: MDCHistory, position?: number): void;
-    unsaved(history: MDCHistory): number;
-    canUndo(history: MDCHistory): boolean;
-    canRedo(history: MDCHistory): boolean;
-    undoLabel(history: MDCHistory): string;
-    redoLabel(history: MDCHistory): string;
   };
   backlog: {
     entryAt(calendar: MDCCalendar, backlog: MDCBacklog, ref: MDCEntryRef): MDCEntry;
@@ -118,7 +106,6 @@ interface MDCalendarNamespace {
     pickFolder(): Promise<MDCStorageAdapter>;
     rememberedFolder(): Promise<{ name: string; granted: boolean } | null>;
     reopenFolder(): Promise<MDCStorageAdapter | null>;
-    forgetFolder(): Promise<void>;
     missingApis(): string[];
   };
   notifications: {
@@ -172,7 +159,6 @@ interface MDCalendarNamespace {
     refreshSelection(): void;
     clearSelection(): void;
     selected(): MDCPick[];
-    sortableReady(): boolean;
   };
 }
 
@@ -188,15 +174,6 @@ type MDCViewRenderer = {
 };
 type MDCSeverity = "info" | "warning" | "error";
 type MDCFileName = "Calendar.md" | "Backlog.md" | "Contacts.md" | "Holidays.md" | "Config.md";
-type MDCFileText = { text: string; stamp: string } | null;
-type MDCFileState = {
-  disk: MDCFileText;
-  /** What the model serializes to right after loading; a missing file is created only when this changes. */
-  baseline: string;
-  /** A version on disk that differs from `disk` while local changes exist. */
-  external: { text: string | null; stamp: string | null } | null;
-  writable: boolean;
-};
 type MDCNotificationBody = string | Array<string | { value: string }>;
 type MDCNotificationOptions = {
   /** Stable error code (MDC-…), errors only. */
@@ -213,10 +190,7 @@ type MDCHeaderState = {
   backlogOpen: boolean;
   anchor: string;
   unsaved: number;
-  canUndo: boolean;
-  canRedo: boolean;
-  undoLabel: string;
-  redoLabel: string;
+  history: MDCHistory;
   muted: boolean;
   conflict: boolean;
 };
@@ -310,16 +284,9 @@ interface FileSystemHandle {
   requestPermission(options: { mode: "read" | "readwrite" }): Promise<PermissionState>;
 }
 
-// Storage adapter (see docs/Architecture.md#storage-adapter).
-type MDCStorageAdapter = {
-  name: string;
-  listFiles(): Promise<string[]>;
-  read(name: string): Promise<{ text: string; stamp: string } | null>;
-  stat(name: string): Promise<string | null>;
-  write(name: string, text: string, expected: string | null): Promise<string>;
-};
-/** Thrown by write() when the file no longer matches the expected stamp; text and stamp are null for a deleted file. */
-type MDCStorageConflictError = Error & { name: "StorageConflictError"; file: string; text: string | null; stamp: string | null };
+// Storage adapter and session: MD_Libs platform/storage and platform/session (see docs/Architecture.md#storage-adapter).
+type MDCStorageAdapter = import("@zang3th/md-libs/platform").storage.MDLStorageAdapter;
+type MDCSession = import("@zang3th/md-libs/platform").session.MDLSession;
 
 // Calendar model (see docs/Domain.md#entry and docs/DataFormat.md#calendar).
 type MDCEntry = {
@@ -438,9 +405,8 @@ type MDCSearchItem = {
   kind: "entry" | "series" | "multiDay" | "backlog";
   title: string;
   tag?: string;
-  /** Normalized title, and normalized title, location, note and tag */
-  words: string;
-  text: string;
+  /** Location, note and tag, searched after the title */
+  details: string;
   /** Day key of the entry, series start or range start; "" in the backlog */
   key: string;
   end?: string;
@@ -468,7 +434,7 @@ type MDCConfig = { tags: MDCTag[] };
 /** Fields the entry dialog edits. */
 type MDCEntryFields = { title: string; start: string; end: string; location: string; note: string[] };
 
-// Undo history (see docs/Architecture.md#undo-history).
+// Undo history: MD_Libs core/history (see docs/Architecture.md#undo-history).
 type MDCViewState = { view: MDCView; anchor: string; contact?: number };
 type MDCUndoAction = {
   label: string;
@@ -490,35 +456,7 @@ type MDCUndoAction = {
   beforeViewState?: MDCViewState;
   afterViewState?: MDCViewState;
 };
-type MDCUndoEntry = MDCUndoAction & { size: number };
 /** A calendar action; `days` lists the day keys it changes. */
 type MDCDayAction = MDCUndoAction & { days: string[] };
-type MDCHistory = {
-  entries: MDCUndoEntry[];
-  index: number;
-  totalSize: number;
-  /** Actions applied since the history was created, minus undone ones. */
-  position: number;
-  savedPosition: number;
-  /** Extra distance to the saved state after its branch was discarded. */
-  savedDetour: number;
-};
+type MDCHistory = import("@zang3th/md-libs/core").history.MDLHistory<MDCUndoAction>;
 
-// Vendored libraries loaded as classic scripts (see docs/Architecture.md#production-dependencies).
-// Only the members in use are declared; extend as needed.
-interface DayjsValue {
-  add(value: number, unit: "day" | "month"): DayjsValue;
-  startOf(unit: "isoWeek" | "month"): DayjsValue;
-  isoWeek(): number;
-  format(template: string): string;
-}
-declare const dayjs: {
-  (value?: string | Date): DayjsValue;
-  extend(plugin: unknown): void;
-  locale(name?: string): string;
-};
-declare const dayjs_plugin_isoWeek: unknown;
-declare const dayjs_plugin_customParseFormat: unknown;
-declare const Sortable: {
-  create(element: HTMLElement, options: object): { destroy(): void };
-};

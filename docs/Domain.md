@@ -123,8 +123,8 @@ An entry, a recurring entry and a multi-day entry can be turned into each other 
 ## Search
 
 - The search covers the whole calendar and the backlog: entries, recurring entries, multi-day entries and backlog entries, by title, location, note and tag.
-- It is tolerant: case and diacritics are ignored („muller“ finds „Müller“), and letters of a word may be missing („zhnrzt“ finds „Zahnarzt“). Every word of the query must match.
-- Hits in the title rank before hits elsewhere, matches at a word start before matches inside a word; equally good hits closer to today come first.
+- It is the fuzzy search of MD_Manager (MD_Libs `core/search`): the letters of a word must appear in order, so letters may be missing („zhnrzt“ finds „Zahnarzt“). Case and diacritics are ignored („muller“ finds „Müller“). Every word of the query must match.
+- Hits in the title rank before hits elsewhere; contiguous letters, word starts and shorter texts rank higher; equally good hits closer to today come first.
 - A hit on a recurring entry leads to its next occurrence from today on.
 
 ## Selection, copy and paste

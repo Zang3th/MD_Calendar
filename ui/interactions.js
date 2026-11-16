@@ -1,3 +1,6 @@
+import Sortable from "sortablejs/Sortable.min.js";
+import { keymap, sortable } from "@zang3th/md-libs/ui";
+
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
 // Pointer, touch and keyboard input (docs/ui/Interaction.md). Turns DOM events into handler calls.
@@ -64,11 +67,6 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   function targets(tile) {
     if (tile && !selection.has(idOf(pickOf(tile)))) return [pickOf(tile)];
     return Array.from(selection, pickFromId);
-  }
-
-  /** @param {EventTarget | null} target */
-  function isTextField(target) {
-    return target instanceof HTMLElement && (target.isContentEditable || target.matches("input, textarea, select"));
   }
 
   /** @param {Element} element */
@@ -139,7 +137,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   document.addEventListener("contextmenu", event => {
     const current = handlers;
-    if (!current || !(event.target instanceof Element) || isTextField(event.target)) return;
+    if (!current || !(event.target instanceof Element) || keymap.isEditable(event.target)) return;
     const tile = /** @type {HTMLElement | null} */ (event.target.closest(".day__list .ev, .bl__list .ev"));
     const key = dayOf(event.target);
     if (!tile && !key) return;
@@ -153,79 +151,61 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }, { passive: true });
   main.addEventListener("pointerleave", () => { hoveredDay = ""; });
 
-  /** Shortcut keys without modifiers (docs/ui/Interaction.md#keyboard-shortcuts). @type {Record<string, (current: MDCInteractionHandlers) => void>} */
-  const keys = {
-    h: current => current.today(),
-    n: current => current.newEntry(current.isContactsView() ? undefined : hoveredDay || undefined),
-    w: current => current.showView("week"),
-    m: current => current.showView("month"),
-    k: current => current.showView("contacts"),
-    b: current => current.toggleBacklog(),
-    f: current => current.toggleSearch(),
-    "?": current => current.showHelp(),
-    arrowleft: current => current.previous(),
-    arrowright: current => current.next(),
-    " ": current => { if (selection.size) current.toggleMany(targets(null)); },
-    delete: current => {
+  // Keyboard shortcuts (docs/ui/Interaction.md#keyboard-shortcuts) with MD_Libs ui/keymap.
+  const shortcuts = keymap.create({
+    target: document,
+    guard: () => Boolean(handlers) && document.body.dataset.startupState !== "blocked"
+  });
+  const current = () => /** @type {MDCInteractionHandlers} */ (handlers);
+  /** Shortcuts other than saving act only while no dialog or modal menu is open. */
+  const free = () => !app.dialog.isOpen() && !app.menus.isModalOpen();
+  const inCalendar = () => free() && !current().isContactsView();
+  shortcuts.bind("mod+shift?+s", () => current().save(), { inEditable: true });
+  shortcuts.bind(["mod+shift?+y", "mod+shift+z"], () => current().redo(), { when: free });
+  shortcuts.bind("mod+z", () => current().undo(), { when: free });
+  shortcuts.bind("mod+shift?+c", () => current().copy(targets(null)), { when: () => free() && selection.size > 0 });
+  shortcuts.bind("mod+shift?+v", () => current().paste(hoveredDay), { when: free });
+  shortcuts.bind("mod+shift?+a", () => {
+    for (const tile of tiles()) if (tile.closest(".main")) selection.add(idOf(pickOf(tile)));
+    refreshSelection();
+  }, { when: inCalendar });
+  /** @type {Array<[string, () => void, (() => boolean)?]>} */
+  const plainKeys = [
+    ["h", () => current().today()],
+    ["n", () => current().newEntry(current().isContactsView() ? undefined : hoveredDay || undefined)],
+    ["w", () => current().showView("week")],
+    ["m", () => current().showView("month")],
+    ["k", () => current().showView("contacts")],
+    ["b", () => current().toggleBacklog()],
+    ["f", () => current().toggleSearch()],
+    ["?", () => current().showHelp()],
+    ["space", () => { if (selection.size) current().toggleMany(targets(null)); }, inCalendar],
+    ["delete", () => {
       if (!selection.size) return;
       const picks = targets(null);
       clearSelection();
-      current.removeMany(picks);
-    },
-    escape: () => clearSelection()
-  };
-
-  document.addEventListener("keydown", event => {
-    const current = handlers;
-    if (!current || document.body.dataset.startupState === "blocked") return;
-    const key = event.key.toLowerCase();
-    const modifier = event.ctrlKey || event.metaKey;
-    if (modifier && !event.altKey && key === "s") {
-      event.preventDefault();
-      current.save();
-      return;
-    }
-    if (app.dialog.isOpen() || app.menus.isModalOpen() || isTextField(event.target)) return;
-    if (modifier && !event.altKey) {
-      if (key === "y" || (key === "z" && event.shiftKey)) current.redo();
-      else if (key === "z") current.undo();
-      else if (key === "c" && selection.size) current.copy(targets(null));
-      else if (key === "v") current.paste(hoveredDay);
-      else if (key === "a" && !current.isContactsView()) {
-        for (const tile of tiles()) if (tile.closest(".main")) selection.add(idOf(pickOf(tile)));
-        refreshSelection();
-      } else return;
-      event.preventDefault();
-      return;
-    }
-    if (event.altKey || (event.repeat && key !== "arrowleft" && key !== "arrowright")) return;
-    const action = keys[key === "?" || event.key === "?" ? "?" : key];
-    if (!action || (current.isContactsView() && ["arrowleft", "arrowright", " ", "delete"].includes(key))) return;
-    action(current);
-    event.preventDefault();
-  });
+      current().removeMany(picks);
+    }, inCalendar],
+    ["escape", () => clearSelection()]
+  ];
+  for (const [key, run, when = free] of plainKeys) shortcuts.bind(`shift?+${key}`, run, { when, repeat: false });
+  shortcuts.bind("shift?+arrowleft", () => current().previous(), { when: inCalendar });
+  shortcuts.bind("shift?+arrowright", () => current().next(), { when: inCalendar });
 
   /** Position among the normal entries of a list; occurrences and other moved tiles above it do not count. @param {HTMLElement} item @param {Set<HTMLElement>} skip */
   function entryPosition(item, skip) {
-    let position = 0;
-    for (let sibling = item.previousElementSibling; sibling; sibling = sibling.previousElementSibling) {
-      if (sibling.classList.contains("ev") && !sibling.classList.contains("ev--series") && !skip.has(/** @type {HTMLElement} */ (sibling))) position += 1;
-    }
-    return position;
+    return sortable.position(item, sibling => sibling.classList.contains("ev") && !sibling.classList.contains("ev--series") && !skip.has(/** @type {HTMLElement} */ (sibling)));
   }
 
   /** Makes the day lists sortable within and between days; occurrences stay in place. @param {HTMLElement[]} lists */
   function bindLists(lists) {
     sortables.forEach(sortable => sortable.destroy());
-    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    sortables = lists.map(list => Sortable.create(list, {
+    sortables = lists.map(list => sortable.create({ Sortable, window, element: list, options: {
       group: "day-lists",
-      animation: reduced ? 0 : 150,
       delay: 180,
       delayOnTouchOnly: true,
       fallbackTolerance: 3,
       filter: ".ev__check, .ev--series",
-      preventOnFilter: false,
       ghostClass: "ev--ghost",
       dragClass: "ev--drag",
       /** @param {{from: HTMLElement, to: HTMLElement, item: HTMLElement, oldIndex: number}} event */
@@ -244,7 +224,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         selection.clear();
         handlers?.moveMany(picks.map(pick => /** @type {MDCEntryRef} */ (pick.ref)), from, target);
       }
-    }));
+    } }));
   }
 
   // ---------- Lasso: dragging on free space selects the tiles it touches ----------
@@ -463,7 +443,6 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   app.interactions = {
     init, bindLists, refreshSelection, clearSelection,
-    selected: () => Array.from(selection, pickFromId),
-    sortableReady: () => typeof Sortable === "function"
+    selected: () => Array.from(selection, pickFromId)
   };
 })(window.MDCalendar);

@@ -1,3 +1,4 @@
+
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
 // Month view (docs/ui/Views.md#month): week rows with ISO week numbers, compact day lists, „+N“ and multi-day bars.
@@ -50,10 +51,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   /** @param {string} key @param {string} month @param {number} lanes */
   function cellMarkup(key, month, lanes) {
-    const day = dayjs(key);
     const other = key.slice(0, 7) !== month;
-    const number = key.endsWith("-01") ? day.format("D. MMM") : day.format("D");
-    return `<div class="mcell${other ? " is-other" : ""}" data-day="${key}" style="--lanes:${lanes}" aria-label="${day.format("dddd, D. MMMM YYYY")}">` +
+    const number = key.endsWith("-01") ? app.calendar.formatDay(key, "D. MMM") : app.calendar.formatDay(key, "D");
+    return `<div class="mcell${other ? " is-other" : ""}" data-day="${key}" style="--lanes:${lanes}" aria-label="${app.calendar.formatDay(key, "dddd, D. MMMM YYYY")}">` +
       `<div class="mcell__head"><span class="mcell__num">${number}</span><span class="mcell__badges"></span></div><div class="mcell__spacer"></div>` +
       `<div class="mcell__list day__list" data-day="${key}"></div>` +
       `<button class="more" type="button" data-more="${key}" hidden></button></div>`;
@@ -82,7 +82,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     }).join("");
     if (rebuilt) {
       shownMonth = month;
-      const names = app.calendar.weekDays(first).map(key => `<span>${dayjs(key).format("dddd")}</span>`).join("");
+      const names = app.calendar.weekDays(first).map(key => `<span>${app.calendar.formatDay(key, "dddd")}</span>`).join("");
       board.innerHTML = `<div class="mweek mweek--head"><span></span><div class="mhead">${names}</div></div><div class="mbody" style="--rows:${weeks.length}">${rows}</div>`;
     } else {
       // Same month: rows are rebuilt for the bars, the day lists are refilled below.

@@ -4,7 +4,7 @@ const path = require("node:path");
 const test = require("node:test");
 const load = require("./load-classic");
 
-const app = load("vendor/dayjs/dayjs.min.js", "domain/calendar.js", "domain/contacts.js", "io/contacts-format.js", "io/vcard.js");
+const app = load("domain/calendar.js", "domain/contacts.js", "io/contacts-format.js", "io/vcard.js");
 const golden = fs.readFileSync(path.join(__dirname, "../../data/parsing/Contacts.md"), "utf8");
 
 /** @param {unknown} value */

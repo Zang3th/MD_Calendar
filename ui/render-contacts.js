@@ -1,3 +1,4 @@
+
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
 // Contacts view: list with search, filters and sort on the left, inline editor on the right (docs/ui/Views.md#contacts).
@@ -122,7 +123,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const mail = contact.emails.find(item => item.value);
     const card = next
       ? `<div class="cx-bcard${next.days === 0 ? " is-today" : next.days <= 14 ? " is-soon" : ""}"><span class="cx-bcard__icon">${icon("cake")}</span>` +
-        `<b>${next.days === 0 ? "Heute!" : when(next.days)}</b><span>${dayjs(next.date).format("D. MMMM")}${next.age !== null ? ` · wird ${next.age}` : ""}</span></div>`
+        `<b>${next.days === 0 ? "Heute!" : when(next.days)}</b><span>${app.calendar.formatDay(next.date, "D. MMMM")}${next.age !== null ? ` · wird ${next.age}` : ""}</span></div>`
       : `<div class="cx-bcard cx-bcard--none"><span class="cx-bcard__icon">${icon("cake")}</span><span>Kein Geburtstag</span></div>`;
     const field = (/** @type {string} */ key, /** @type {string} */ value, /** @type {string} */ placeholder, /** @type {string} */ classes) =>
       `<input class="cx-in ${classes}" data-key="${key}" value="${escape(value)}" placeholder="${placeholder}" aria-label="${placeholder}" autocomplete="off">`;

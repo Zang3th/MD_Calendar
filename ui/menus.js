@@ -1,3 +1,5 @@
+import { popover } from "@zang3th/md-libs/ui";
+
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
 // Context menu and the help panel (docs/ui/Interaction.md, docs/ui/Shell.md#help).
@@ -8,6 +10,12 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   const helpButton = /** @type {HTMLButtonElement} */ (document.getElementById("helpButton"));
   /** @type {Array<{run(): void}>} */
   let contextItems = [];
+  // The context menu handles Escape with its arrow keys below.
+  const contextMenu = popover.create({ window, element: context, dismiss: "pointerdown", escape: false, onClose: () => { contextItems = []; } });
+  const helpMenu = popover.create({
+    window, element: help, button: helpButton, dismiss: "pointerdown",
+    onClose: reason => { if (reason === "escape") helpButton.focus(); }
+  });
 
   /**
    * The main shortcuts by task, laid out like the quick reference of MD_Manager: action left, keys right as key caps.
@@ -28,9 +36,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   /** Places a floating element at a point or below an anchor, kept inside the window. @param {HTMLElement} element @param {number} x @param {number} y */
   function placeAt(element, x, y) {
     element.hidden = false;
-    const box = element.getBoundingClientRect();
-    element.style.left = `${Math.round(Math.max(8, Math.min(x, window.innerWidth - box.width - 8)))}px`;
-    element.style.top = `${Math.round(Math.max(8, Math.min(y, window.innerHeight - box.height - 8)))}px`;
+    const position = popover.place(popover.point(x, y), element.getBoundingClientRect(), popover.viewport(window), { margin: 8 });
+    element.style.left = `${Math.round(position.left)}px`;
+    element.style.top = `${Math.round(position.top)}px`;
   }
 
   /** @param {MDCMenuItem[]} items @param {number} x @param {number} y */
@@ -43,15 +51,16 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   function hideContext() {
-    context.hidden = true;
-    contextItems = [];
+    contextMenu.close();
   }
 
   /** Opens the help below its button, like the holiday overview; a second call closes it. @param {boolean} [open] */
   function showHelp(open = help.hidden) {
-    help.hidden = !open;
-    helpButton.setAttribute("aria-expanded", String(open));
-    if (!open) return;
+    if (!open) {
+      helpMenu.close();
+      return;
+    }
+    helpMenu.open();
     // One layout read to place the panel below its button, then writes only.
     const bounds = helpButton.getBoundingClientRect();
     help.style.top = `${Math.round(bounds.bottom + 10)}px`;
@@ -64,17 +73,6 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const item = contextItems[Number(button.dataset.item)];
     hideContext();
     item?.run();
-  });
-  document.addEventListener("pointerdown", event => {
-    if (!(event.target instanceof Node)) return;
-    if (!context.hidden && !context.contains(event.target)) hideContext();
-    if (!help.hidden && !help.contains(event.target) && !helpButton.contains(event.target)) showHelp(false);
-  });
-  document.addEventListener("keydown", event => {
-    if (event.key === "Escape" && !help.hidden) {
-      showHelp(false);
-      helpButton.focus();
-    }
   });
   document.addEventListener("keydown", event => {
     if (context.hidden) return;

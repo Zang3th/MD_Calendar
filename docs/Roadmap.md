@@ -259,20 +259,23 @@ Die Kontakte-Ansicht wird ein vollwertiger Kontakt-Editor. `Contacts.md` bleibt 
 - [x] ~Docs aktualisieren~
 
 #Pin
-## Umstieg und Nutzung
+## Refactorings
 
 #Version
 - 0.6.0
 
-#Info
-Ab hier ersetzt MD_Calendar den Google-Kalender. Google bleibt nur noch als Archiv.
+#Date
+- 10.11.2026 - TBD
 
-### Umstieg
+### MD_Libs
 
-- [ ] Stichtag festlegen
-- [ ] Google-Kalender exportieren + importieren
-- [ ] Google-Kontakte per vCard importieren
-- [ ] Ordner ins NAS-Backup aufnehmen
+- [x] ~Auf MD_Libs als Applikationskern umsteigen~
+- [x] ~Tests anpassen und reduzieren~
+- [x] ~Dokumentation und README anpassen~
+
+### Neu-Dialog
+
+- [ ] Grundsätzlich überarbeiten
 
 ### Bugs und Verbesserungen
 
@@ -291,6 +294,28 @@ Ab hier ersetzt MD_Calendar den Google-Kalender. Google bleibt nur noch als Arch
 - [x] ~Hintergrundlicht in der Mitte entfernt~
 - [x] ~Rahmen von Header + Hintergrund entfernt~
 - [x] ~Undo-Zähler: unveränderter Stand gilt als gespeichert~
+- [ ] Übersetzung: Das ganze Projekt auf Englisch umstellen
+
+### Release
+
+- [ ] Docs + README aktualisieren
+
+## Umstieg und Nutzung
+
+#Version
+- 0.7.0
+
+#Info
+Ab hier ersetzt MD_Calendar den Google-Kalender als Daily-Driver. Google bleibt noch als Archiv bestehen.
+
+### Umstieg
+
+- [ ] Stichtag festlegen
+- [ ] Google-Kalender exportieren + importieren
+- [ ] Google-Kontakte per vCard importieren
+- [ ] Ordner ins NAS-Backup aufnehmen
+
+### Bugs und Verbesserungen
 
 ### Release
 
@@ -299,7 +324,7 @@ Ab hier ersetzt MD_Calendar den Google-Kalender. Google bleibt nur noch als Arch
 ## Mobil
 
 #Version
-- 2.0.0
+- 1.0.0
 
 #Info
 Dieselbe App als gehostete PWA auf dem iPhone. Die Vorkehrungen sind ab 0.1.0 eingebaut.

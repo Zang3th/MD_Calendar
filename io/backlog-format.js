@@ -1,20 +1,18 @@
+import { markdown } from "@zang3th/md-libs/core";
+
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
 // Parser and serializer for Backlog.md (see docs/DataFormat.md#backlog).
 (function (app) {
-  const byteOrderMark = String.fromCharCode(0xFEFF);
   const inbox = "Inbox";
 
   /**
-   * @param {string} text
+   * @param {string} source
    * @returns {{backlog: MDCBacklog, warnings: MDCFormatWarning[]}}
    */
-  function parse(text) {
+  function parse(source) {
     const { entry: format } = app.calendarFormat;
-    const source = text.startsWith(byteOrderMark) ? text.slice(1) : text;
-    const newline = source.includes("\r\n") ? "\r\n" : "\n";
-    const lines = source.split(/\r?\n/);
-    if (lines.at(-1) === "") lines.pop();
+    const { lines, newline } = markdown.split(source);
 
     /** @type {MDCBacklog} */
     const backlog = { newline, head: [], groups: [] };

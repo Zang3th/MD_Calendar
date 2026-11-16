@@ -1,3 +1,4 @@
+
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
 // Date and time pickers of the entry dialog (docs/ui/Shell.md#entry-dialog). Inputs with data-picker="date" or "time"
@@ -26,10 +27,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const start = app.calendar.weekStart(month);
     const cells = Array.from({ length: 42 }, (_, index) => app.calendar.addDays(start, index));
     picker.innerHTML = `<div class="picker__head"><button class="iconbtn" type="button" data-month="-1" aria-label="Vorheriger Monat">${app.tiles.icon("chevron-left")}</button>` +
-      `<b>${dayjs(month).format("MMMM YYYY")}</b><button class="iconbtn" type="button" data-month="1" aria-label="Nächster Monat">${app.tiles.icon("chevron-right")}</button></div>` +
+      `<b>${app.calendar.formatDay(month, "MMMM YYYY")}</b><button class="iconbtn" type="button" data-month="1" aria-label="Nächster Monat">${app.tiles.icon("chevron-right")}</button></div>` +
       `<div class="picker__grid" role="grid">${weekdayNames.map(name => `<span class="picker__dow">${name}</span>`).join("")}` +
       cells.map(key => `<button type="button" class="picker__day${key.slice(0, 7) !== month.slice(0, 7) ? " is-other" : ""}${key === today ? " is-today" : ""}" ` +
-        `data-date="${key}" aria-pressed="${key === selected}" aria-label="${dayjs(key).format("dddd, D. MMMM YYYY")}">${Number(key.slice(8))}</button>`).join("") + `</div>`;
+        `data-date="${key}" aria-pressed="${key === selected}" aria-label="${app.calendar.formatDay(key, "dddd, D. MMMM YYYY")}">${Number(key.slice(8))}</button>`).join("") + `</div>`;
   }
 
   function renderTime() {

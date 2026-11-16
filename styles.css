@@ -86,6 +86,10 @@ body::before {
 /* Header pill and main panel have no frame; the glass fill and the shadow set them apart. */
 .hdr.glass, .main.glass { border: 0; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
 body.startup-blocked .app, body.startup-blocked .dlg { opacity: .45; pointer-events: none; }
+/* Shown only when dist/app.js could not be loaded, i.e. the app has not been built (npm start). */
+.build-missing { display: none; }
+html[data-build="missing"] body > :not(.build-missing) { display: none; }
+html[data-build="missing"] .build-missing { display: block; max-width: 40rem; margin: 20vh auto 0; padding: 0 24px; color: var(--text); font-size: 16px; line-height: 1.5; }
 
 /* ---------- Header pill ---------- */
 .hdr { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 14px; padding: 8px 10px 8px 12px; border-radius: 22px; }
@@ -457,14 +461,20 @@ body.backlog-open .main { margin-right: 354px; }
 @keyframes notification-out { to { opacity: 0; transform: translateY(12px); } }
 .notification-header { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; }
 .notification-header::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--tone); box-shadow: 0 0 10px var(--tone); }
+.notification-heading { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .notification-title { flex: 0 1 auto; min-width: 0; font-weight: 700; text-align: center; overflow-wrap: anywhere; text-wrap: balance; }
-.notification-code { flex: none; font-size: 11px; font-weight: 700; color: var(--tone); font-variant-numeric: tabular-nums; }
-.notification-body { color: var(--muted); text-align: center; overflow-wrap: anywhere; text-wrap: balance; }
+.notification-controls, .notification-actions { display: flex; align-items: center; gap: 4px; flex: none; }
+.notification-tag { flex: none; font-size: 11px; font-weight: 700; color: var(--tone); font-variant-numeric: tabular-nums; }
+.notification-body { display: flex; align-items: center; justify-content: center; gap: 4px; color: var(--muted); text-align: center; overflow-wrap: anywhere; text-wrap: balance; }
+.notification-message { min-width: 0; }
 .notification-value { color: var(--text); font-weight: 600; }
-.notification-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 6px; }
-.notification-actions .btn { padding: 6px 12px; font-size: 12.5px; }
-.notification-icon { width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center; color: var(--muted); }
-.notification-icon:hover { color: var(--text); background: var(--glass-2); }
+.notification-buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 6px; }
+.notification-button { display: inline-flex; align-items: center; white-space: nowrap; padding: 6px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 700; background: var(--glass-2); color: var(--muted); transition: background .15s, filter .15s; }
+.notification-button:hover { color: var(--text); background: color-mix(in srgb, var(--accent) 16%, var(--glass-2)); }
+.notification-button-primary { background: linear-gradient(90deg, var(--accent), var(--accent-2)); color: var(--on-accent); }
+.notification-button-primary:hover { color: var(--on-accent); background: linear-gradient(90deg, var(--accent), var(--accent-2)); filter: brightness(1.08); }
+.notification-action { width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center; color: var(--muted); }
+.notification-action:hover { color: var(--text); background: var(--glass-2); }
 
 /* ---------- Tooltip ---------- */
 .app-tooltip { position: fixed; z-index: 120; max-width: 18rem; padding: 6px 10px; border-radius: 9px; background: var(--panel); border: 1px solid var(--edge); color: var(--text); box-shadow: 0 6px 20px rgba(0,0,0,.4); font-size: 12px; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; pointer-events: none; }

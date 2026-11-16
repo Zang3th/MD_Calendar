@@ -1,16 +1,15 @@
+import { markdown } from "@zang3th/md-libs/core";
+
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
 // Parser and serializer for Calendar.md (see docs/DataFormat.md#calendar).
 (function (app) {
-  const byteOrderMark = String.fromCharCode(0xFEFF);
   const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
   const multiDayHeading = "## Multi-day";
   const seriesHeading = "## Recurring";
   const entryPattern = /^- \[([ xX])\] (.*)$/;
   const subItemPattern = /^\s+- (.*)$/;
   const timePattern = /^([01]\d|2[0-3]):([0-5]\d)(?: - ([01]\d|2[0-3]):([0-5]\d))? (.+)$/;
-  const tagPattern = /^(.*\S) #([^\s#]+)$/;
-  const keyPattern = /^#([A-Za-z]+)$/;
   const seriesStartPattern = /^(\d{2}\.\d{2}\.\d{4})(?: ([01]\d|2[0-3]):([0-5]\d)(?: - ([01]\d|2[0-3]):([0-5]\d))?)?$/;
   const locationPrefix = "Location: ";
   const blockKeys = {
@@ -20,17 +19,17 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   const { parseDate: dayKey, formatDate: displayDate } = app.calendar;
 
-  /** @param {string} text */
-  function titleAndTag(text) {
-    const tagged = tagPattern.exec(text);
-    return tagged ? { title: tagged[1], tag: tagged[2] } : { title: text, tag: "" };
+  /** @param {string} value */
+  function titleAndTag(value) {
+    const { text: title, tag } = markdown.trailingTag(value);
+    return { title, tag };
   }
 
-  /** @param {string} text @returns {Omit<MDCEntry, "done" | "location" | "note" | "extra">} */
-  function entryText(text) {
+  /** @param {string} value @returns {Omit<MDCEntry, "done" | "location" | "note" | "extra">} */
+  function entryText(value) {
     let start = "";
     let end = "";
-    let rest = text;
+    let rest = value;
     const time = timePattern.exec(rest);
     if (time) {
       start = `${time[1]}:${time[2]}`;
@@ -62,31 +61,15 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const extra = [];
     /** @type {MDCFormatWarning[]} */
     const itemWarnings = [];
-    /** @type {string | null} */
-    let mode = null;
-    lines.slice(1).forEach((line, offset) => {
-      const key = keyPattern.exec(line);
-      if (key) {
-        mode = blockKeys[kind].includes(key[1]) && !values[key[1]] ? key[1] : null;
-        if (mode) values[mode] = [];
-        else {
-          extra.push(line);
-          itemWarnings.push({ lineNumber: firstLine + offset + 2, kind: "unknown-line", text: line });
-        }
-        return;
-      }
-      if (mode === "Note") {
-        note.push(line);
-        return;
-      }
-      if (line.trim() === "") return;
-      const item = /^- (.*)$/.exec(line);
-      if (item && mode) values[mode].push(item[1].trim());
+    for (const line of markdown.keyBlocks(lines.slice(1), { keys: blockKeys[kind], prose: ["Note"] })) {
+      if (line.type === "key") values[line.key] = [];
+      else if (line.type === "item") values[line.key].push(line.value);
+      else if (line.type === "prose") note.push(line.text);
       else {
-        extra.push(line);
-        itemWarnings.push({ lineNumber: firstLine + offset + 2, kind: "unknown-line", text: line });
+        extra.push(line.text);
+        itemWarnings.push({ lineNumber: firstLine + line.index + 2, kind: "unknown-line", text: line.text });
       }
-    });
+    }
     trimTrailingBlanks(note);
     const single = (/** @type {string} */ name) => values[name]?.length === 1 ? values[name][0] : null;
     const location = values.Location ? single("Location") : "";
@@ -149,14 +132,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   /**
-   * @param {string} text
+   * @param {string} source
    * @returns {{calendar: MDCCalendar, warnings: MDCFormatWarning[]}}
    */
-  function parse(text) {
-    const source = text.startsWith(byteOrderMark) ? text.slice(1) : text;
-    const newline = source.includes("\r\n") ? "\r\n" : "\n";
-    const lines = source.split(/\r?\n/);
-    if (lines.at(-1) === "") lines.pop();
+  function parse(source) {
+    const { lines, newline } = markdown.split(source);
 
     /** @type {MDCCalendar} */
     const calendar = { newline, head: [], days: new Map(), multiDay: [], series: [], multiDayHead: [], seriesHead: [], seriesRevision: 0 };

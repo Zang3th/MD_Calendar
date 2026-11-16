@@ -1,3 +1,5 @@
+import { markdown } from "@zang3th/md-libs/core";
+
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
 // Entry tiles, multi-day bars and day header badges shared by the views and the backlog panel (docs/ui/Views.md).
@@ -11,7 +13,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   /** @param {string} value */
   function escape(value) {
-    return value.replace(/[&<>"]/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" })[character] || character);
+    return markdown.escapeHtml(value);
   }
 
   /** @param {string} name */
@@ -84,7 +86,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const { item } = segment;
     const tagged = tint(item.tag);
     const classes = ["bar", segment.continuesBefore && "cont-l", segment.continuesAfter && "cont-r", item.end < today && "is-past"].filter(Boolean).join(" ");
-    const range = `${dayjs(item.start).format("D. MMM")} – ${dayjs(item.end).format("D. MMM")}`;
+    const range = `${app.calendar.formatDay(item.start, "D. MMM")} – ${app.calendar.formatDay(item.end, "D. MMM")}`;
     return `<button class="${classes}${tagged.className}" type="button" data-multi="${segment.index}" data-start="${item.start}" data-end="${item.end}" ` +
       `style="--col:${segment.column};--span:${segment.span};--lane:${segment.lane}${tagged.hue === null ? "" : `;--h:${tagged.hue}`}" ` +
       `aria-label="${escape(item.title)}, ${range}">${tagIcon(item.tag, "bar__tag")}<span class="bar__title">${escape(item.title)}</span>${withRange ? `<span class="bar__range">${range}</span>` : ""}</button>`;

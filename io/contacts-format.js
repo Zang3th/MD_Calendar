@@ -1,9 +1,9 @@
+import { markdown } from "@zang3th/md-libs/core";
+
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
 // Parser and serializer for Contacts.md (see docs/DataFormat.md#contacts).
 (function (app) {
-  const byteOrderMark = String.fromCharCode(0xFEFF);
-  const keyPattern = /^#([A-Za-z]+)$/;
   const itemPattern = /^- (.*)$/;
   /** Block order of a contact; also the order in which blocks are written. */
   const keys = ["FirstName", "LastName", "Nickname", "Birthday", "Phone", "Email", "Address", "Company", "Position", "Groups", "Anniversary", "Favorite", "Note"];
@@ -48,32 +48,25 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
    */
   function parseContact(lines, warnings) {
     const contact = emptyContact();
-    /** @type {string | null} */
-    let mode = null;
-    const seen = new Set();
-    /** @param {{line: string, index: number}} entry */
-    const keep = entry => {
-      contact.extra.push(entry.line);
-      warnings.push({ lineNumber: entry.index + 1, kind: "unknown-line", text: entry.line });
+    /** @param {{text: string, index: number}} line */
+    const keep = line => {
+      contact.extra.push(line.text);
+      warnings.push({ lineNumber: lines[line.index + 1].index + 1, kind: "unknown-line", text: line.text });
     };
-    for (const entry of lines.slice(1)) {
-      const { line } = entry;
-      const key = keyPattern.exec(line);
-      if (key) {
-        mode = keys.includes(key[1]) && !seen.has(key[1]) ? key[1] : null;
-        if (mode) seen.add(mode);
-        else keep(entry);
+    for (const line of markdown.keyBlocks(lines.slice(1).map(entry => entry.line), { keys, prose: ["Note"] })) {
+      if (line.type === "key") continue;
+      if (line.type === "unknown") {
+        keep(line);
         continue;
       }
-      if (mode === "Note") {
-        contact.note.push(line);
+      if (line.type === "prose") {
+        contact.note.push(line.text);
         continue;
       }
-      if (line.trim() === "") continue;
-      const item = itemPattern.exec(line);
-      const value = item ? item[1].trim() : "";
-      if (!item || !mode || contact.extra.length) {
-        keep(entry);
+      const { key: mode, value } = line;
+      const kept = { text: lines[line.index + 1].line, index: line.index };
+      if (contact.extra.length) {
+        keep(kept);
         continue;
       }
       if (mode === "FirstName" && !contact.firstName) contact.firstName = value;
@@ -89,8 +82,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         const anniversary = labelledValue(value);
         const date = app.calendar.parseDate(anniversary.value);
         if (date) contact.anniversaries.push({ label: anniversary.label, date });
-        else keep(entry);
-      } else keep(entry);
+        else keep(kept);
+      } else keep(kept);
     }
     while (contact.note.length && contact.note[contact.note.length - 1].trim() === "") contact.note.pop();
     // A contact written by hand with only a heading takes its name from the heading.
@@ -103,14 +96,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   /**
-   * @param {string} text
+   * @param {string} source
    * @returns {{contacts: MDCContacts, warnings: MDCFormatWarning[]}}
    */
-  function parse(text) {
-    const source = text.startsWith(byteOrderMark) ? text.slice(1) : text;
-    const newline = source.includes("\r\n") ? "\r\n" : "\n";
-    const lines = source.split(/\r?\n/);
-    if (lines.at(-1) === "") lines.pop();
+  function parse(source) {
+    const { lines, newline } = markdown.split(source);
     /** @type {MDCContacts} */
     const contacts = { newline, head: [], groups: [], contacts: [], revision: 0 };
     /** @type {MDCFormatWarning[]} */

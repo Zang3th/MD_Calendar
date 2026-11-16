@@ -2,7 +2,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const load = require("./load-classic");
 
-const { recurrence, calendar: domain } = load("vendor/dayjs/dayjs.min.js", "vendor/dayjs/plugin/isoWeek.js", "domain/calendar.js", "domain/recurrence.js");
+const { recurrence, calendar: domain } = load("domain/calendar.js", "domain/recurrence.js");
 
 /** @param {unknown} value */
 function plain(value) {

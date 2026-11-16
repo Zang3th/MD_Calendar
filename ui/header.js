@@ -1,3 +1,5 @@
+import { history as undoHistory } from "@zang3th/md-libs/core";
+
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
 // Header pill: title, „+“, undo, redo, save control, view switcher, help, sound, holidays, backlog (docs/ui/Shell.md#header).
@@ -23,10 +25,18 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   /** The title keeps the width of its longest text so that the arrows next to it never move. */
   function sizeTitle() {
-    const names = Array.from({ length: 12 }, (_, month) => dayjs(`2026-${String(month + 1).padStart(2, "0")}-01`).format("MMMM 0000"));
+    const names = Array.from({ length: 12 }, (_, month) => app.calendar.formatDay(`2026-${String(month + 1).padStart(2, "0")}-01`, "MMMM 0000"));
     titleSizer.innerHTML = [...names, "Kontakte"].map(name => `<span>${name}</span>`).join("");
     sized = true;
   }
+
+  /** @type {import("@zang3th/md-libs/core").history.MDLControlStrings} */
+  const strings = {
+    undo: name => name ? `Rückgängig: „${name}“ (Strg Z)` : "Rückgängig",
+    redo: name => name ? `Wiederholen: „${name}“ (Strg Y)` : "Wiederholen",
+    save: (status, count) => status === "conflict" ? "Die Datei wurde außerhalb geändert: neu laden oder überschreiben"
+      : status === "unsaved" ? `${count} ungespeicherte Änderung${count === 1 ? "" : "en"} speichern (Strg S)` : "Alles gespeichert"
+  };
 
   /** @param {HTMLElement} button @param {string} text */
   function label(button, text) {
@@ -40,7 +50,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     title.disabled = !state.open;
     const week = state.view === "week";
     const contacts = state.view === "contacts";
-    if (state.open) titleText.textContent = contacts ? "Kontakte" : dayjs(week ? app.calendar.weekStart(state.anchor) : state.anchor).format("MMMM YYYY");
+    if (state.open) titleText.textContent = contacts ? "Kontakte" : app.calendar.formatDay(week ? app.calendar.weekStart(state.anchor) : state.anchor, "MMMM YYYY");
     else titleText.textContent = "MD_Calendar";
     label(newButton, contacts ? "Neuer Kontakt (N)" : "Neuer Eintrag (N)");
     views.forEach(([button, view], index) => {
@@ -49,19 +59,19 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     });
     backlogToggle.setAttribute("aria-pressed", String(state.backlogOpen));
 
-    undo.disabled = !state.canUndo;
-    redo.disabled = !state.canRedo;
-    label(undo, state.canUndo ? `Rückgängig: „${state.undoLabel}“ (Strg Z)` : "Rückgängig");
-    label(redo, state.canRedo ? `Wiederholen: „${state.redoLabel}“ (Strg Y)` : "Wiederholen");
+    const shown = undoHistory.controls({ history: state.history, unsaved: state.unsaved, conflict: state.conflict, strings });
+    undo.disabled = shown.undo.disabled;
+    redo.disabled = shown.redo.disabled;
+    label(undo, shown.undo.label);
+    label(redo, shown.redo.label);
 
-    const dirty = state.unsaved > 0 || state.conflict;
+    const dirty = shown.save.status !== "saved";
     save.classList.toggle("is-dirty", dirty);
     if (dirty) window.clearTimeout(flashTimer);
     save.classList.toggle("is-flash", !dirty && save.classList.contains("is-flash"));
     saveText.textContent = dirty ? "Speichern" : save.classList.contains("is-flash") ? "Gespeichert" : "";
-    saveCount.textContent = dirty ? String(state.unsaved) : "";
-    if (state.conflict) label(save, "Die Datei wurde außerhalb geändert: neu laden oder überschreiben");
-    else label(save, dirty ? `${state.unsaved} ungespeicherte Änderung${state.unsaved === 1 ? "" : "en"} speichern (Strg S)` : "Alles gespeichert");
+    saveCount.textContent = dirty ? String(shown.save.count) : "";
+    label(save, shown.save.label);
 
     sound.setAttribute("aria-pressed", String(state.muted));
     label(sound, state.muted ? "Ton an" : "Ton aus");

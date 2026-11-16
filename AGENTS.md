@@ -8,8 +8,9 @@ Rules for every agent working in this repository. This file contains rules only;
 - Preserve existing and unrelated behavior.
 - The documents in `docs/` are the specification. Follow them literally. When a request conflicts with them or leaves product behavior open, ask instead of inventing behavior, and record the answer in the owning document.
 - Runtime, technology and production dependencies are fixed in [Architecture](docs/Architecture.md#runtime). Test-only dependencies and package tooling are allowed.
+- The move to a build step (esbuild bundling ES modules into one classic script in an uncommitted `dist/`, built with `npm run build`) and to the shared library MD_Libs is approved as described in `../MD_Libs/docs/Plan.md`. Within that plan, runtime, dependencies and the adopted systems may change; update [Architecture](docs/Architecture.md) and [Decisions](docs/Decisions.md) in the same change.
 - Do not add unrequested features, abstractions, fallbacks, configuration or polish.
-- MD_Manager (`../MD_Manager`) is the reference for structure and for the systems listed in [Architecture](docs/Architecture.md#systems-adopted-from-md_manager). Copy deliberately and adapt; never copy blindly and never share code between the repositories.
+- Code shared with MD_Manager (`../MD_Manager`) lives in MD_Libs (`../MD_Libs`); never copy code between the application repositories. MD_Manager is the reference: MD_Libs reproduces its user-facing behavior, and where MD_Calendar differs, MD_Calendar adapts or sets an option. A change to MD_Libs may change internals and interfaces but never what an MD_Manager user sees or experiences.
 
 ## Documentation
 
@@ -66,8 +67,9 @@ Rules for every agent working in this repository. This file contains rules only;
 
 The test suite is deliberately lean so that iteration stays fast. Every test must be able to catch a real defect that no cheaper test catches.
 
-- `npm run verify` is the Definition of Done. It runs type checking, linting, the architecture checker and the tests, and fails fast.
+- `npm run verify` is the Definition of Done. It builds the bundle, then runs type checking, linting, the architecture checker and the tests, and fails fast.
 - Use `node:test` for `domain/` and the parsers and serializers in `io/`: golden-file round trips, recurrence expansion, date logic, moves between calendar and backlog, undo actions.
+- MD_Libs tests its own behavior. Tests here cover what MD_Calendar adds: its options, texts and wiring, not the library again.
 - Use Playwright only for critical flows that need a real browser: opening the folder and saving with the version check, external changes, drag and drop, wiring of undo and redo, the contact editor's commit and focus behavior.
 - No visual baseline screenshots until the implemented UI has stabilized; then the user decides.
 - Tests are deterministic, isolated and order-independent. Wait for observable states, never for fixed delays. Browser tests fail on console errors.

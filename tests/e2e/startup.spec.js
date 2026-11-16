@@ -11,11 +11,17 @@ test("the application page loads from file:// without errors", async ({ page: br
   browser.on("pageerror", error => errors.push(error.message));
 
   await browser.goto(page);
-  await expect.poll(() => browser.evaluate(() => {
-    const dayjs = /** @type {any} */ (window).dayjs;
-    return typeof dayjs === "function" && dayjs.locale();
-  })).toBe("de");
+  await expect(browser.locator("body")).toHaveAttribute("data-startup-state", "ready");
+  await expect(browser.locator(".build-missing")).toBeHidden();
   const faces = await browser.evaluate(async () => (await document.fonts.load('16px "Plus Jakarta Sans"', "Äb")).length);
   expect(faces).toBeGreaterThan(0);
   expect(errors).toEqual([]);
+});
+
+test("a page without a build shows how to build it instead of the application", async ({ page: browser }) => {
+  await browser.route("**/dist/app.js", route => route.abort("failed"));
+  await browser.goto(page);
+  await expect(browser.locator(".build-missing")).toBeVisible();
+  await expect(browser.locator(".build-missing")).toContainText("npm run build");
+  await expect(browser.locator(".app")).toBeHidden();
 });

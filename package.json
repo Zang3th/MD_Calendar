@@ -1,19 +1,28 @@
 {
   "private": true,
   "scripts": {
+    "build": "node tools/build.js",
     "check:types": "tsc -p jsconfig.json && tsc -p jsconfig.harness.json",
     "check:lint": "eslint . --max-warnings=0",
     "check:architecture": "node tools/check-architecture.js",
     "test:unit": "node --test \"tests/unit/*.test.js\"",
     "test:e2e": "playwright test --pass-with-no-tests",
-    "verify": "npm run check:types && npm run check:lint && npm run check:architecture && npm run test:unit && npm run test:e2e"
+    "verify": "npm run build && npm run check:types && npm run check:lint && npm run check:architecture && npm run test:unit && npm run test:e2e"
+  },
+  "dependencies": {
+    "@zang3th/md-libs": "github:Zang3th/MD_Libs#master",
+    "sortablejs": "1.15.7"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",
     "@playwright/test": "1.62.0",
     "@types/node": "24.13.3",
+    "esbuild": "0.28.2",
     "eslint": "9.39.5",
     "globals": "16.5.0",
     "typescript": "5.9.3"
+  },
+  "allowScripts": {
+    "esbuild": true
   }
 }

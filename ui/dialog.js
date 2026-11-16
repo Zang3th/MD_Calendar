@@ -1,3 +1,4 @@
+
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
 // Entry dialog (docs/ui/Shell.md#entry-dialog): title, date or range, time, recurrence, location, note.
@@ -97,7 +98,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   function updateDateHint() {
     const startKey = dateKey();
     const endKey = multi.getAttribute("aria-pressed") === "true" ? app.calendar.parseDate(endDate.value) : "";
-    const spelled = (/** @type {string} */ key) => dayjs(key).format("dddd, D. MMMM YYYY");
+    const spelled = (/** @type {string} */ key) => app.calendar.formatDay(key, "dddd, D. MMMM YYYY");
     dateHint.textContent = !startKey ? "" : endKey && endKey !== startKey ? `${spelled(startKey)} bis ${spelled(endKey)}` : spelled(startKey);
   }
 
@@ -113,7 +114,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const options = [["", "Keine"], ["DAILY", "Täglich"], ["WEEKLY", "Wöchentlich"], ["MONTHLY_DAY", `Monatlich am ${day}.`]];
     if (position <= 4) options.push(["MONTHLY_POS", `Monatlich am ${position}. ${longNames[weekday]}`]);
     if (day + 7 > daysInMonth) options.push(["MONTHLY_LAST", `Monatlich am letzten ${longNames[weekday]}`]);
-    options.push(["YEARLY", `Jährlich am ${dayjs(key).format("D. MMMM")}`]);
+    options.push(["YEARLY", `Jährlich am ${app.calendar.formatDay(key, "D. MMMM")}`]);
     repeat.innerHTML = options.map(([value, label]) => `<option value="${value}">${label}</option>`).join("");
     repeat.value = options.some(([value]) => value === selected) ? selected : "";
   }

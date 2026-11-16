@@ -2,7 +2,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const load = require("./load-classic");
 
-const { calendar: domain } = load("vendor/dayjs/dayjs.min.js", "vendor/dayjs/plugin/isoWeek.js", "domain/calendar.js", "domain/recurrence.js");
+const { calendar: domain } = load("domain/calendar.js", "domain/recurrence.js");
 
 /** @param {unknown} value */
 function plain(value) {
@@ -35,21 +35,16 @@ function roundTrip(calendar, action) {
   return after;
 }
 
-test("weeks start on Monday and follow ISO 8601 numbering across the year boundary", () => {
+// Day arithmetic, weeks and ISO week numbers are tested in MD_Libs core/dates; these tests cover what the calendar adds.
+test("a week lists Monday to Sunday, also across the year boundary", () => {
   assert.deepEqual(plain(domain.weekDays("2026-11-12")), ["2026-11-09", "2026-11-10", "2026-11-11", "2026-11-12", "2026-11-13", "2026-11-14", "2026-11-15"]);
-  assert.equal(domain.weekStart("2026-11-15"), "2026-11-09");
-  assert.equal(domain.isoWeek("2026-11-12"), 46);
-  assert.equal(domain.weekStart("2027-01-01"), "2026-12-28");
-  assert.equal(domain.isoWeek("2027-01-01"), 53);
-  assert.equal(domain.isoWeek("2027-01-04"), 1);
-  assert.equal(domain.addDays("2026-10-25", 1), "2026-10-26");
+  assert.deepEqual(plain(domain.weekDays("2027-01-01")), ["2026-12-28", "2026-12-29", "2026-12-30", "2026-12-31", "2027-01-01", "2027-01-02", "2027-01-03"]);
 });
 
 test("dates and times are validated", () => {
   assert.equal(domain.parseDate("29.02.2028"), "2028-02-29");
   assert.equal(domain.parseDate("29.02.2026"), "");
   assert.equal(domain.parseDate("2026-11-12"), "");
-  assert.equal(domain.formatDate("2026-11-12"), "12.11.2026");
   assert.equal(domain.parseTime("9:05"), "09:05");
   assert.equal(domain.parseTime("24:00"), "");
   assert.equal(domain.parseTime("12:60"), "");

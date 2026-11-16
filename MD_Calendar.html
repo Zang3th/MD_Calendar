@@ -11,44 +11,10 @@
   <link rel="manifest" href="res/logo/site.webmanifest">
   <meta name="theme-color" content="#0e1520">
   <link rel="stylesheet" href="styles.css">
-  <script defer src="vendor/dayjs/dayjs.min.js"></script>
-  <script defer src="vendor/dayjs/plugin/isoWeek.js"></script>
-  <script defer src="vendor/dayjs/plugin/customParseFormat.js"></script>
-  <script defer src="vendor/dayjs/locale/de.js"></script>
-  <script defer src="vendor/sortable/Sortable.min.js"></script>
-  <script defer src="domain/calendar.js"></script>
-  <script defer src="domain/recurrence.js"></script>
-  <script defer src="domain/history.js"></script>
-  <script defer src="domain/backlog.js"></script>
-  <script defer src="domain/contacts.js"></script>
-  <script defer src="domain/search.js"></script>
-  <script defer src="io/calendar-format.js"></script>
-  <script defer src="io/backlog-format.js"></script>
-  <script defer src="io/holidays-format.js"></script>
-  <script defer src="io/config-format.js"></script>
-  <script defer src="io/contacts-format.js"></script>
-  <script defer src="io/vcard.js"></script>
-  <script defer src="io/ics.js"></script>
-  <script defer src="io/storage.js"></script>
-  <script defer src="ui/notifications.js"></script>
-  <script defer src="ui/tooltips.js"></script>
-  <script defer src="ui/sounds.js"></script>
-  <script defer src="ui/header.js"></script>
-  <script defer src="ui/start.js"></script>
-  <script defer src="ui/tiles.js"></script>
-  <script defer src="ui/render-week.js"></script>
-  <script defer src="ui/render-month.js"></script>
-  <script defer src="ui/render-contacts.js"></script>
-  <script defer src="ui/backlog-panel.js"></script>
-  <script defer src="ui/holidays-panel.js"></script>
-  <script defer src="ui/pickers.js"></script>
-  <script defer src="ui/dialog.js"></script>
-  <script defer src="ui/menus.js"></script>
-  <script defer src="ui/search-panel.js"></script>
-  <script defer src="ui/interactions.js"></script>
-  <script defer src="app.js"></script>
+  <script defer src="dist/app.js" onerror="document.documentElement.dataset.build = 'missing'"></script>
 </head>
 <body>
+  <p class="build-missing" role="alert">MD_Calendar ist noch nicht gebaut. Bitte im Ordner MD_Calendar <code>npm ci</code> und <code>npm run build</code> ausführen.</p>
   <svg class="icon-sprite" aria-hidden="true">
     <symbol id="icon-building" viewBox="0 0 32 32" fill="none">
     <path d="M8 27V7Q8 5 10 5H22Q24 5 24 7V27M5 27H27M13 10H14M18 10H19M13 15H14M18 15H19M14 27V21H18V27"
