@@ -47,9 +47,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     `<button class="dlg__day" type="button" aria-pressed="false" data-weekday="${index}" aria-label="${longNames[index]}">${name}</button>`).join("");
   const dayButtons = /** @type {HTMLButtonElement[]} */ (Array.from(weekdays.querySelectorAll("button")));
 
-  /** @param {string} message */
-  function reject(message) {
-    app.notifications.show("warning", message, "");
+  /** @param {[string, MDCNotificationBody]} message Title and body. */
+  function reject([title, body]) {
+    app.notifications.show("warning", title, body);
   }
 
   /** The start date as a day key, the last accepted one, or "" without a date (backlog). */
@@ -180,21 +180,22 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   function validate(input) {
     const value = input.value.trim();
     let normalized = value;
-    let message = "";
+    /** @type {[string, MDCNotificationBody] | null} */
+    let message = null;
     if (input === date && !value && request?.inBacklog && repeat.value === "" && multi.getAttribute("aria-pressed") !== "true") {
       normalized = "";
     } else if (input === date || input === endDate) {
       const key = app.calendar.parseDate(value);
-      if (!key) message = "Invalid date (DD.MM.YYYY)";
-      else if (input === endDate && key < dateKey()) message = "End before start";
+      if (!key) message = ["Invalid date", app.notifications.text`Use ${"DD.MM.YYYY"}.`];
+      else if (input === endDate && key < dateKey()) message = ["End before start", ""];
       else normalized = app.calendar.formatDate(key);
     } else if (input === interval) {
-      if (!/^[1-9]\d{0,2}$/.test(value)) message = "Interval: 1 to 999";
+      if (!/^[1-9]\d{0,2}$/.test(value)) message = ["Invalid interval", "Use 1 to 999."];
     } else if (value) {
       normalized = app.calendar.parseTime(value);
-      if (!normalized) message = "Invalid time (HH:MM)";
-      else if (input === end && !start.value.trim()) message = "End time without start";
-      else if (input === end && normalized < start.value.trim()) message = "End time before start";
+      if (!normalized) message = ["Invalid time", app.notifications.text`Use ${"HH:MM"}.`];
+      else if (input === end && !start.value.trim()) message = ["End time without start", "Enter a start time."];
+      else if (input === end && normalized < start.value.trim()) message = ["End time before start", ""];
     }
     if (message) {
       reject(message);

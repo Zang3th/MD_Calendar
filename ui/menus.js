@@ -8,10 +8,34 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   const help = /** @type {HTMLElement} */ (document.getElementById("helpPanel"));
   const helpContent = /** @type {HTMLElement} */ (document.getElementById("helpContent"));
   const helpButton = /** @type {HTMLButtonElement} */ (document.getElementById("helpButton"));
+  const options = /** @type {HTMLElement} */ (document.getElementById("optionsMenu"));
+  const optionsButton = /** @type {HTMLButtonElement} */ (document.getElementById("optionsButton"));
+  const hideIcons = /** @type {HTMLButtonElement} */ (document.getElementById("hideIcons"));
+  const newButton = /** @type {HTMLButtonElement} */ (document.getElementById("new"));
+  const hideIconsKey = "md-calendar-hide-icons";
   /** @type {Array<{run(): void}>} */
   let contextItems = [];
   // The context menu handles Escape with its arrow keys below.
-  const contextMenu = popover.create({ window, element: context, dismiss: "pointerdown", escape: false, onClose: () => { contextItems = []; } });
+  const contextMenu = popover.create({ window, element: context, dismiss: "pointerdown", escape: false, onClose: () => {
+    contextItems = [];
+    newButton.setAttribute("aria-expanded", "false");
+  } });
+  const optionsMenu = popover.create({
+    window, element: options, button: optionsButton, dismiss: "pointerdown",
+    onClose: reason => { if (reason === "escape") optionsButton.focus(); }
+  });
+
+  /** Hides the tag and series icons of entries and bars; a per-device preference. @param {boolean} hidden */
+  function setIconsHidden(hidden) {
+    document.body.classList.toggle("hide-icons", hidden);
+    hideIcons.setAttribute("aria-checked", String(hidden));
+  }
+  try { setIconsHidden(localStorage.getItem(hideIconsKey) === "1"); } catch { /* Without storage icons stay visible. */ }
+  hideIcons.addEventListener("click", () => {
+    const hidden = hideIcons.getAttribute("aria-checked") !== "true";
+    setIconsHidden(hidden);
+    try { localStorage.setItem(hideIconsKey, hidden ? "1" : "0"); } catch { /* The choice lasts for this page. */ }
+  });
   const helpMenu = popover.create({
     window, element: help, button: helpButton, dismiss: "pointerdown",
     onClose: reason => { if (reason === "escape") helpButton.focus(); }
@@ -41,17 +65,51 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     element.style.top = `${Math.round(position.top)}px`;
   }
 
+  /**
+   * Menu label text; a part in braces is a file type and shows as code: “Import {.ics} event”. The spaces around it
+   * are replaced by the chip's own margin, so that both sides get the same, fixed distance.
+   * @param {string} text
+   */
+  function label(text) {
+    return app.tiles.escape(text).replace(/\s*\{([^}]+)\}\s*/g, '<code class="menu__code">$1</code>');
+  }
+
   /** @param {MDCMenuItem[]} items @param {number} x @param {number} y */
   function showContext(items, x, y) {
     contextItems = items;
-    context.innerHTML = items.map((item, index) => `<button class="menu__item${item.danger ? " menu__item--danger" : ""}" type="button" role="menuitem" data-item="${index}">` +
-      `${app.tiles.icon(item.icon)}<span>${app.tiles.escape(item.label)}</span></button>`).join("");
+    context.innerHTML = items.map((item, index) => `<button class="menu__item${item.danger ? " menu__item--danger" : ""}" type="button" role="menuitem" data-item="${index}"${item.label.includes("{") ? ` aria-label="${app.tiles.escape(item.label.replace(/[{}]/g, ""))}"` : ""}>` +
+      `${app.tiles.icon(item.icon)}<span>${label(item.label)}</span></button>`).join("");
     placeAt(context, x, y);
     /** @type {HTMLElement | null} */ (context.querySelector(".menu__item"))?.focus();
   }
 
   function hideContext() {
     contextMenu.close();
+  }
+
+  /** The menu of “+”: the ways to add, placed below the button; a second click closes it. @param {MDCMenuItem[]} items */
+  function showNewMenu(items) {
+    if (!context.hidden && newButton.getAttribute("aria-expanded") === "true") {
+      hideContext();
+      return;
+    }
+    const bounds = newButton.getBoundingClientRect();
+    showContext(items, bounds.left, bounds.bottom + 8);
+    newButton.setAttribute("aria-expanded", "true");
+  }
+
+  /** Opens the options below their button, aligned to its right edge; a second call closes them. */
+  function showOptions() {
+    if (!options.hidden) {
+      optionsMenu.close();
+      return;
+    }
+    optionsMenu.open();
+    const bounds = optionsButton.getBoundingClientRect();
+    options.style.top = `${Math.round(bounds.bottom + 10)}px`;
+    options.style.left = "auto";
+    options.style.right = `${Math.round(window.innerWidth - bounds.right)}px`;
+    hideIcons.focus();
   }
 
   /** Opens the help below its button, like the holiday overview; a second call closes it. @param {boolean} [open] */
@@ -88,10 +146,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   window.addEventListener("resize", () => {
     hideContext();
     showHelp(false);
+    optionsMenu.close();
   });
 
   app.menus = {
-    showContext, hideContext, showHelp,
+    showContext, hideContext, showHelp, showNewMenu, showOptions,
     isModalOpen: () => !context.hidden
   };
 })(window.MDCalendar);

@@ -23,13 +23,6 @@
           stroke-linecap="round"
           stroke-linejoin="round"/>
     </symbol>
-    <symbol id="icon-cake" viewBox="0 0 32 32" fill="none">
-    <path d="M6 27H26M8 27V18Q8 16 10 16H22Q24 16 24 18V27M8 21Q10.5 23.5 13 21Q15.5 18.5 18 21Q20.5 23.5 24 21M11 16V12M16 16V12M21 16V12M11 7V8M16 7V8M21 7V8"
-          stroke="currentColor"
-          stroke-width="3"
-          stroke-linecap="round"
-          stroke-linejoin="round"/>
-    </symbol>
     <symbol id="icon-calendar" viewBox="0 0 32 32" fill="none">
     <path d="M9 7H23Q27 7 27 11V23Q27 27 23 27H9Q5 27 5 23V11Q5 7 9 7Z
              M5 13H27M11 4V9M21 4V9"
@@ -108,8 +101,15 @@
           stroke-linecap="round"
           stroke-linejoin="round"/>
     </symbol>
-    <symbol id="icon-flag" viewBox="0 0 32 32" fill="none">
-    <path d="M8 28V5M8 6H24L20 11.5L24 17H8"
+    <symbol id="icon-folder" viewBox="0 0 32 32" fill="none">
+    <path d="M5 10Q5 7 8 7H13L16 10H24Q27 10 27 13V23Q27 26 24 26H8Q5 26 5 23Z"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-gift" viewBox="0 0 32 32" fill="none">
+    <path d="M6 13H26V18H6ZM8 18V27H24V18M16 13V27M16 13Q10 6 8.5 10Q8 13 16 13Q24 13 23.5 10Q22 6 16 13"
           stroke="currentColor"
           stroke-width="3"
           stroke-linecap="round"
@@ -131,6 +131,15 @@
           stroke-linecap="round"
           stroke-linejoin="round"/>
     </g>
+    </symbol>
+    <symbol id="icon-holiday" viewBox="0 0 32 32" fill="none">
+    <path d="M6 9H26V27H6ZM6 14H26M11 5V9M21 5V9"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    <path fill="currentColor"
+          d="M16 16.5L17.4 19.3L20.4 19.7L18.2 21.8L18.8 24.8L16 23.3L13.2 24.8L13.8 21.8L11.6 19.7L14.6 19.3Z"/>
     </symbol>
     <symbol id="icon-import" viewBox="0 0 32 32" fill="none">
     <path d="M9 5H19L25 11V25Q25 27 23 27H9Q7 27 7 25V7Q7 5 9 5ZM16 13V22M12 18L16 22L20 18"
@@ -163,6 +172,12 @@
           stroke-width="3"
           stroke-linecap="round"
           stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-menu" viewBox="0 0 32 32" fill="none">
+    <path d="M7 9H25M7 16H25M7 23H25"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"/>
     </symbol>
     <symbol id="icon-muted" viewBox="0 0 32 32" fill="none">
     <g transform="translate(-.5 0)">
@@ -415,10 +430,12 @@
   <div class="app">
     <header class="hdr glass">
       <div class="hdr__left">
-        <img class="logo" src="res/logo/mark.svg" alt="MD_Calendar" width="32" height="32">
+        <button class="logo" id="logo" type="button" aria-label="Start page"><img src="res/logo/mark.svg" alt="" width="32" height="32"></button>
         <button class="hdr__title" id="title" type="button" aria-label="Today (T)" disabled><span class="hdr__titletext" id="titleText">MD_Calendar</span><span class="hdr__sizer" id="titleSizer" aria-hidden="true"></span></button>
+        <span class="version" id="appVersion"></span>
         <div class="edit" data-open-only>
-          <button class="primary primary--icon" id="new" type="button" aria-label="New entry (N)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-plus"></use></svg></button>
+          <button class="primary primary--icon" id="new" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="contextMenu" aria-label="Add entry or import"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-plus"></use></svg></button>
+          <input type="file" id="icsImport" accept=".ics,text/calendar" hidden>
           <button class="iconbtn" id="undo" type="button" aria-label="Undo" disabled><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-undo"></use></svg></button>
           <button class="iconbtn" id="redo" type="button" aria-label="Redo" disabled><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-redo"></use></svg></button>
           <button class="save" id="save" type="button" aria-label="All saved"><span class="save__icon"><i class="save__dot"></i><svg class="ui-icon save__ok" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-check"></use></svg></span><span class="save__text"></span><b class="save__count"></b></button>
@@ -430,24 +447,24 @@
         <button id="viewMonth" type="button" aria-pressed="false" aria-label="Month (M)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-month"></use></svg><span>Month</span></button>
         <button id="viewContacts" type="button" aria-pressed="false" aria-label="Contacts (C)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-contacts"></use></svg><span>Contacts</span></button>
       </div>
-      <div class="hdr__right" data-open-only>
+      <div class="hdr__right">
+        <button class="iconbtn" data-open-only id="holidaysButton" type="button" aria-expanded="false" aria-controls="holidaysPanel" aria-label="Holidays"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-holiday"></use></svg></button>
+        <button class="iconbtn" data-open-only id="backlogToggle" type="button" aria-pressed="false" aria-controls="backlog" aria-label="Backlog (B)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-inbox"></use></svg></button>
         <button class="iconbtn" id="helpButton" type="button" aria-expanded="false" aria-controls="helpPanel" aria-label="Help (?)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-help"></use></svg></button>
         <button class="iconbtn" id="sound" type="button" aria-pressed="false" aria-label="Mute"><svg class="ui-icon sound-on" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-volume"></use></svg><svg class="ui-icon sound-off" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-muted"></use></svg></button>
-        <button class="iconbtn" id="holidaysButton" type="button" aria-expanded="false" aria-controls="holidaysPanel" aria-label="Holidays"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-flag"></use></svg></button>
-        <button class="iconbtn" id="backlogToggle" type="button" aria-pressed="false" aria-controls="backlog" aria-label="Backlog (B)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-inbox"></use></svg></button>
+        <button class="iconbtn" id="optionsButton" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="optionsMenu" aria-label="Options"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-menu"></use></svg></button>
       </div>
     </header>
     <main class="main glass">
       <section class="start" id="start" hidden>
-        <img class="start__logo" src="res/logo/mark.svg" alt="" width="64" height="64">
-        <h1 class="start__title">MD_Calendar</h1>
-        <p class="start__text">Choose the folder with your calendar files.</p>
+        <section class="recent" aria-labelledby="recentTitle">
+          <h2 class="recent__title" id="recentTitle">Recent folders</h2>
+          <ul class="recent__list" id="recentList"></ul>
+        </section>
         <div class="start__actions">
-          <button class="primary" id="reopen" type="button" hidden></button>
-          <button class="btn btn--ghost" id="pick" type="button">Open folder</button>
-          <label class="btn btn--ghost start__import"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-import"></use></svg><span>Import calendar (.ics)</span><input type="file" id="icsImport" accept=".ics,text/calendar" hidden></label>
+          <button class="primary start__button" id="pick" type="button"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-folder"></use></svg>Open folder</button>
+          <button class="start__button start__new" id="create" type="button"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-plus"></use></svg>New calendar</button>
         </div>
-        <p class="start__note" id="startImport" hidden></p>
       </section>
       <div class="wk" id="week" hidden></div>
       <div class="month" id="month" hidden></div>
@@ -465,13 +482,23 @@
       <span class="hp__year" id="holidaysYear"></span>
       <button class="iconbtn" type="button" data-year="1" aria-label="Next year"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-chevron-right"></use></svg></button>
     </header>
-    <div class="hp__content" id="holidaysContent"></div>
+    <div class="seg seg--tabs" role="tablist" aria-label="Lists">
+      <span class="seg__thumb" id="holidaysThumb" aria-hidden="true"></span>
+      <button type="button" role="tab" id="holidaysTabVacation" data-tab="vacation" aria-selected="true" aria-controls="holidaysContent">Vacation</button>
+      <button type="button" role="tab" id="holidaysTabHolidays" data-tab="holidays" aria-selected="false" aria-controls="holidaysContent">Holidays</button>
+      <button type="button" role="tab" id="holidaysTabSchool" data-tab="school" aria-selected="false" aria-controls="holidaysContent">School vacations</button>
+    </div>
+    <div class="hp__content hp__content--tabs" id="holidaysContent" role="tabpanel"></div>
   </section>
-  <section class="search glass" id="searchPanel" aria-label="Search" hidden>
+  <section class="search" id="searchPanel" aria-label="Search" hidden>
     <label class="sp__field"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-search"></use></svg><input id="searchInput" placeholder="Search calendar …" aria-label="Search calendar" autocomplete="off" role="combobox" aria-expanded="true" aria-controls="searchResults"></label>
     <ul class="sp__results" id="searchResults" role="listbox" aria-label="Results"></ul>
   </section>
   <div class="menu popover glass" id="contextMenu" role="menu" aria-label="Entry" hidden></div>
+  <section class="occ popover glass" id="occasionsPanel" role="dialog" hidden></section>
+  <div class="menu popover glass" id="optionsMenu" role="menu" aria-label="Options" hidden>
+    <button class="menu__item menu__item--switch" id="hideIcons" type="button" role="menuitemcheckbox" aria-checked="false"><span>Hide icons</span><span class="switch" aria-hidden="true"></span></button>
+  </div>
   <section class="popover glass" id="helpPanel" aria-label="Shortcuts" hidden>
     <header class="hp__head hp__head--center"><span class="hp__year">Shortcuts</span></header>
     <div class="hp__content" id="helpContent"></div>
@@ -515,6 +542,7 @@
       <div class="picker" id="picker" hidden></div>
     </form>
   </dialog>
+  <div class="watermark" id="watermark" hidden>© 2026 MD_Calendar <span id="watermarkVersion"></span> · Tim Krüger (Zang3th) · <a href="https://github.com/Zang3th" target="_blank" rel="noopener noreferrer">GitHub</a></div>
   <section class="notifications" id="notifications" aria-label="Notifications" aria-live="polite"></section>
   <div class="app-tooltip" id="appTooltip" role="tooltip" hidden></div>
 </body>

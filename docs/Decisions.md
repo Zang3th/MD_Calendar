@@ -83,7 +83,7 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 ## D15 · Mobile later, as a PWA with a second storage adapter
 
 **Decision:** See [Mobile](Mobile.md).
-**Rejected:** a separate native app; a JSON file in Drive with an own mobile UI only (no advantage over the PWA).
+**Rejected:** a separate native app; a JSON file in the synced folder with an own mobile UI only (no advantage over the PWA).
 
 ## D16 · Logo "Orbit C"
 
@@ -146,8 +146,9 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 
 ## D27 · Start card instead of an empty app
 
-**Decision:** While no folder is open, the main panel shows a start card with the folder buttons; a remembered folder with a still granted permission opens directly. → [Shell](ui/Shell.md#start-card)
-**Reasons:** one obvious first step; one click for the usual case.
+**Decision:** While no folder is open, the main panel shows a start card with the five most recently opened folders and “Open folder”, as in MD_Manager. The most recently opened folder opens directly while its permission is still granted; the logo leads back to the start card. → [Shell](ui/Shell.md#start-card)
+**Reasons:** one obvious first step; one click for the usual case; switching between folders without the system dialog.
+**Rejected:** a start card with only the last folder; always showing the start card at startup (the daily calendar should open directly).
 
 ## D28 · External changes are never applied silently over local work
 
@@ -206,7 +207,7 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 
 ## D39 · Imported history is done
 
-**Decision:** The ICS import marks entries before today as done, so that years of history do not show as overdue. Events already present are skipped. The import is offered only on the start card and runs into the folder opened next. → [Domain](Domain.md#ics-import), [Shell](ui/Shell.md#start-card)
+**Decision:** The ICS import marks entries before today as done, so that years of history do not show as overdue. Events already present are skipped. The import is the second item of the **+** menu (“Import .ics event”), as one more way to add entries, and runs into the open calendar. → [Domain](Domain.md#ics-import), [Shell](ui/Shell.md#header)
 **Rejected:** importing everything open.
 
 ## D40 · No tooltips for now
@@ -224,6 +225,12 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 **Decision:** The whole project is English except the roadmap: UI texts, accessible names, notifications, displayed dates, docs and tests. Texts use the short wording of common calendar apps and MD_Manager (“Today”, “Recurring”, “Delete occurrence”, “End series here”). Displayed dates keep the day first (`Thursday, 12 November 2026`, `12 Nov`); numeric dates stay `DD.MM.YYYY`. Shortcut letters follow the English words: `T` today, `C` contacts. The vacation tag is “Vacation” (D36). → [Shell](ui/Shell.md), [Interaction](ui/Interaction.md#keyboard-shortcuts)
 **Reasons:** one language with MD_Manager and MD_Libs, whose default texts are English.
 **Rejected:** month-first US dates (the data format and MD_Manager put the day first).
+
+## D43 · MD_Calendar.json marks a calendar folder
+
+**Decision:** Every calendar folder holds `MD_Calendar.json` with technical data that does not belong in Markdown: a format version, one entry per device and the hash of each file as the app last saved it. The file is mandatory; a folder without it does not open, and “New calendar” on the start card sets a folder up. The sync client is the user's choice and is named nowhere. → [DataFormat](DataFormat.md#md_calendarjson), [Shell](ui/Shell.md#start-card)
+**Reasons:** a later comparison between devices needs data that is independent of device clocks and of file times a sync client rewrites; content hashes and device IDs provide it. Requiring the file keeps the app from opening an arbitrary folder as an empty calendar.
+**Rejected:** INI (no standard, flat, untyped); TOML and YAML (need a parser for a file nobody edits by hand); front matter in the Markdown files; timestamps alone as the comparison.
 
 ## Research notes
 

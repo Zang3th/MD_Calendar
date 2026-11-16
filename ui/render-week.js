@@ -18,7 +18,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     section.classList.toggle("is-past", key < today);
     /** @type {HTMLElement} */ (section.querySelector(".day__list")).innerHTML = app.tiles.dayTiles(calendar, key, today).html;
     // Badge maximum: 3 in the landscape week, 5 in the portrait week (docs/ui/Views.md#day-header).
-    /** @type {HTMLElement} */ (section.querySelector(".day__badges")).innerHTML = app.tiles.badges(key, portrait.matches ? 5 : 3);
+    /** @type {HTMLElement} */ (section.querySelector(".day__badges")).innerHTML = app.tiles.badges(key, portrait.matches ? 5 : 2);
   }
 
   /** @param {string} key */

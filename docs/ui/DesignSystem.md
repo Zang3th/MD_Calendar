@@ -21,7 +21,8 @@ The visual language of MD_Calendar. The values below are authoritative.
 | `--g2` | `rgba(110,200,225,.34)` | Background light 2 |
 | `--accent` | `#8fd8ee` | Primary accent: today, selection, focus, current week number |
 | `--accent-2` | `#c9a2e0` | Secondary accent: holidays, gradients |
-| `--warm` | `#f3cf7e` | Birthdays, anniversaries, favorites |
+| `--warm` | `#f3cf7e` | Birthdays, favorites |
+| `--heart` | `#ff8a8a` | Anniversaries |
 | `--panel` | `#182235` | Opaque tint for floating panels and dialogs |
 | `--on-accent` | `#07121a` | Text on accent fills |
 | `--tag-s` | `62%` | Saturation applied to tag hues |
@@ -117,9 +118,9 @@ Overdue entries are excluded and keep full visibility.
 
 Scale: 2, 4, 6, 8, 10, 12, 14, 16, 22 px. Every padding, margin and gap uses a value of the scale. The only exceptions are derived values and optical corrections:
 
-- Day cards are laid out with 5px on each side, half of the 10px gap between cards, so that multi-day bars can use equal columns.
+- Day cards are laid out with 5px on each side, half of the 10px gap between cards, so that multi-day bars can use equal columns. A bar starts and ends where the entries of its days do: 15px inside the column in the week (5px + the list padding of 10px), 11px in the month (cell margin 4px, border 1px, padding 6px). On hover a bar lifts by 1px like an entry.
 - The check box of an entry sits 1px lower to align with the first text line.
-- Positions computed from other values: the backlog panel starts below the header pill (14px + header height + 14px), the main panel makes room for it (panel width + 14px), and notifications sit 28px above the window edge (page spacing plus main panel padding).
+- Positions computed from other values: the backlog panel starts below the header pill (14px + header height + 14px), the main panel makes room for it (panel width + 14px), and notifications sit 28px from the bottom and right window edges (page spacing plus panel padding).
 
 | Area | Spacing |
 |---|---|
@@ -132,11 +133,14 @@ Scale: 2, 4, 6, 8, 10, 12, 14, 16, 22 px. Every padding, margin and gap uses a v
 | Backlog panel | padding 16px 14px; 16px between groups; 6px between entries; counter 2px 8px |
 | Holiday overview | padding 12px; rows 6px |
 | Entry dialog | padding 22px; 16px between sections; 10px between fields; field padding 12px 14px; buttons 8px 16px, in the footer 8px 10px; date and time picker padding 8px |
-| Menus and search bar | padding 6px (search 8px, 28px above the window edge like the notifications); items 8px 10px; 10px between icon and label |
-| Start card | padding 22px |
+| Menus and search bar | menus padding 6px; items 8px 10px; 10px between icon and label. The search bar is two separate glass surfaces without an enclosing panel: the field (44px high, padding 0 14px, radius 16px) 28px above the window edge and, 8px above it, the hit list (padding 6px, radius 16px), each with one 1px `--edge` frame |
+| Start card | width 460px, padding 22px 24px 24px; heading (18px, 800) to list 16px, list to buttons 20px; buttons 40px high, gap 10px, “Open folder” primary, “New calendar” on `--glass-2`; rows padding 11px 12px, gap 6px; name 13.5px 700 with the detail line 2px below (11.5px, 600, `--faint`); day 12px 700 `--muted` above the time 11.5px 600 `--faint`, right-aligned |
 | Contacts | 14px between list and detail; list padding 12px; detail padding 22px |
 | Chips and badges | chips 6px 12px; badges 2px 8px (month 2px 6px, portrait week 4px 8px); “+X” 0 6px; 6px between chips |
 | Tooltip | padding 6px 10px |
+| “+” menu | like the context menu, 8px below **+**, left-aligned to it; a file type as code chip (11.5px monospace, 700, `--accent` on 14% accent, radius 5px, padding 1px 5px) |
+| Options menu | like the context menu; the switch 30×18px with a 12px knob, `--accent` when on |
+| Notifications | width 280px, padding 12px 14px, 8px between cards; dot 8px, 10px to the title (13.5px, 700); body 9px below, after a 1px `--edge` line and 8px, indented 18px, 12.5px in `--muted`; highlighted names italic, 700, `--accent`; controls and shortcut keys as one key-cap style (11.5px, 700, padding 0 3px, radius 4px, 1px `--edge` outline with 2px bottom, no fill); buttons 10px below, right-aligned |
 
 ## Shape
 

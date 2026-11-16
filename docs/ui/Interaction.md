@@ -45,7 +45,7 @@ A click on free space clears the selection. Context menus show only icon and lab
 
 ## Creating entries
 
-- **+**, `N`, a double-click on a day and “New entry” in the context menu of a day open the entry dialog for a new entry (preselected date in [Shell](Shell.md#entry-dialog)).
+- “Create new entry” in the **+** menu, `N`, a double-click on a day and “New entry” in the context menu of a day open the entry dialog for a new entry (preselected date in [Shell](Shell.md#entry-dialog)).
 - New backlog entries are created with “To backlog” in the dialog.
 
 ## Selection, copy and paste

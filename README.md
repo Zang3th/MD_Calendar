@@ -38,7 +38,7 @@ Plan your days while keeping your data open, portable, and human-readable.
 
 From a clone of the repository, run `npm ci` and `npm run build` once; this bundles [MD_Libs](https://github.com/Zang3th/MD_Libs) into `dist/app.js`.
 
-Then open `MD_Calendar.html` in a Chromium-based browser with support for the File System Access API and choose the calendar folder.
+Then open `MD_Calendar.html` in a Chromium-based browser with support for the File System Access API. Choose “New calendar” for a new or existing folder of Markdown files, or “Open folder” for a folder that is already set up.
 
 ### Markdown Example
 
@@ -47,9 +47,10 @@ Examples of every file are stored locally in [`data/parsing/`](https://github.co
 ### Data
 
 - One folder holds all data, kept in sync by a sync client of your choice.
+- Only folders with `MD_Calendar.json` open; “New calendar” on the start page sets a folder up.
 - Markdown is the canonical format; parsing creates plain JavaScript state.
 - Serialization writes state changes back to the files in the folder.
-- The handle of the last opened folder is stored in IndexedDB.
+- Handles of the five most recently opened folders are stored in IndexedDB.
   - Calendar content remains in its Markdown files.
 
 | File | Content | Written by the app |
@@ -59,6 +60,7 @@ Examples of every file are stored locally in [`data/parsing/`](https://github.co
 | `Contacts.md` | Contacts and contact groups | yes |
 | `Holidays.md` | Public holidays and school vacations, generated outside the app | no |
 | `Config.md` | Tags with colors and icons, maintained by hand | no |
+| `MD_Calendar.json` | Technical data: format version, devices, hashes of saved files; marks the folder as a calendar folder | yes |
 
 The calendar document base structure is:
 
@@ -143,7 +145,7 @@ The verification pipeline builds the bundle and runs strict TypeScript checking 
     </tr>
   </thead>
   <tbody>
-    <tr><td>master</td><td>16.11.2026</td><td>517</td><td>606</td><td>4,070</td><td>59</td><td>See <a href="https://github.com/Zang3th/MD_Calendar/blob/master/docs/Roadmap.md">roadmap</a></td></tr>
+    <tr><td>master</td><td>16.11.2026</td><td>545</td><td>679</td><td>4,432</td><td>67</td><td>See <a href="https://github.com/Zang3th/MD_Calendar/blob/master/docs/Roadmap.md">roadmap</a></td></tr>
     <tr><td>v0.6.0</td><td>16.11.2026</td><td>517</td><td>606</td><td>4,070</td><td>59</td><td>Project baseline with MD_Libs as application core</td></tr>
   </tbody>
 </table>

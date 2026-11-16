@@ -78,20 +78,32 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   /** @type {Record<string, (current: MDCInteractionHandlers) => void>} */
   const buttons = {
     pick: current => current.pickFolder(),
-    reopen: current => current.reopenFolder(),
+    create: current => current.createCalendar(),
+    logo: current => current.showStart(),
     title: current => current.today(),
     viewWeek: current => current.showView("week"),
     viewMonth: current => current.showView("month"),
     viewContacts: current => current.showView("contacts"),
-    new: current => current.newEntry(),
+    new: current => current.showNewMenu(),
     undo: current => current.undo(),
     redo: current => current.redo(),
     save: current => current.save(),
     sound: current => current.toggleSound(),
     backlogToggle: current => current.toggleBacklog(),
     holidaysButton: current => current.toggleHolidays(),
-    helpButton: current => current.showHelp()
+    helpButton: current => current.showHelp(),
+    optionsButton: current => current.showOptions()
   };
+
+  // The calendar import reads the chosen .ics file (docs/ui/Shell.md#header).
+  const icsInput = /** @type {HTMLInputElement} */ (document.getElementById("icsImport"));
+  icsInput.addEventListener("change", () => {
+    const file = icsInput.files?.[0];
+    icsInput.value = "";
+    const current = handlers;
+    if (!file || !current) return;
+    void file.text().then(text => current.importCalendar(text, file.name));
+  });
 
   /** Set while a bar is dragged, so that the click ending the drag does not open the dialog. */
   let suppressClick = false;
@@ -105,6 +117,14 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     }
     const button = event.target.closest("button");
     if (!button || button.disabled) return;
+    if (button.dataset.recent) {
+      current.openRecent(button.dataset.recent);
+      return;
+    }
+    if (button.dataset.forget) {
+      current.forgetRecent(button.dataset.forget);
+      return;
+    }
     const action = buttons[button.id];
     const tile = /** @type {HTMLElement | null} */ (button.closest(".ev"));
     if (tile && (event.ctrlKey || event.metaKey)) {
@@ -125,7 +145,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     else if (button.classList.contains("ev__open") && tile) current.openEntry(entryRef(button));
     else if (button.dataset.more) current.openWeek(button.dataset.more);
     else if (button.dataset.multi) current.openMultiDay(Number(button.dataset.multi));
-    else if (button.dataset.contact && button.classList.contains("badge")) current.openContact(Number(button.dataset.contact));
+    else if (button.dataset.occasions) {
+      const bounds = button.getBoundingClientRect();
+      current.showOccasions(button.dataset.occasions, /** @type {MDCBadgeKind} */ (button.dataset.kind), bounds.right, bounds.bottom + 6);
+    }
   });
 
   // Double-clicking free space of a day creates an entry on that day (docs/ui/Interaction.md#creating).
@@ -306,7 +329,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     seriesDrag.shown = true;
     suppressClick = true;
     window.setTimeout(() => { suppressClick = false; }, 0);
-    handlers?.notice("Recurring entries can’t be moved");
+    handlers?.notice("Recurring entries can’t be moved", "Edit the series instead.");
   });
   document.addEventListener("pointerup", () => { seriesDrag = null; });
 
@@ -443,6 +466,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   app.interactions = {
     init, bindLists, refreshSelection, clearSelection,
+    /** Opens the file dialog of the calendar import (“+” menu). */
+    chooseCalendarFile: () => icsInput.click(),
     selected: () => Array.from(selection, pickFromId)
   };
 })(window.MDCalendar);

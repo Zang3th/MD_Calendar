@@ -11,6 +11,7 @@ function titles(page, day) {
 test("an entry is created and saved; a stale write leads to the reload-or-overwrite choice", async ({ page, calendar }) => {
   await calendar.openApp();
   await page.locator("#new").click();
+  await page.getByRole("menuitem", { name: "Create new entry" }).click();
   await page.locator("#dialogTitle").fill("Call Lena");
   await page.locator("#dialogStart").fill("9:30");
   await page.keyboard.press("Enter");

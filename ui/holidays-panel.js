@@ -1,15 +1,19 @@
 
-import { popover } from "@zang3th/md-libs/ui";
+import { popover, segmented } from "@zang3th/md-libs/ui";
 
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
-// Holiday overview: a floating panel below its header button with the holidays and school vacations of one year
-// (docs/ui/Views.md#holiday-overview).
+// Holiday overview: a floating panel below its header button with three tabs for one year: own vacations,
+// holidays and school vacations (docs/ui/Views.md#holiday-overview).
 (function (app) {
   const button = /** @type {HTMLButtonElement} */ (document.getElementById("holidaysButton"));
   const panel = /** @type {HTMLElement} */ (document.getElementById("holidaysPanel"));
   const yearLabel = /** @type {HTMLElement} */ (document.getElementById("holidaysYear"));
   const content = /** @type {HTMLElement} */ (document.getElementById("holidaysContent"));
+  const thumb = /** @type {HTMLElement} */ (document.getElementById("holidaysThumb"));
+  const tabs = /** @type {HTMLButtonElement[]} */ (Array.from(panel.querySelectorAll("[role=tab]")));
+  /** The open tab; it stays selected when the panel opens again. @type {"vacation" | "holidays" | "school"} */
+  let tab = "vacation";
   const floating = popover.create({
     window, element: panel, button, dismiss: "pointerdown",
     onClose: reason => { if (reason === "escape") button.focus(); }
@@ -26,27 +30,45 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return app.calendar.formatDay(key, "DD.MM.");
   }
 
+  /** @param {string} key */
+  const pastClass = key => key < today ? " is-past" : "";
+
+  /** @param {string} start @param {string} end */
+  const range = (start, end) => start === end ? short(start) : `${short(start)} – ${short(end)}`;
+
+  /** @param {string} text */
+  const empty = text => `<li class="hp__empty">${text}</li>`;
+
+  function rows() {
+    const prefix = String(year);
+    const escape = app.tiles.escape;
+    if (tab === "holidays") {
+      const holidays = data.holidays.filter(holiday => holiday.date.startsWith(prefix));
+      return holidays.map(holiday =>
+        `<li class="hp__row${pastClass(holiday.date)}"><span class="hp__date">${short(holiday.date)}</span>` +
+        `<span class="hp__day">${app.calendar.formatDay(holiday.date, "dd")}</span><span class="hp__name">${escape(holiday.name)}</span></li>`).join("")
+        || empty(data.holidays.length ? `No holidays in ${year}.` : "No Holidays.md in the folder.");
+    }
+    if (tab === "school") {
+      const vacations = data.vacations.filter(vacation => vacation.start.startsWith(prefix) || vacation.end.startsWith(prefix));
+      return vacations.map(vacation =>
+        `<li class="hp__row${pastClass(vacation.end)}"><span class="hp__date hp__date--range">${range(vacation.start, vacation.end)}</span>` +
+        `<span class="hp__name">${escape(vacation.name)}</span></li>`).join("")
+        || empty(data.vacations.length ? `No school vacations in ${year}.` : "No Holidays.md in the folder.");
+    }
+    return personal(year).map(item =>
+      `<li class="hp__row${pastClass(item.end)}"><span class="hp__date hp__date--range">${range(item.start, item.end)}</span>` +
+      `<span class="hp__name">${escape(item.title)}</span></li>`).join("")
+      || empty(`No vacation in ${year}.`);
+  }
+
   function fill() {
     yearLabel.textContent = String(year);
-    const prefix = String(year);
-    const holidays = data.holidays.filter(holiday => holiday.date.startsWith(prefix));
-    const vacations = data.vacations.filter(vacation => vacation.start.startsWith(prefix) || vacation.end.startsWith(prefix));
-    const escape = app.tiles.escape;
-    const holidayRows = holidays.map(holiday =>
-      `<li class="hp__row${holiday.date < today ? " is-past" : ""}"><span class="hp__date">${short(holiday.date)}</span>` +
-      `<span class="hp__day">${app.calendar.formatDay(holiday.date, "dd")}</span><span class="hp__name">${escape(holiday.name)}</span></li>`).join("");
-    const vacationRows = vacations.map(vacation =>
-      `<li class="hp__row${vacation.end < today ? " is-past" : ""}"><span class="hp__date hp__date--range">${short(vacation.start)} – ${short(vacation.end)}</span>` +
-      `<span class="hp__name">${escape(vacation.name)}</span></li>`).join("");
-    const empty = (/** @type {string} */ text) => `<li class="hp__empty">${text}</li>`;
-    const own = personal(year);
-    const ownRows = own.map(item =>
-      `<li class="hp__row${item.end < today ? " is-past" : ""}"><span class="hp__date hp__date--range">${item.start === item.end ? short(item.start) : `${short(item.start)} – ${short(item.end)}`}</span>` +
-      `<span class="hp__name">${escape(item.title)}</span></li>`).join("");
-    content.innerHTML =
-      `<h3 class="hp__title">Holidays</h3><ul class="hp__list">${holidayRows || empty(data.holidays.length ? `No holidays in ${year}.` : "No Holidays.md in the folder.")}</ul>` +
-      (own.length ? `<h3 class="hp__title">Vacation</h3><ul class="hp__list hp__list--own">${ownRows}</ul>` : "") +
-      `<h3 class="hp__title">School vacations</h3><ul class="hp__list">${vacationRows || empty(`No school vacations in ${year}.`)}</ul>`;
+    const selected = tabs.findIndex(button => button.dataset.tab === tab);
+    segmented.select({ buttons: tabs, selected, thumb, attribute: "aria-selected" });
+    content.setAttribute("aria-labelledby", tabs[selected].id);
+    content.innerHTML = `<ul class="hp__list">${rows()}</ul>`;
+    content.scrollTop = 0;
   }
 
   /** @param {boolean} open */
@@ -84,9 +106,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   panel.addEventListener("click", event => {
-    const target = event.target instanceof Element ? event.target.closest("[data-year]") : null;
+    const target = event.target instanceof Element ? event.target.closest("[data-year], [data-tab]") : null;
     if (!(target instanceof HTMLElement)) return;
-    year += Number(target.dataset.year);
+    if (target.dataset.tab) tab = /** @type {typeof tab} */ (target.dataset.tab);
+    else year += Number(target.dataset.year);
     fill();
   });
   window.addEventListener("resize", () => setOpen(false));

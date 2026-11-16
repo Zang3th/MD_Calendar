@@ -9,6 +9,10 @@ const root = path.resolve(__dirname, "../..");
 /** @type {Record<string, string>} */
 const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".ico": "image/x-icon", ".png": "image/png", ".webmanifest": "application/manifest+json" };
 
+/** Every calendar folder needs MD_Calendar.json; `openApp` writes this one unless the files bring their own. */
+const folderState = "MD_Calendar.json";
+const emptyState = '{\n  "format": 1,\n  "devices": {},\n  "files": {}\n}\n';
+
 /** Fixed "today" of the tests: Thursday, 12 November 2026. */
 const today = new Date("2026-11-12T10:00:00");
 
@@ -78,11 +82,11 @@ const test = /** @type {CalendarTest} */ (/** @type {unknown} */ (base.test.exte
       }, name);
     }
 
-    /** Opens the application, puts the files into the folder and opens it via the start card. @param {Record<string, string>} [files] */
+    /** Opens the application, puts the files and MD_Calendar.json into the folder and opens it via the start card. @param {Record<string, string>} [files] */
     async function openApp(files = {}) {
       await page.goto(`${origin}/MD_Calendar.html`);
       await base.expect(page.locator("body")).toHaveAttribute("data-startup-state", "ready");
-      for (const [name, text] of Object.entries(files)) await writeFile(name, text);
+      for (const [name, text] of Object.entries({ [folderState]: emptyState, ...files })) await writeFile(name, text);
       await page.locator("#pick").click();
       await base.expect(page.locator("#week:not([hidden]), #month:not([hidden])")).toBeVisible();
     }
@@ -92,4 +96,4 @@ const test = /** @type {CalendarTest} */ (/** @type {unknown} */ (base.test.exte
   }
 }))));
 
-module.exports = { test, expect: base.expect, today };
+module.exports = { test, expect: base.expect, today, emptyState };

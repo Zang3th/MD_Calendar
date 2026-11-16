@@ -42,7 +42,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const total = app.recurrence.occurrences(calendar, key).length + app.calendar.entries(calendar, key).length;
     const { html, hidden } = app.tiles.dayTiles(calendar, key, today, { limit: total <= room.all ? room.all : room.withMore, compact: true });
     /** @type {HTMLElement} */ (cell.querySelector(".mcell__list")).innerHTML = html;
-    /** @type {HTMLElement} */ (cell.querySelector(".mcell__badges")).innerHTML = app.tiles.badges(key, 1);
+    /** @type {HTMLElement} */ (cell.querySelector(".mcell__badges")).innerHTML = app.tiles.badges(key, 3, true);
     const more = /** @type {HTMLButtonElement} */ (cell.querySelector(".more"));
     more.hidden = !hidden;
     more.textContent = `+${hidden}`;

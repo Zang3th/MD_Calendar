@@ -1,6 +1,6 @@
 # Product
 
-MD_Calendar is a local-first calendar for a single user. It replaces Google Calendar as the primary calendar. All data lives in human-readable Markdown files in a folder that a sync client (Google Drive for desktop) keeps in sync.
+MD_Calendar is a local-first calendar for a single user. It replaces Google Calendar as the primary calendar. All data lives in human-readable Markdown files in one folder; any sync client can keep it in sync.
 
 ## Core idea
 

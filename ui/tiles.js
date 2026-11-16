@@ -97,20 +97,68 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
    * the last one shows “+X” for the rest (docs/ui/Views.md#day-header).
    * @param {string} key @param {number} max
    */
-  function badges(key, max) {
-    const holidays = (holidaysByDay.get(key) || []).map(name => ({ name, contact: -1, age: /** @type {number | null} */ (null), label: "" }));
-    const occasions = contacts ? app.contacts.occasionsOn(contacts, key).map(item => ({ name: item.name, contact: item.index, age: item.age, label: item.label })) : [];
-    const all = [...holidays, ...occasions];
-    if (!all.length) return "";
-    const shown = all.slice(0, max);
-    const rest = all.length - shown.length;
-    const describe = (/** @type {typeof all[number]} */ item) => `${item.name}${item.label ? ` (${item.label})` : ""}${item.age !== null ? ` ${item.age}` : ""}`;
-    const more = (/** @type {number} */ index) => rest && index === shown.length - 1 ? `<span class="badge__more">+${rest}</span>` : "";
-    return shown.map((item, index) => {
-      if (item.contact < 0) return `<span class="badge badge--holiday"><span class="badge__name">${escape(item.name)}</span>${more(index)}</span>`;
-      const label = `${item.label ? "Anniversary" : "Birthday"}: ${describe(item)}${rest && index === shown.length - 1 ? `; also ${all.slice(max).map(describe).join(", ")}` : ""}, open contact`;
-      return `<button class="badge badge--occasion" type="button" data-contact="${item.contact}" aria-label="${escape(label)}">${icon(item.label ? "heart" : "cake")}` +
-        `<span class="badge__name">${escape(item.name)}</span>${item.age !== null ? `<span class="badge__age">${item.age}</span>` : ""}${more(index)}</button>`;
+  /** Name, label and age of an occasion, for accessible names and the occasion list. @param {{name: string, label: string, age: number | null}} item */
+  function describeOccasion(item) {
+    return `${item.name}${item.label ? ` (${item.label})` : ""}${item.age !== null ? ` ${item.age}` : ""}`;
+  }
+
+  /** The kinds of day badges, highest priority first, with their icon and wording. */
+  const badgeKinds = /** @type {const} */ ([
+    { kind: "anniversary", icon: "heart", one: "Anniversary", many: "anniversaries" },
+    { kind: "birthday", icon: "gift", one: "Birthday", many: "birthdays" },
+    { kind: "holiday", icon: "holiday", one: "Holiday", many: "holidays" }
+  ]);
+
+  /** What a day has to show, by kind, in priority order. @param {string} key */
+  function dayOccasions(key) {
+    const occasions = contacts ? app.contacts.occasionsOn(contacts, key) : [];
+    return {
+      anniversary: occasions.filter(item => item.label),
+      birthday: occasions.filter(item => !item.label),
+      holiday: (holidaysByDay.get(key) || []).map(name => ({ index: -1, name, label: "", age: /** @type {number | null} */ (null) }))
+    };
+  }
+
+  /**
+   * Badges of a day header, starting at the top right: anniversaries (heart), birthdays (gift), holidays (calendar with a star).
+   * Written out (week): one anniversary or birthday shows its name and age, several share one badge with the icon and their
+   * count, holidays show their names; more than `max` of them switch to the compact form. Compact (month): one icon badge
+   * per kind with the count when there are several. Every anniversary and birthday badge, and every compact holiday badge,
+   * opens the list of its kind (docs/ui/Views.md#day-header).
+   * @param {string} key @param {number} max @param {boolean} [compact]
+   */
+  function badges(key, max, compact = false) {
+    const byKind = dayOccasions(key);
+    /** @type {Array<{label: string, tag: "button" | "span", attributes: string, action: string, content: string}>} */
+    const parts = [];
+    for (const { kind, icon: symbol, one, many } of badgeKinds) {
+      const items = byKind[kind];
+      if (!items.length) continue;
+      const css = `badge badge--${kind}${kind === "holiday" ? "" : " badge--occasion"}`;
+      // Every badge of people, and a compact holiday badge, opens the list of its kind; written-out holidays are text.
+      const label = items.length === 1 ? `${one}: ${describeOccasion(items[0])}` : `${items.length} ${many}: ${items.map(describeOccasion).join(", ")}`;
+      const list = { tag: /** @type {const} */ ("button"), action: "show list", label,
+        attributes: `class="${css}${compact ? " badge--compact" : ""}" type="button" data-occasions="${key}" data-kind="${kind}" aria-haspopup="dialog"` };
+      if (compact) {
+        parts.push({ ...list, content: `${icon(symbol)}${items.length > 1 ? `<span class="badge__count">${items.length}</span>` : ""}` });
+      } else if (kind === "holiday") {
+        for (const item of items) parts.push({ label: item.name, tag: "span", action: "", attributes: `class="${css}"`, content: `<span class="badge__name">${escape(item.name)}</span>` });
+      } else if (items.length === 1) {
+        const [item] = items;
+        parts.push({ ...list, content: `${icon(symbol)}<span class="badge__name">${escape(item.name)}</span>${item.age !== null ? `<span class="badge__age">${item.age}</span>` : ""}` });
+      } else {
+        parts.push({ ...list, content: `${icon(symbol)}<span class="badge__count">${items.length}</span>` });
+      }
+    }
+    // Written-out badges that do not fit fall back to the compact row, which always fits.
+    if (!compact && parts.length > max) return badges(key, badgeKinds.length, true);
+    const shown = parts.slice(0, max);
+    const rest = parts.slice(max);
+    return shown.map((part, index) => {
+      const last = rest.length > 0 && index === shown.length - 1;
+      const label = [part.label, last ? `also ${rest.map(other => other.label).join(", ")}` : "", part.action].filter(Boolean).join("; ");
+      const accessible = part.tag === "button" ? ` aria-label="${escape(label)}"` : "";
+      return `<${part.tag} ${part.attributes}${accessible}>${part.content}${last ? `<span class="badge__more">+${rest.length}</span>` : ""}</${part.tag}>`;
     }).join("");
   }
 
@@ -151,5 +199,5 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     element.animate([{ transform: "scale(1)" }, { transform: "scale(1.015)" }, { transform: "scale(1)" }], { duration: 600, easing: "ease-out" });
   }
 
-  app.tiles = { escape, icon, tint, tagIcon, tagIconIds, dayTiles, backlogTiles, bar, badges, setTags, setContacts, setHolidays, pulse, slide };
+  app.tiles = { escape, icon, tint, tagIcon, tagIconIds, dayTiles, backlogTiles, bar, badges, describeOccasion, dayOccasions, setTags, setContacts, setHolidays, pulse, slide };
 })(window.MDCalendar);

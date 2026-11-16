@@ -7,18 +7,17 @@ Mobile access is planned for version 2.0 (see [Roadmap](Roadmap.md)). Goal: the 
 | Topic | Plan |
 |---|---|
 | Hosting | Static hosting over `https`, for example on the NAS or GitHub Pages. A service worker enables offline use; the app is installed to the iPhone home screen. |
-| Storage | A second storage adapter for the Google Drive REST API with OAuth (Google Identity Services, token flow in the browser). Alternative: WebDAV on the NAS. |
+| Storage | A second storage adapter for a file store the browser can reach over `https`, for example WebDAV on the NAS. Which store is decided then. |
 | Layout | A third layout for narrow screens, for example a day list or agenda, plus the backlog. |
 | Several devices | The single-writer assumption ends. On a conflict the app reloads and re-applies its own unsaved changes, or lets the user decide. |
 
 ## Known obstacles
 
-- **Drive permissions:** with the `drive.file` scope the app sees only files it created or that were granted through the Google Picker. Files synced from the desktop are not included. Options: the full `drive` scope (unverified app, acceptable for personal use) or granting through the Picker.
-- **Token lifetime:** the browser token flow issues tokens valid for about one hour. Renewal is usually silent, sometimes a popup.
-- **Storage eviction in Safari:** iOS clears website storage after seven days without use, except for installed web apps. Drive therefore always holds the truth; local storage is only a cache.
+- **Access:** the store must reach the same folder the desktop uses, with credentials that the browser can hold.
+- **Storage eviction in Safari:** iOS clears website storage after seven days without use, except for installed web apps. The file store therefore always holds the truth; local storage is only a cache.
 
 ## Interim options before 2.0
 
 - Read the Markdown files directly in the iOS Files app.
 - Write an ICS file on save, served by the NAS, subscribed in the iOS calendar (read-only).
-- An iOS Shortcut that appends a line to the Inbox group of `Backlog.md` (to be verified with Google Drive as the target).
+- An iOS Shortcut that appends a line to the Inbox group of `Backlog.md` in the synced folder.

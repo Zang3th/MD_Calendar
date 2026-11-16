@@ -1,8 +1,9 @@
 import { history as undoHistory } from "@zang3th/md-libs/core";
+import { segmented } from "@zang3th/md-libs/ui";
 
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
-// Header pill: title, “+”, undo, redo, save control, view switcher, help, sound, holidays, backlog (docs/ui/Shell.md#header).
+// Header pill: logo, title, version, “+”, undo, redo, save control, view switcher, import, help, sound, holidays, backlog (docs/ui/Shell.md#header).
 (function (app) {
   const flashDuration = 1500;
   const element = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
@@ -20,6 +21,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   const thumb = /** @type {HTMLElement} */ (document.querySelector(".seg__thumb"));
   const backlogToggle = element("backlogToggle");
   const openOnly = /** @type {HTMLElement[]} */ (Array.from(document.querySelectorAll("[data-open-only]")));
+  // Version label and watermark belong to the start page, as in MD_Manager.
+  const startOnly = [element("appVersion"), element("watermark")];
   let flashTimer = 0;
   let sized = false;
 
@@ -47,16 +50,14 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   function update(state) {
     if (!sized && state.open) sizeTitle();
     for (const part of openOnly) part.hidden = !state.open;
+    for (const part of startOnly) part.hidden = state.open;
     title.disabled = !state.open;
     const week = state.view === "week";
     const contacts = state.view === "contacts";
     if (state.open) titleText.textContent = contacts ? "Contacts" : app.calendar.formatDay(week ? app.calendar.weekStart(state.anchor) : state.anchor, "MMMM YYYY");
     else titleText.textContent = "MD_Calendar";
-    label(newButton, contacts ? "New contact (N)" : "New entry (N)");
-    views.forEach(([button, view], index) => {
-      button.setAttribute("aria-pressed", String(state.view === view));
-      if (state.view === view) thumb.style.transform = `translateX(${index * 100}%)`;
-    });
+    label(newButton, contacts ? "Add contact or import" : "Add entry or import");
+    segmented.select({ buttons: views.map(([button]) => button), selected: views.findIndex(([, view]) => view === state.view), thumb });
     backlogToggle.setAttribute("aria-pressed", String(state.backlogOpen));
 
     const shown = undoHistory.controls({ history: state.history, unsaved: state.unsaved, conflict: state.conflict, strings });
@@ -88,5 +89,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     }, flashDuration);
   }
 
-  app.header = { update, flashSaved };
+  /** Writes the version into the label and the watermark. @param {string} version */
+  function setVersion(version) {
+    element("appVersion").textContent = `v${version}`;
+    element("watermarkVersion").textContent = `v${version}`;
+  }
+
+  app.header = { update, flashSaved, setVersion };
 })(window.MDCalendar);

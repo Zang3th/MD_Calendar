@@ -14,6 +14,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     window,
     container: /** @type {HTMLElement} */ (document.getElementById("notifications")),
     maxTextLength: 220,
+    duration: 7000,
     defaultCode: "MDC-000",
     strings: {
       tag: (severity, code) => severity === "error" ? code : "",
@@ -34,16 +35,16 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     },
     globalErrors: {
       title: "Unexpected error",
-      body: "An unexpected error occurred in the application.",
+      body: "Save, then reload if needed.",
       codes: { error: "MDC-900", rejection: "MDC-901" },
       details: (_kind, value) => errorMessage(value)
     }
   });
 
-  /** Blocks the application and reports why. @param {string} title @param {string} body @param {string} details @param {string} code */
+  /** Blocks the application and reports why. @param {string} title @param {MDCNotificationBody} body @param {string} details @param {string} code */
   function fatal(title, body, details, code) {
     stack.fatal(title, body, { details, code });
   }
 
-  app.notifications = { show: stack.show, fatal };
+  app.notifications = { show: stack.show, fatal, text: notifications.text, control: notifications.control, key: notifications.key };
 })(window.MDCalendar);

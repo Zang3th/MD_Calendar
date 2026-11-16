@@ -99,21 +99,42 @@ interface MDCalendarNamespace {
     emptyContact(): MDCContact;
     displayName(contact: MDCContact): string;
   };
+  folderState: {
+    fileName: string;
+    create(): MDCFolderState;
+    opened(document: Record<string, any>, device: MDCDevice, now: Date): MDCFolderState;
+    saved(document: Record<string, any>, device: MDCDevice, hashes: Record<string, string>, now: Date): MDCFolderState;
+    file(folder: MDCStorageAdapter, unreadable: () => void): ReturnType<typeof import("@zang3th/md-libs/platform").jsonFile.create>;
+    read(text: string): MDCFolderState | null;
+    summary(state: Record<string, any>, deviceId: string): MDCFolderInfo;
+  };
   vcard: { parse(text: string): MDCContact[]; serialize(contacts: MDCContact[]): string };
   ics: { parse(text: string): { events: MDCIcsEvent[]; skipped: number } };
   storage: {
-    pickFolder(): Promise<MDCStorageAdapter>;
-    rememberedFolder(): Promise<{ name: string; granted: boolean } | null>;
-    reopenFolder(): Promise<MDCStorageAdapter | null>;
+    pickFolder(): Promise<MDCOpenAttempt>;
+    createCalendar(setUp: (folder: MDCStorageAdapter) => Promise<unknown>): Promise<MDCStorageAdapter>;
+    device(): MDCDevice;
+    fingerprint(text: string): Promise<string>;
+    recentFolders(): Promise<MDCRecentFolder[]>;
+    rememberInfo(folder: MDCStorageAdapter, info: MDCFolderInfo): Promise<void>;
+    refreshInfo(id: string, summarize: (text: string) => MDCFolderInfo | null): Promise<MDCFolderInfo | null>;
+    openRecent(id: string): Promise<MDCOpenAttempt>;
+    openLast(): Promise<MDCOpenAttempt | null>;
+    forgetFolder(id: string): Promise<void>;
+    skipNextAutoOpen(): void;
+    takeSkipAutoOpen(): boolean;
     missingApis(): string[];
   };
   notifications: {
-    show(severity: MDCSeverity, title: string, body: MDCNotificationBody, options?: MDCNotificationOptions): { dismiss(): void; isOpen(): boolean };
-    fatal(title: string, body: string, details: string, code: string): void;
+    show(severity: MDCSeverity, title: MDCNotificationBody, body: MDCNotificationBody, options?: MDCNotificationOptions): { dismiss(): void; isOpen(): boolean };
+    fatal(title: string, body: MDCNotificationBody, details: string, code: string): void;
+    text(strings: TemplateStringsArray, ...values: unknown[]): Exclude<MDCNotificationBody, string>;
+    control(label: string): Exclude<MDCNotificationBody, string>[number];
+    key(keys: string): Exclude<MDCNotificationBody, string>[number];
   };
   tooltips: { hide(): void };
   sounds: { play(): Promise<void>; setMuted(value: boolean): void; isMuted(): boolean };
-  header: { update(state: MDCHeaderState): void; flashSaved(): void };
+  header: { update(state: MDCHeaderState): void; flashSaved(): void; setVersion(version: string): void };
   contactsView: {
     init(handlers: MDCContactsHandlers): void;
     render(contacts: MDCContacts, selected: number, today: string): void;
@@ -127,10 +148,13 @@ interface MDCalendarNamespace {
     showContext(items: MDCMenuItem[], x: number, y: number): void;
     hideContext(): void;
     showHelp(open?: boolean): void;
+    showNewMenu(items: MDCMenuItem[]): void;
+    showOptions(): void;
     isModalOpen(): boolean;
   };
   searchPanel: { init(search: (query: string) => MDCSearchItem[], jump: (item: MDCSearchItem) => void): void; toggle(): void; isOpen(): boolean };
-  start: { show(remembered: string | null): void; hide(): void; onImport(handler: (text: string, name: string) => void): void };
+  start: { show(folders: MDCRecentFolder[]): void; hide(): void };
+  occasionsPanel: { show(list: MDCOccasionList, right: number, top: number): void; isOpen(): boolean };
   tiles: {
     escape(value: string): string;
     icon(name: string): string;
@@ -142,7 +166,9 @@ interface MDCalendarNamespace {
     dayTiles(calendar: MDCCalendar, key: string, today: string, options?: { limit?: number; compact?: boolean }): { html: string; hidden: number };
     backlogTiles(entries: readonly MDCEntry[]): string;
     bar(segment: MDCSegment, today: string, withRange: boolean): string;
-    badges(key: string, max: number): string;
+    badges(key: string, max: number, compact?: boolean): string;
+    dayOccasions(key: string): Record<MDCBadgeKind, Array<{ index: number; name: string; label: string; age: number | null }>>;
+    describeOccasion(item: { name: string; label: string; age: number | null }): string;
     setTags(tags: MDCTag[]): MDCTag[];
     setHolidays(holidays: MDCHolidays): void;
     pulse(element: HTMLElement): void;
@@ -157,6 +183,7 @@ interface MDCalendarNamespace {
     bindLists(lists: HTMLElement[]): void;
     refreshSelection(): void;
     clearSelection(): void;
+    chooseCalendarFile(): void;
     selected(): MDCPick[];
   };
 }
@@ -173,7 +200,7 @@ type MDCViewRenderer = {
 };
 type MDCSeverity = "info" | "warning" | "error";
 type MDCFileName = "Calendar.md" | "Backlog.md" | "Contacts.md" | "Holidays.md" | "Config.md";
-type MDCNotificationBody = string | Array<string | { value: string }>;
+type MDCNotificationBody = import("@zang3th/md-libs/ui").notifications.MDLNotificationBody;
 type MDCNotificationOptions = {
   /** Stable error code (MDC-…), errors only. */
   code?: string;
@@ -225,6 +252,7 @@ type MDCDialogHandlers = {
 };
 /** A selected or clicked tile: an entry of a day or backlog group, or an occurrence of a series. */
 type MDCPick = { ref?: MDCEntryRef; series?: number; key: string };
+/** `label` may mark a file type in braces, shown as code: "Import {.ics} event". */
 type MDCMenuItem = { label: string; icon: string; danger?: boolean; run(): void };
 type MDCContactsHandlers = {
   select(index: number): void;
@@ -235,11 +263,15 @@ type MDCContactsHandlers = {
   exportOne(index: number): void;
   exportAll(): void;
   copy(text: string): void;
-  reject(message: string): void;
+  reject(title: string, body: MDCNotificationBody): void;
 };
 type MDCInteractionHandlers = {
   pickFolder(): void;
-  reopenFolder(): void;
+  createCalendar(): void;
+  openRecent(id: string): void;
+  forgetRecent(id: string): void;
+  importCalendar(text: string, name: string): void;
+  showStart(): void;
   today(): void;
   previous(): void;
   next(): void;
@@ -248,9 +280,12 @@ type MDCInteractionHandlers = {
   toggleHolidays(): void;
   toggleSearch(): void;
   showHelp(): void;
+  showOptions(): void;
+  showNewMenu(): void;
   openContact(index: number): void;
+  showOccasions(key: string, kind: MDCBadgeKind, right: number, top: number): void;
   isContactsView(): boolean;
-  notice(title: string): void;
+  notice(title: string, body: MDCNotificationBody): void;
   contextMenu(picks: MDCPick[], x: number, y: number, key: string): void;
   toggleMany(picks: MDCPick[]): void;
   removeMany(picks: MDCPick[]): void;
@@ -284,6 +319,25 @@ interface FileSystemHandle {
 }
 
 // Storage adapter and session: MD_Libs platform/storage and platform/session (see docs/Architecture.md#storage-adapter).
+/** The version from package.json, inserted by the build (tools/build.js). */
+declare const MDC_VERSION: string;
+
+/** An opened folder, or why it could not be opened; `uninitialized` when it has no MD_Calendar.json. */
+type MDCOpenResult = MDCStorageAdapter | "denied" | "missing" | "uninitialized";
+type MDCOpenAttempt = { name: string; result: MDCOpenResult };
+
+// MD_Calendar.json (see docs/DataFormat.md#md_calendarjson). Unknown fields are kept.
+type MDCDevice = { id: string; name: string };
+type MDCFolderState = {
+  format: number;
+  devices: Record<string, { name?: string; path?: string; lastOpened?: string; lastSaved?: string; [key: string]: unknown }>;
+  files: Record<string, { hash?: string; savedAt?: string; savedBy?: string; [key: string]: unknown }>;
+  [key: string]: unknown;
+};
+
+type MDCRecentFolder = { id: string; name: string; openedAt: number; info?: MDCFolderInfo };
+/** What the start card shows of a folder, from its MD_Calendar.json. */
+type MDCFolderInfo = { path: string; devices: number; savedBy: string };
 type MDCStorageAdapter = import("@zang3th/md-libs/platform").storage.MDLStorageAdapter;
 type MDCSession = import("@zang3th/md-libs/platform").session.MDLSession;
 
@@ -396,6 +450,14 @@ type MDCContacts = {
   revision: number;
 };
 /** A birthday (empty label) or an anniversary of a contact; `year` is "" when unknown. */
+type MDCBadgeKind = "anniversary" | "birthday" | "holiday";
+/** The list behind a day badge. */
+type MDCOccasionList = {
+  kind: MDCBadgeKind;
+  title: string;
+  date: string;
+  items: Array<{ name: string; detail: string; badge: string; open: (() => void) | null }>;
+};
 type MDCOccasion = { index: number; name: string; label: string; year: string };
 type MDCContactAction = MDCUndoAction & { days: string[]; contacts: true; selectAfter: number; selectBefore: number };
 

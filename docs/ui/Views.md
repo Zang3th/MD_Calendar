@@ -23,19 +23,21 @@ Rotating the screen switches to the default view of the new orientation. The bac
 ## Day header
 
 - Weekday and date. Today: weekday in the accent color, a “Today” pill in the accent color next to the date and an accent-tinted day card with an accent outline and glow, so that today stands out wherever it is in the week. In the month view the date of today sits on an accent pill.
-- **Badges** next to the date: the holiday first, then birthdays and anniversaries, stacked vertically while there is room.
-  - Holiday badge in `--accent-2`; birthday badges in `--warm` with a cake icon, first and last name and the age the contact turns; anniversary badges in `--warm` with a heart icon, the name and the number of years.
-  - Maximum badges: 3 in the landscape week, 5 in the portrait week, 1 in the month view. Beyond the maximum the last badge shows “+X”; its accessible name lists the others with ages.
-  - Clicking a birthday or anniversary badge opens the contact in the contacts view.
+- **Badges** start at the top right of the day card, by priority: anniversaries (heart, `--heart`), then birthdays (gift, `--warm`), then holidays (calendar with a star, `--accent-2`).
+  - **Written out** (week, while they fit: 2 badges in the landscape week, 5 in the portrait week): an anniversary or birthday shows the icon, the name and the age or number of years; several of one kind share one badge with the icon and their count; a holiday shows its name. Badges stack downwards.
+  - **Compact** (month, and the week when the written-out badges do not fit): one icon badge per kind in a row, with the count when there are several.
+  - Every anniversary or birthday badge, also for a single person, and every compact holiday badge opens a list below it, right-aligned to it, in the color of its kind: a header with the icon on a tinted tile, the title (“2 birthdays”, “Anniversary”, “2 holidays”) and the weekday and date; below it one row per name. Birthdays show “turns 32” as a pill, anniversaries their label (“Wedding”) and “6 years”; rows of people end with a chevron and open the contact, holidays are only listed.
 - School vacations are not shown in the week and month views; they appear only in the [holiday overview](#holiday-overview).
 
 ## Holiday overview
 
-An icon button in the right zone of the header toggles a small floating glass panel below the button. It shows the lists of one year; arrows switch the year:
+An icon button in the right zone of the header toggles a small floating glass panel below the button. It shows the lists of one year; arrows switch the year. Below the year, a segmented control with a sliding indicator (as the view switcher) switches between three tabs by mouse; only the list of the selected tab is shown, so the panel does not scroll:
 
-- “Holidays”: date, weekday and name of each public holiday.
-- “Vacation”: only when there are own vacations, that is entries and multi-day entries with the tag “Vacation”; date or date range and title. Consecutive days with the same title form one range.
-- “School vacations”: date range and name of each school vacation of North Rhine-Westphalia.
+1. “Vacation”: own vacations, that is entries and multi-day entries with the tag “Vacation”; date or date range and title. Consecutive days with the same title form one range. Without vacations: “No vacation in <year>.”
+2. “Holidays”: date, weekday and name of each public holiday.
+3. “School vacations”: date range and name of each school vacation of North Rhine-Westphalia; a one-day vacation shows one date.
+
+“Vacation” is selected at first; the selected tab stays when the year changes and when the panel opens again. The list area has a fixed height, so the panel keeps its size when the tab changes.
 
 Past holidays and vacations are dimmed.
 
@@ -55,7 +57,7 @@ Past holidays and vacations are dimmed.
 
 - Grid of week rows, Monday to Sunday. Days outside the month are faded.
 - A slim column (20px) on the left shows the ISO week number of each row, without a column heading. The current week's number is highlighted in the accent color.
-- Each cell: date (the first of a month shows the month name), at most one badge plus “+X”, compact entry list.
+- Each cell: date (the first of a month shows the month name), compact badges (see [Day header](#day-header)), compact entry list.
 - Visible entries per cell: at most 3 in landscape and 4 in portrait, fewer when the cell is too low (bar lanes, small window). Further entries collapse into a “+N” chip; clicking it opens the week of that day.
 - In narrow cells (portrait) tiles show only check box and title.
 - Multi-day bars run across the cells of each week row; only the cells a bar covers make room for it.
@@ -86,5 +88,5 @@ A full contact editor with a list on the left and the selected contact on the ri
   - “Note”: full width.
 - Inline fields have no frame; a surface appears on hover and an accent outline on focus. Remove buttons are always visible.
 - “Dates”: an invalid birthday or anniversary date is rejected with a notification and the field returns to its value.
-- “+” in the header and `N` create a new contact and focus its first name.
+- “Create new contact” in the **+** menu and `N` create a new contact and focus its first name.
 - Portrait: narrower list, single-column detail, birthday card as a row below the header.

@@ -45,15 +45,22 @@ test("double-clicking a day opens a new entry for that day", async ({ page, cale
   await expect(page.locator("#dialogDateHint")).toHaveText("Friday, 13 November 2026");
 });
 
-test("an ICS file chosen on the start card is imported into the folder opened next", async ({ page, calendar }) => {
-  await page.goto(`${calendar.origin}/MD_Calendar.html`);
-  await expect(page.locator("body")).toHaveAttribute("data-startup-state", "ready");
+test("“+” opens a choice; its ICS item imports into the open calendar", async ({ page, calendar }) => {
+  await calendar.openApp();
+  await page.locator("#new").click();
+  // The file type is a chip without spaces around it; the accessible name keeps the plain sentence.
+  await expect(page.locator("#new")).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByRole("menuitem")).toHaveCount(2);
+  await expect(page.getByRole("menuitem").first()).toHaveAccessibleName("Create new entry");
+  await expect(page.getByRole("menuitem").nth(1)).toHaveAccessibleName("Import .ics event");
+  await expect(page.locator("#contextMenu .menu__code")).toHaveText(".ics");
+  const chooser = page.waitForEvent("filechooser");
+  await page.getByRole("menuitem", { name: "Import .ics event" }).click();
+  await chooser;
   await page.locator("#icsImport").setInputFiles({
-    name: "einladung.ics", mimeType: "text/calendar",
+    name: "invitation.ics", mimeType: "text/calendar",
     buffer: Buffer.from("BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:x\r\nDTSTART;VALUE=DATE:20261113\r\nDTEND;VALUE=DATE:20261114\r\nSUMMARY:Invitation\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n")
   });
-  await expect(page.locator("#startImport")).toContainText("einladung.ics");
-  await page.locator("#pick").click();
   await expect(page.locator(`${friday} .ev__title`)).toHaveText(["Invitation"]);
-  await expect(page.locator("#icsImport")).toBeHidden();
+  await expect(page.locator(".notification", { hasText: "1 event imported" })).toBeVisible();
 });

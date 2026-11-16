@@ -58,7 +58,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const next = app.contacts.nextBirthday(contact, today);
     const soon = next && (sort === "birthday" || next.days <= 14);
     const sub = soon && next
-      ? `<span class="cx-row__soon">${icon("cake")}${when(next.days)}${next.age !== null ? ` · turns ${next.age}` : ""}</span>`
+      ? `<span class="cx-row__soon">${icon("gift")}${when(next.days)}${next.age !== null ? ` · turns ${next.age}` : ""}</span>`
       : escape(contact.company || contact.groups.join(", ") || contact.phones[0]?.value || "");
     return `<button class="cx-row${shown && index === shown.selected ? " is-sel" : ""}" type="button" data-contact="${index}">` +
       `${avatar(contact, "sm")}<span class="cx-row__main"><b>${escape(shownName(contact))}</b><small>${sub}</small></span>` +
@@ -121,9 +121,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const phone = contact.phones.find(item => item.value);
     const mail = contact.emails.find(item => item.value);
     const card = next
-      ? `<div class="cx-bcard${next.days === 0 ? " is-today" : next.days <= 14 ? " is-soon" : ""}"><span class="cx-bcard__icon">${icon("cake")}</span>` +
+      ? `<div class="cx-bcard${next.days === 0 ? " is-today" : next.days <= 14 ? " is-soon" : ""}"><span class="cx-bcard__icon">${icon("gift")}</span>` +
         `<b>${next.days === 0 ? "Today!" : when(next.days)}</b><span>${app.calendar.formatDay(next.date, "D MMMM")}${next.age !== null ? ` · turns ${next.age}` : ""}</span></div>`
-      : `<div class="cx-bcard cx-bcard--none"><span class="cx-bcard__icon">${icon("cake")}</span><span>No birthday</span></div>`;
+      : `<div class="cx-bcard cx-bcard--none"><span class="cx-bcard__icon">${icon("gift")}</span><span>No birthday</span></div>`;
     const field = (/** @type {string} */ key, /** @type {string} */ value, /** @type {string} */ placeholder, /** @type {string} */ classes) =>
       `<input class="cx-in ${classes}" data-key="${key}" value="${escape(value)}" placeholder="${placeholder}" aria-label="${placeholder}" autocomplete="off">`;
     return `<section class="cx-detail" aria-label="${escape(shownName(contact))}">` +
@@ -141,7 +141,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       `<section class="cx-sec"><h3>${icon("phone")}Phone</h3>${labelledRows("phones", contact)}</section>` +
       `<section class="cx-sec"><h3>${icon("mail")}Email</h3>${labelledRows("emails", contact)}</section>` +
       `<section class="cx-sec"><h3>${icon("pin")}Addresses</h3>${labelledRows("addresses", contact)}</section>` +
-      `<section class="cx-sec"><h3>${icon("cake")}Dates</h3><div class="cx-field"><span class="cx-label cx-label--fixed">Birthday</span>` +
+      `<section class="cx-sec"><h3>${icon("gift")}Dates</h3><div class="cx-field"><span class="cx-label cx-label--fixed">Birthday</span>` +
       `${field("birthday", contact.birthday ? app.contactsFormat.formatBirthday(contact.birthday) : "", "DD.MM.YYYY or DD.MM.", "")}` +
       `<span class="cx-hint">${next?.age !== null && next ? `turns ${next.age}` : ""}</span><span></span></div>` +
       contact.anniversaries.map((item, index) => `<div class="cx-field">` +
@@ -161,7 +161,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       `<label class="cx-search">${icon("search")}<input id="contactsQuery" placeholder="Name, company, email, phone …" aria-label="Search contacts" autocomplete="off"></label>` +
       `<div class="cx-filters" id="contactsFilters" role="group" aria-label="Filter"></div>` +
       `<div class="cx-bar"><div class="cx-sort" role="group" aria-label="Sort"><button type="button" data-sort="name" aria-pressed="true">A–Z</button>` +
-      `<button type="button" data-sort="birthday" aria-pressed="false">${icon("cake")}Birthday</button></div>` +
+      `<button type="button" data-sort="birthday" aria-pressed="false">${icon("gift")}Birthday</button></div>` +
       `<span class="cx-tools"><label class="cx-import">${icon("upload")}Import<input type="file" id="contactsImport" accept=".vcf,text/vcard" hidden></label>` +
       `<button class="cx-import" type="button" data-action="exportAll">${icon("download")}Export</button></span></div>` +
       `<div class="cx-scroll" id="contactsRows"></div><div class="cx-count" id="contactsCount"></div></aside><div class="cx-slot" id="contactsDetail"></div>`;
@@ -226,14 +226,14 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     if (name === "birthday") {
       const birthday = trimmed ? app.contactsFormat.parseBirthday(trimmed) : "";
       if (trimmed && !birthday) {
-        handlers?.reject("Invalid birthday (DD.MM.YYYY or DD.MM.)");
+        handlers?.reject("Invalid birthday", app.notifications.text`Use ${"DD.MM.YYYY"} or ${"DD.MM."}`);
         return;
       }
       contact.birthday = birthday;
     } else if (name === "anniversaryDate") {
       const date = app.calendar.parseDate(trimmed);
       if (!date) {
-        handlers?.reject("Invalid date (DD.MM.YYYY)");
+        handlers?.reject("Invalid date", app.notifications.text`Use ${"DD.MM.YYYY"}.`);
         return;
       }
       contact.anniversaries[index].date = date;

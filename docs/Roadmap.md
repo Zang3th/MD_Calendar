@@ -306,16 +306,38 @@ Die Kontakte-Ansicht wird ein vollwertiger Kontakt-Editor. `Contacts.md` bleibt 
 
 ### Allgemeines
 
-- [ ] Dummy-Daten in GDrive ablegen
-- [ ] Holidays korrekt erzeugen und ablegen
+- [x] ~Dummy-Daten erstellen und ablegen~
+- [x] ~Holidays korrekt erzeugen und ablegen~
+- [x] ~MD_Calendar.json ausarbeiten und erstellen~
+
+### Backlog
+
+- [ ] Grundsätzlich keine Icons in Backlog-Gruppen
+- [ ] New/New-Group fehlt => gute Lösung finden
+
+### Kontake
+
+- [ ] Grundsätzlich überarbeiten
 
 ### Neu-Dialog
 
 - [ ] Grundsätzlich überarbeiten
 
+### Startseite
+
+- [x] ~Grundsätzlich überarbeiten~
+
 ### Bugs und Verbesserungen
 
-- [ ] "Kalendereinträge einpflegen" von der Startseite entfernen
+- [x] ~Tabs in der Feiertage-/Urlaubsansicht~
+- [x] ~Notifications verbessern~
+- [x] ~Zeiträume: CSS verbessern~
+- [x] ~+-Button: New/Import~
+- [ ] Alignment von Karten links/rechts anpassen
+- [ ] Größe von Icons anpassen
+- [ ] Single-Left-Click: New
+- [ ] Double-Left-Click: Focus-/Zen-Mode
+- [ ] Drag-and-Drop Test zwischen Backlog und Tagen ist wackelig im parallelen Lauf
 
 ### Release
 
@@ -330,7 +352,7 @@ Die Kontakte-Ansicht wird ein vollwertiger Kontakt-Editor. `Contacts.md` bleibt 
 - TBD
 
 #Info
-Ab hier ersetzt MD_Calendar den Google-Kalender als Daily-Driver. Google bleibt noch als Archiv bestehen.
+Ab hier ersetzt MD_Calendar den Google-Kalender als Daily-Driver.
 
 ### Umstieg
 
@@ -341,19 +363,28 @@ Ab hier ersetzt MD_Calendar den Google-Kalender als Daily-Driver. Google bleibt 
 - [ ] Kontaktdaten exportieren
 - [ ] Ordner ins NAS-Backup aufnehmen
 
+### Statistiken und Analyse
+
+- [ ] Feature ausarbeiten
+
 ### Bugs und Verbesserungen
+
+- [ ] Farben für die Tags finalisieren
 
 ### Release
 
 - [ ] Docs + README aktualisieren
 
-## Mobil
+## Mobile
 
 #Version
-- 1.0.0
+- 0.9.0
+
+#Date
+- TBD
 
 #Info
-Dieselbe App als gehostete PWA auf dem iPhone. Die Vorkehrungen sind ab 0.1.0 eingebaut.
+Dieselbe App als gehostete PWA auf dem iPhone.
 
 ### Plattform
 
@@ -362,8 +393,6 @@ Dieselbe App als gehostete PWA auf dem iPhone. Die Vorkehrungen sind ab 0.1.0 ei
 
 ### Speicher
 
-- [ ] Drive-Scope klären (`drive` vs. Picker)
-- [ ] Drive-Adapter mit OAuth umsetzen
 - [ ] Konflikte zwischen Geräten behandeln => neu laden + eigene Änderungen erneut anwenden
 
 ### Layout

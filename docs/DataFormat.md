@@ -1,10 +1,11 @@
 # Data Format
 
-How the [domain](Domain.md) is stored. Markdown files in one folder are the only persistent data.
+How the [domain](Domain.md) is stored. Markdown files in one folder hold all data; `MD_Calendar.json` next to them holds technical data only.
 
 ## Calendar folder
 
-- The user selects one folder. A sync client keeps it in sync; the intended setup is Google Drive for desktop in mirror mode (or with the folder available offline).
+- The user selects one folder. Keeping it in sync between devices is left to any sync client; the app does not depend on one.
+- A folder is a calendar folder when it holds `MD_Calendar.json`. Only such a folder opens; “New calendar” on the start card adds the file to a folder (see [Shell](ui/Shell.md#start-card)).
 - The app reads and writes only the files listed below. Other files in the folder are ignored.
 - File names are fixed.
 - The format is English: file names, headings, `#Key` lines, labels and fixed values (`yes`, `Inbox`). Only the user's own content (titles, notes, names, tag and group names) is written as the user enters it.
@@ -16,6 +17,39 @@ How the [domain](Domain.md) is stored. Markdown files in one folder are the only
 | `Contacts.md` | Contacts and contact groups. | yes |
 | `Holidays.md` | Public holidays and school vacations. | no |
 | `Config.md` | Tags with colors and icons. Optional; created and maintained by hand. | no |
+| `MD_Calendar.json` | Technical data of the folder, see [below](#md_calendarjson). Mandatory. | yes |
+
+## MD_Calendar.json
+
+Technical data that does not belong in Markdown. The app writes it when a folder opens and after each save; the calendar never depends on its content.
+
+```json
+{
+  "format": 1,
+  "devices": {
+    "6f1c2a9e-…": {
+      "name": "Windows",
+      "path": "N:\\Calendar",
+      "lastOpened": "2026-11-16T09:12:04Z",
+      "lastSaved": "2026-11-16T09:30:00Z"
+    }
+  },
+  "files": {
+    "Calendar.md": { "hash": "sha256-4f2a…", "savedAt": "2026-11-16T09:30:00Z", "savedBy": "6f1c2a9e-…" }
+  }
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `format` | Version of this layout. An app that finds a higher number leaves the file untouched. |
+| `devices` | One entry per device, keyed by a random ID that each browser creates once and keeps in `localStorage`. `name` is set from the platform on first use and may be changed by hand. `path` is optional and entered by hand: the browser never learns the folder path. `lastOpened` and `lastSaved` are written by the app. |
+| `files` | One entry per file the app saved: SHA-256 of the content as written (`hash`), when (`savedAt`) and by which device (`savedBy`). |
+
+- Times are UTC in ISO 8601 without milliseconds.
+- The app writes two-space indentation with known keys in the order above, devices and files sorted by key, and a final line break.
+- Fields the app does not know are kept.
+- An unreadable file is recreated with a warning; a missing one while the folder is open is recreated silently.
 
 ## Rules for the calendar file
 
