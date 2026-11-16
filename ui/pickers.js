@@ -26,11 +26,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const today = app.calendar.todayKey(new Date());
     const start = app.calendar.weekStart(month);
     const cells = Array.from({ length: 42 }, (_, index) => app.calendar.addDays(start, index));
-    picker.innerHTML = `<div class="picker__head"><button class="iconbtn" type="button" data-month="-1" aria-label="Vorheriger Monat">${app.tiles.icon("chevron-left")}</button>` +
-      `<b>${app.calendar.formatDay(month, "MMMM YYYY")}</b><button class="iconbtn" type="button" data-month="1" aria-label="Nächster Monat">${app.tiles.icon("chevron-right")}</button></div>` +
+    picker.innerHTML = `<div class="picker__head"><button class="iconbtn" type="button" data-month="-1" aria-label="Previous month">${app.tiles.icon("chevron-left")}</button>` +
+      `<b>${app.calendar.formatDay(month, "MMMM YYYY")}</b><button class="iconbtn" type="button" data-month="1" aria-label="Next month">${app.tiles.icon("chevron-right")}</button></div>` +
       `<div class="picker__grid" role="grid">${weekdayNames.map(name => `<span class="picker__dow">${name}</span>`).join("")}` +
       cells.map(key => `<button type="button" class="picker__day${key.slice(0, 7) !== month.slice(0, 7) ? " is-other" : ""}${key === today ? " is-today" : ""}" ` +
-        `data-date="${key}" aria-pressed="${key === selected}" aria-label="${app.calendar.formatDay(key, "dddd, D. MMMM YYYY")}">${Number(key.slice(8))}</button>`).join("") + `</div>`;
+        `data-date="${key}" aria-pressed="${key === selected}" aria-label="${app.calendar.formatDay(key, "dddd, D MMMM YYYY")}">${Number(key.slice(8))}</button>`).join("") + `</div>`;
   }
 
   function renderTime() {
@@ -39,7 +39,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const start = /** @type {HTMLInputElement | null} */ (document.getElementById("dialogStart"));
     const anchor = current || (input.id === "dialogEnd" && start && app.calendar.parseTime(start.value)) || "08:00";
     const times = Array.from({ length: 96 }, (_, index) => `${String(Math.floor(index / 4)).padStart(2, "0")}:${String(index % 4 * 15).padStart(2, "0")}`);
-    picker.innerHTML = `<div class="picker__times" role="listbox" aria-label="Uhrzeit">${times.map(time =>
+    picker.innerHTML = `<div class="picker__times" role="listbox" aria-label="Time">${times.map(time =>
       `<button type="button" class="picker__time" role="option" data-time="${time}" aria-selected="${time === current}">${time}</button>`).join("")}</div>`;
     const target = times.find(time => time >= anchor) || times[times.length - 1];
     const list = /** @type {HTMLElement} */ (picker.firstElementChild);

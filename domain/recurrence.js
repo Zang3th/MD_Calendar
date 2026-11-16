@@ -140,25 +140,5 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return result;
   }
 
-  /** Describes a rule in German for the UI. @param {MDCRule} rule @param {string} start */
-  function describe(rule, start) {
-    const names = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
-    const short = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
-    const every = (/** @type {string} */ one, /** @type {string} */ many) => rule.interval > 1 ? `Alle ${rule.interval} ${many}` : one;
-    let text = "";
-    if (rule.freq === "DAILY") text = every("Täglich", "Tage");
-    else if (rule.freq === "WEEKLY") {
-      const days = (rule.byDay.length ? rule.byDay : [weekdays[weekday(start)]]).map(day => short[weekdays.indexOf(day)]);
-      text = `${every("Wöchentlich", "Wochen")}: ${days.join(", ")}`;
-    } else if (rule.freq === "MONTHLY") {
-      const match = /^(-?\d)(\w\w)$/.exec(rule.byDay[0] || "");
-      const on = rule.byMonthDay ? `am ${rule.byMonthDay}.` : match
-        ? `am ${match[1] === "-1" ? "letzten" : `${match[1]}.`} ${names[weekdays.indexOf(match[2])]}`
-        : `am ${parts(start).day}.`;
-      text = `${every("Monatlich", "Monate")} ${on}`;
-    } else text = every("Jährlich", "Jahre");
-    return rule.until ? `${text} bis ${app.calendar.formatDate(rule.until)}` : text;
-  }
-
-  app.recurrence = { parseRule, serializeRule, occursOn, occurrences, describe, weekday, weekdays };
+  app.recurrence = { parseRule, serializeRule, occursOn, occurrences, weekday, weekdays };
 })(window.MDCalendar);

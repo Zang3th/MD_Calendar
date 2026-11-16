@@ -12,12 +12,12 @@ test("checking off an occurrence records its date as done", async ({ page, calen
   expect(await calendar.readFile("Calendar.md")).toBe(`# Calendar\n\n${series}#Done\n- 12.11.2026\n`);
 });
 
-test("the month view collapses long days into „+N“ and opens their week", async ({ page, calendar }) => {
+test("the month view collapses long days into “+N” and opens their week", async ({ page, calendar }) => {
   const entries = ["A", "B", "C", "D", "E"].map(title => `- [ ] ${title}`).join("\n");
   await calendar.openApp({ "Calendar.md": `# Calendar\n\n## November 2026\n\n### 18.11.2026\n${entries}\n` });
   await page.keyboard.press("m");
   const cell = page.locator('.mcell[data-day="2026-11-18"]');
-  // How many tiles fit depends on the cell height; the visible ones plus „+N“ always cover all entries.
+  // How many tiles fit depends on the cell height; the visible ones plus “+N” always cover all entries.
   const visible = await cell.locator(".ev__title").allTextContents();
   expect(visible.length).toBeGreaterThan(0);
   expect(visible).toEqual(["A", "B", "C", "D", "E"].slice(0, visible.length));

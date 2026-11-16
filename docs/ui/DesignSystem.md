@@ -1,6 +1,6 @@
 # Design System
 
-The visual language of MD_Calendar. The values below are authoritative; the approved prototype ([prototypes/README.md](../../prototypes/README.md)) shows them in use.
+The visual language of MD_Calendar. The values below are authoritative.
 
 ## Visual language: Aurora
 
@@ -128,14 +128,14 @@ Scale: 2, 4, 6, 8, 10, 12, 14, 16, 22 px. Every padding, margin and gap uses a v
 | Main panel | padding 16px |
 | Week | 10px between day cards; day header padding 0 14px 0 16px, 4px between weekday and date, 4px between badges; day list padding 4px 10px 10px |
 | Entries in a day | 6px between entries; entry padding 8px 10px; 8px between check box and text |
-| Month | 8px between cells; cell padding 0 6px 6px; 4px between entries; entry padding 0 8px; „+N“ 4px below the entries; ISO week number 8px from the top |
+| Month | 8px between cells; cell padding 0 6px 6px; 4px between entries; entry padding 0 8px; “+N” 4px below the entries; ISO week number 8px from the top |
 | Backlog panel | padding 16px 14px; 16px between groups; 6px between entries; counter 2px 8px |
 | Holiday overview | padding 12px; rows 6px |
 | Entry dialog | padding 22px; 16px between sections; 10px between fields; field padding 12px 14px; buttons 8px 16px, in the footer 8px 10px; date and time picker padding 8px |
 | Menus and search bar | padding 6px (search 8px, 28px above the window edge like the notifications); items 8px 10px; 10px between icon and label |
 | Start card | padding 22px |
 | Contacts | 14px between list and detail; list padding 12px; detail padding 22px |
-| Chips and badges | chips 6px 12px; badges 2px 8px (month 2px 6px, portrait week 4px 8px); „+X“ 0 6px; 6px between chips |
+| Chips and badges | chips 6px 12px; badges 2px 8px (month 2px 6px, portrait week 4px 8px); “+X” 0 6px; 6px between chips |
 | Tooltip | padding 6px 10px |
 
 ## Shape
@@ -211,7 +211,7 @@ The set, chosen by the user from three designs per tag:
 | `car` | Auto | Car from the side |
 | `doctor` | Arzt | Cross in a rounded square |
 | `physio` | Physio | Stretching figure |
-| `vacation` | Urlaub | Palm tree |
+| `vacation` | Vacation | Palm tree |
 
 ## Motion
 

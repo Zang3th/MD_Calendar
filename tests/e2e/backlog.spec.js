@@ -36,10 +36,10 @@ test("entries move between the backlog and the days, and saving writes both file
 test("holidays show in the day header and tags take their color from Config.md", async ({ page, calendar }) => {
   await calendar.openApp({
     "Calendar.md": "# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] Tagged #Work\n- [ ] Unconfigured #Other\n",
-    "Holidays.md": "# Holidays\n\n## Holidays\n- 11.11.2026 Sankt Martin\n\n## School vacations\n",
+    "Holidays.md": "# Holidays\n\n## Holidays\n- 11.11.2026 St. Martin's Day\n\n## School vacations\n",
     "Config.md": "# Config\n\n## Tags\n- Work: #ff0000 briefcase\n"
   });
-  await expect(page.locator('.day[data-day="2026-11-11"] .badge--holiday')).toHaveText("Sankt Martin");
+  await expect(page.locator('.day[data-day="2026-11-11"] .badge--holiday')).toHaveText("St. Martin's Day");
   await expect(page.locator(`${thursday} .ev`).first()).toHaveClass(/has-tag/);
   await expect(page.locator(`${thursday} .ev`).first()).toHaveAttribute("style", "--h:0");
   await expect(page.locator(`${thursday} .ev`).nth(1)).not.toHaveClass(/has-tag/);

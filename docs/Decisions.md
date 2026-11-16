@@ -53,7 +53,7 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 
 ## D9 · UI: Aurora with header pill, Nord scheme
 
-**Decision:** The design direction is "Aurora" with all controls in a floating header pill (prototype `03b`), scheme Nord (fixed, see D19). → [Design System](ui/DesignSystem.md), [Shell](ui/Shell.md)
+**Decision:** The design direction is "Aurora" with all controls in a floating header pill, scheme Nord (fixed, see D19). → [Design System](ui/DesignSystem.md), [Shell](ui/Shell.md)
 **Process:** six directions were compared (Precision, Notebook, Aurora, Console, Editorial, Bento); Aurora was refined over several rounds (portrait week rows, header pill instead of a sidebar).
 
 ## D10 · Borders kept inside, none on header and main panel; past periods dimmed
@@ -89,7 +89,7 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 
 **Decision:** The logo is "Orbit C" and is used everywhere: application header, favicons, PWA icons. → [Design System](ui/DesignSystem.md#logo-orbit-c)
 **Reasons:** minimal, strong silhouette that stays legible at 16px; the gold dot echoes "today".
-**Rejected:** calendar sheet with "12", glass sheet with "C", "CAL" badge (illegible at favicon size), "C" with check mark. All options remain in `prototypes/logos/`.
+**Rejected:** calendar sheet with "12", glass sheet with "C", "CAL" badge (illegible at favicon size), "C" with check mark.
 
 ## D17 · Completion sound "Arpeggio"
 
@@ -111,7 +111,7 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 ## D20 · English data format
 
 **Decision:** The whole data format is English: file names (`Contacts.md`, `Holidays.md`), headings, `#Key` lines, labels and fixed values. Only the user's own content is written as entered. → [DataFormat](DataFormat.md)
-**Reasons:** one language for everything that code reads; only the roadmap is German.
+**Reasons:** one language for everything that code reads, like the UI (D42); only the roadmap is German.
 **Rejected:** German file names and keywords as user-facing data.
 
 ## D21 · Multi-day entries as metadata blocks
@@ -151,18 +151,18 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 
 ## D28 · External changes are never applied silently over local work
 
-**Decision:** A changed file with local changes and any deleted file lead to a persistent choice between „Neu laden“ and „Überschreiben“. → [Architecture](Architecture.md#external-changes), [Shell](ui/Shell.md#notifications)
+**Decision:** A changed file with local changes and any deleted file lead to a persistent choice between “Reload” and “Overwrite”. → [Architecture](Architecture.md#external-changes), [Shell](ui/Shell.md#notifications)
 **Rejected:** treating a deleted file as an empty file.
 
 ## D29 · No add button per day; no hover-only controls
 
 **Decision:** Days have no add button. A new entry is created with **+**, `N` (on the day under the pointer), a double-click on a day or the context menu of a day. Controls never appear only on hover. → [Interaction](ui/Interaction.md#creating-entries), [AGENTS.md](../AGENTS.md#user-experience)
 **Reasons:** the user wants the day cards without buttons; **+** and the dialog's date picker reach every day on touch too.
-**Rejected:** an always visible add button per day; showing it only on hover, as in the prototype (touch has no hover).
+**Rejected:** an always visible add button per day; showing it only on hover (touch has no hover).
 
 ## D30 · Series end with the chosen occurrence; occurrences are never overdue
 
-**Decision:** „Ab hier beenden“ keeps the chosen occurrence as the last one; a whole series is deleted with „Serie löschen“. Occurrences of recurring entries are never shown as overdue. → [Domain](Domain.md#recurring-entry)
+**Decision:** “End series here” keeps the chosen occurrence as the last one; a whole series is deleted with “Delete series”. Occurrences of recurring entries are never shown as overdue. → [Domain](Domain.md#recurring-entry)
 **Reasons:** a daily series would otherwise turn every missed past day red.
 **Rejected:** ending the day before; marking all or only the latest missed occurrence as overdue.
 
@@ -172,7 +172,7 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 
 ## D32 · Tag icon on tiles, bars and in the tag dropdown; holiday overview in the header
 
-**Decision:** The tag icon appears on entry tiles, multi-day bars and in the tag dropdown of the entry dialog, where the tags are sorted alphabetically and „Kein Tag“ is the default. The holiday overview is a floating panel opened by an icon button in the header with the lists holidays, own vacations and school vacations. → [Views](ui/Views.md), [Shell](ui/Shell.md#entry-dialog)
+**Decision:** The tag icon appears on entry tiles, multi-day bars and in the tag dropdown of the entry dialog, where the tags are sorted alphabetically and “No tag” is the default. The holiday overview is a floating panel opened by an icon button in the header with the lists holidays, own vacations and school vacations. → [Views](ui/Views.md), [Shell](ui/Shell.md#entry-dialog)
 **Rejected:** tag chips in the dialog (too wide with many tags); a year calendar of twelve small months; a fourth view in the view switcher.
 
 ## D33 · Birthdays on 29 February show on 28 February
@@ -189,9 +189,9 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 
 **Decision:** Contacts have initials avatars only. Birthday and anniversary badges show first and last name, never the nickname. → [Domain](Domain.md#contact)
 
-## D36 · Vacations are entries with the tag „Urlaub“
+## D36 · Vacations are entries with the tag “Vacation”
 
-**Decision:** Entries and multi-day entries with the tag named „Urlaub“ are listed as own vacations in the holiday overview, between holidays and school vacations. → [Views](ui/Views.md#holiday-overview)
+**Decision:** Entries and multi-day entries with the tag named “Vacation” are listed as own vacations in the holiday overview, between holidays and school vacations. → [Views](ui/Views.md#holiday-overview)
 **Rejected:** recognizing vacations by the tag icon; listing multi-day entries only.
 
 ## D37 · Selection, internal clipboard and context menu
@@ -201,7 +201,7 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 
 ## D38 · Further shortcuts
 
-**Decision:** `F` opens the search bar at the bottom edge (there is no search button), `K` contacts, `?` help panel, `Space`, `Del`, `Ctrl+A`, `Ctrl+C`, `Ctrl+V` for the selection, `N` on the day under the pointer, and the mouse wheel switches one week or month per gesture. → [Interaction](ui/Interaction.md#keyboard-shortcuts)
+**Decision:** `F` opens the search bar at the bottom edge (there is no search button), `C` contacts, `T` today, `?` help panel, `Space`, `Del`, `Ctrl+A`, `Ctrl+C`, `Ctrl+V` for the selection, `N` on the day under the pointer, and the mouse wheel switches one week or month per gesture. → [Interaction](ui/Interaction.md#keyboard-shortcuts)
 **Rejected:** `Ctrl+K` and `/` for the search.
 
 ## D39 · Imported history is done
@@ -218,6 +218,12 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 
 **Decision:** Favicons and the regular PWA icons show the mark without tile; only the iOS home screen icon and the maskable icon keep the tile. → [Design System](ui/DesignSystem.md#logo-orbit-c)
 **Reasons:** the user wants the logo without a frame wherever possible.
+
+## D42 · English UI
+
+**Decision:** The whole project is English except the roadmap: UI texts, accessible names, notifications, displayed dates, docs and tests. Texts use the short wording of common calendar apps and MD_Manager (“Today”, “Recurring”, “Delete occurrence”, “End series here”). Displayed dates keep the day first (`Thursday, 12 November 2026`, `12 Nov`); numeric dates stay `DD.MM.YYYY`. Shortcut letters follow the English words: `T` today, `C` contacts. The vacation tag is “Vacation” (D36). → [Shell](ui/Shell.md), [Interaction](ui/Interaction.md#keyboard-shortcuts)
+**Reasons:** one language with MD_Manager and MD_Libs, whose default texts are English.
+**Rejected:** month-first US dates (the data format and MD_Manager put the day first).
 
 ## Research notes
 

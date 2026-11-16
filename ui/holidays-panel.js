@@ -18,7 +18,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   let data = { holidays: [], vacations: [] };
   let today = "";
   let year = 0;
-  /** Own vacations of a year: entries and multi-day entries with the tag „Urlaub“. @type {(year: number) => MDCPeriod[]} */
+  /** Own vacations of a year: entries and multi-day entries with the tag “Vacation”. @type {(year: number) => MDCPeriod[]} */
   let personal = () => [];
 
   /** @param {string} key */
@@ -44,9 +44,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       `<li class="hp__row${item.end < today ? " is-past" : ""}"><span class="hp__date hp__date--range">${item.start === item.end ? short(item.start) : `${short(item.start)} – ${short(item.end)}`}</span>` +
       `<span class="hp__name">${escape(item.title)}</span></li>`).join("");
     content.innerHTML =
-      `<h3 class="hp__title">Feiertage</h3><ul class="hp__list">${holidayRows || empty(data.holidays.length ? `Keine Feiertage für ${year}.` : "Keine Holidays.md im Ordner.")}</ul>` +
-      (own.length ? `<h3 class="hp__title">Urlaub</h3><ul class="hp__list hp__list--own">${ownRows}</ul>` : "") +
-      `<h3 class="hp__title">Schulferien</h3><ul class="hp__list">${vacationRows || empty(`Keine Schulferien für ${year}.`)}</ul>`;
+      `<h3 class="hp__title">Holidays</h3><ul class="hp__list">${holidayRows || empty(data.holidays.length ? `No holidays in ${year}.` : "No Holidays.md in the folder.")}</ul>` +
+      (own.length ? `<h3 class="hp__title">Vacation</h3><ul class="hp__list hp__list--own">${ownRows}</ul>` : "") +
+      `<h3 class="hp__title">School vacations</h3><ul class="hp__list">${vacationRows || empty(`No school vacations in ${year}.`)}</ul>`;
   }
 
   /** @param {boolean} open */

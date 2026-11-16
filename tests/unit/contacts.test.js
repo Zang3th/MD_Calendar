@@ -47,13 +47,13 @@ test("birthdays show with age; 29 February shows on 28 February in non-leap year
 test("vCards are read and written; duplicates are merged without overwriting", () => {
   const card = "BEGIN:VCARD\r\nVERSION:3.0\r\nN:Example;Max;;;\r\nFN:Max Example\r\nTEL;TYPE=CELL:+49 170 0000000\r\nTEL;TYPE=HOME:02151 1234\r\n" +
     "EMAIL;TYPE=INTERNET:max@example.com\r\nBDAY:--0517\r\nitem1.X-ABDATE:2018-06-09\r\nitem1.X-ABLabel:_$!<Anniversary>!$_\r\nNOTE:Line one\\nLine two\r\nEND:VCARD\r\n" +
-    "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Lena Neu\r\nEMAIL:lena@example.com\r\nEND:VCARD\r\n";
+    "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Lena Walker\r\nEMAIL:lena@example.com\r\nEND:VCARD\r\n";
   const parsed = app.vcard.parse(card);
   assert.deepEqual(plain(parsed[0].phones), [{ label: "Mobile", value: "+49 170 0000000" }, { label: "Home", value: "02151 1234" }]);
   assert.equal(parsed[0].birthday, "--05-17");
   assert.deepEqual(plain(parsed[0].anniversaries), [{ label: "Anniversary", date: "2018-06-09" }]);
   assert.deepEqual(plain(parsed[0].note), ["Line one", "Line two"]);
-  assert.deepEqual([parsed[1].firstName, parsed[1].lastName], ["Lena", "Neu"]);
+  assert.deepEqual([parsed[1].firstName, parsed[1].lastName], ["Lena", "Walker"]);
 
   const { contacts } = app.contactsFormat.parse(golden);
   const result = app.contacts.importContacts(contacts, parsed);

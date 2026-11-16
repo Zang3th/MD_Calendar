@@ -42,9 +42,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const classes = ["ev", series && "ev--series", item.done && "is-done", overdue && "is-overdue"].filter(Boolean).join(" ");
     const tagged = tint(item.tag);
     const time = item.start ? `${item.start}${item.end && !compact ? `–${item.end}` : ""}` : "";
-    const description = [item.title, time, item.tag, series ? "Serie" : "", item.done ? "erledigt" : overdue ? "überfällig" : ""].filter(Boolean).join(", ");
+    const description = [item.title, time, item.tag, series ? "recurring" : "", item.done ? "done" : overdue ? "overdue" : ""].filter(Boolean).join(", ");
     return `<div class="${classes}${tagged.className}"${tagged.style} ${attributes}>` +
-      `<button class="ev__check" type="button" role="checkbox" aria-checked="${item.done}" aria-label="Erledigt: ${escape(item.title)}">${icon("check")}</button>` +
+      `<button class="ev__check" type="button" role="checkbox" aria-checked="${item.done}" aria-label="Done: ${escape(item.title)}">${icon("check")}</button>` +
       `<button class="ev__open" type="button" aria-label="${escape(description)}"><span class="ev__line">` +
       (time ? `<span class="ev__time">${time}</span>` : "") +
       tagIcon(item.tag, "ev__tag") +
@@ -86,7 +86,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const { item } = segment;
     const tagged = tint(item.tag);
     const classes = ["bar", segment.continuesBefore && "cont-l", segment.continuesAfter && "cont-r", item.end < today && "is-past"].filter(Boolean).join(" ");
-    const range = `${app.calendar.formatDay(item.start, "D. MMM")} – ${app.calendar.formatDay(item.end, "D. MMM")}`;
+    const range = `${app.calendar.formatDay(item.start, "D MMM")} – ${app.calendar.formatDay(item.end, "D MMM")}`;
     return `<button class="${classes}${tagged.className}" type="button" data-multi="${segment.index}" data-start="${item.start}" data-end="${item.end}" ` +
       `style="--col:${segment.column};--span:${segment.span};--lane:${segment.lane}${tagged.hue === null ? "" : `;--h:${tagged.hue}`}" ` +
       `aria-label="${escape(item.title)}, ${range}">${tagIcon(item.tag, "bar__tag")}<span class="bar__title">${escape(item.title)}</span>${withRange ? `<span class="bar__range">${range}</span>` : ""}</button>`;
@@ -94,7 +94,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   /**
    * Badges of a day header: holidays first, then birthdays and anniversaries; at most `max`,
-   * the last one shows „+X“ for the rest (docs/ui/Views.md#day-header).
+   * the last one shows “+X” for the rest (docs/ui/Views.md#day-header).
    * @param {string} key @param {number} max
    */
   function badges(key, max) {
@@ -108,7 +108,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const more = (/** @type {number} */ index) => rest && index === shown.length - 1 ? `<span class="badge__more">+${rest}</span>` : "";
     return shown.map((item, index) => {
       if (item.contact < 0) return `<span class="badge badge--holiday"><span class="badge__name">${escape(item.name)}</span>${more(index)}</span>`;
-      const label = `${item.label ? "Jahrestag" : "Geburtstag"}: ${describe(item)}${rest && index === shown.length - 1 ? `; außerdem ${all.slice(max).map(describe).join(", ")}` : ""}, Kontakt öffnen`;
+      const label = `${item.label ? "Anniversary" : "Birthday"}: ${describe(item)}${rest && index === shown.length - 1 ? `; also ${all.slice(max).map(describe).join(", ")}` : ""}, open contact`;
       return `<button class="badge badge--occasion" type="button" data-contact="${item.contact}" aria-label="${escape(label)}">${icon(item.label ? "heart" : "cake")}` +
         `<span class="badge__name">${escape(item.name)}</span>${item.age !== null ? `<span class="badge__age">${item.age}</span>` : ""}${more(index)}</button>`;
     }).join("");

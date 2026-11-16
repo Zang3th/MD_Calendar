@@ -13,15 +13,15 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return /^\d{2}\.\d{2}\.\d{4}$/.test(value.trim()) ? dates.parse(value)?.key ?? "" : "";
   }
 
-  /** German names for displayed dates, as the dayjs locale `de` had them. @type {import("@zang3th/md-libs/core").dates.MDLDateNames} */
+  /** English names for displayed dates. @type {import("@zang3th/md-libs/core").dates.MDLDateNames} */
   const names = {
-    days: ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"],
-    daysShort: ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"],
-    months: ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"],
-    monthsShort: ["Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sept.", "Okt.", "Nov.", "Dez."]
+    days: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    daysShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    months: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+    monthsShort: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
   };
 
-  /** A day for display, e.g. `formatDay(key, "dddd, D. MMMM YYYY")` (tokens: MD_Libs dates.formatPattern). @param {string} key @param {string} pattern */
+  /** A day for display, e.g. `formatDay(key, "dddd, D MMMM YYYY")` (tokens: MD_Libs dates.formatPattern). @param {string} key @param {string} pattern */
   function formatDay(key, pattern) {
     return dates.formatPattern(key, pattern, names);
   }
@@ -382,7 +382,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const seriesAfter = [...seriesBefore, ...newSeries];
     const multiAfter = [...multiBefore, ...newMultiDay];
     result.action = {
-      label: "ICS-Import", days: keys, layout: true,
+      label: "ICS import", days: keys, layout: true,
       size: after.flat().reduce((total, entry) => total + sizeOf(entry), 0) + [...newSeries, ...newMultiDay].reduce((total, item) => total + itemSize(item), 0),
       redo() { set(after, seriesAfter, multiAfter); },
       undo() { set(before, seriesBefore, multiBefore); }

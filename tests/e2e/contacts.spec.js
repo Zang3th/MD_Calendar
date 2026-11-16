@@ -24,7 +24,7 @@ test("contacts are edited inline with undo, focus moves on, and saving writes Co
   await page.keyboard.press("Enter");
   await page.locator('[data-key="birthday"]').fill("31.02.");
   await page.keyboard.press("Enter");
-  await expect(page.locator(".notification", { hasText: "Ungültiger Geburtstag" })).toBeVisible();
+  await expect(page.locator(".notification", { hasText: "Invalid birthday" })).toBeVisible();
   await expect(page.locator('[data-key="birthday"]')).toHaveValue("12.11.1990");
 
   await page.keyboard.press("Control+z");
@@ -39,12 +39,12 @@ test("contacts are edited inline with undo, focus moves on, and saving writes Co
 
 test("a vCard import merges a duplicate and adds a new contact as one undoable step", async ({ page, calendar }) => {
   await calendar.openApp({ "Contacts.md": contacts });
-  await page.keyboard.press("k");
+  await page.keyboard.press("c");
   await page.locator("#contactsImport").setInputFiles({
     name: "import.vcf", mimeType: "text/vcard",
-    buffer: Buffer.from("BEGIN:VCARD\r\nVERSION:3.0\r\nN:Example;Max;;;\r\nEMAIL:max@example.com\r\nEND:VCARD\r\nBEGIN:VCARD\r\nVERSION:3.0\r\nN:Neu;Lena;;;\r\nEND:VCARD\r\n")
+    buffer: Buffer.from("BEGIN:VCARD\r\nVERSION:3.0\r\nN:Example;Max;;;\r\nEMAIL:max@example.com\r\nEND:VCARD\r\nBEGIN:VCARD\r\nVERSION:3.0\r\nN:Walker;Lena;;;\r\nEND:VCARD\r\n")
   });
-  await expect(page.locator(".notification", { hasText: "1 neu, 1 zusammengeführt" })).toBeVisible();
+  await expect(page.locator(".notification", { hasText: "1 new, 1 merged" })).toBeVisible();
   await expect(page.locator(".cx-row")).toHaveCount(2);
   await page.keyboard.press("Control+z");
   await expect(page.locator(".cx-row")).toHaveCount(1);

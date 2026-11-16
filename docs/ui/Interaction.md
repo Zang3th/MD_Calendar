@@ -10,9 +10,9 @@ Single-key shortcuts are ignored while a text field has focus.
 |---|---|
 | `W` | Week view |
 | `M` | Month view |
-| `K` | Contacts view |
+| `C` | Contacts view |
 | `B` | Show or hide the backlog panel |
-| `H` | Jump to today: the period slides in, the day scrolls into view and is highlighted once |
+| `T` | Jump to today: the period slides in, the day scrolls into view and is highlighted once |
 | `N` | New entry on the day under the pointer, otherwise on the preselected day (in the contacts view: new contact) |
 | `F` | Open the search bar at the bottom edge |
 | `?` | Show or hide the help |
@@ -35,8 +35,8 @@ The arrows, `Space`, `Del` and `Ctrl+A` do nothing in the contacts view. The hel
 | Gesture | Action |
 |---|---|
 | Double-click on free space of a day | New entry on that day |
-| Right-click on an entry | Context menu: „Erledigt“ or „Nicht erledigt“, „Kopieren“, „Löschen“; on a selected entry it applies to the whole selection |
-| Right-click on free space of a day | Context menu: „Neuer Eintrag“ and, when something is copied, „Einfügen“ |
+| Right-click on an entry | Context menu: “Done” or “Not done”, “Copy”, “Delete”; on a selected entry it applies to the whole selection |
+| Right-click on free space of a day | Context menu: “New entry” and, when something is copied, “Paste” |
 | Dragging on free space | Lasso: selects every entry it touches |
 | `Ctrl`+click on an entry | Adds it to the selection or removes it |
 | Mouse wheel over the week or month | One week or month per wheel gesture; a day list that can still scroll in that direction scrolls first |
@@ -45,8 +45,8 @@ A click on free space clears the selection. Context menus show only icon and lab
 
 ## Creating entries
 
-- **+**, `N`, a double-click on a day and „Neuer Eintrag“ in the context menu of a day open the entry dialog for a new entry (preselected date in [Shell](Shell.md#entry-dialog)).
-- New backlog entries are created with „Ins Backlog“ in the dialog.
+- **+**, `N`, a double-click on a day and “New entry” in the context menu of a day open the entry dialog for a new entry (preselected date in [Shell](Shell.md#entry-dialog)).
+- New backlog entries are created with “To backlog” in the dialog.
 
 ## Selection, copy and paste
 
@@ -85,4 +85,4 @@ Rules in [Domain](../Domain.md#selection-copy-and-paste).
 ## Deleting
 
 - Entries and contacts are deleted without a confirmation dialog.
-- A notification confirms the deletion („„Titel“ gelöscht“); `Ctrl+Z` restores it.
+- A notification confirms the deletion (““Title” deleted”); `Ctrl+Z` restores it.

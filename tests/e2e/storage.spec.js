@@ -10,5 +10,5 @@ test("a picked folder is remembered and opens again after a reload", async ({ pa
   await page.reload();
   await expect(page.locator("#week")).toBeVisible();
   await expect(page.locator("#start")).toBeHidden();
-  await expect(page.locator(".notification", { hasText: "Kalender" })).toBeVisible();
+  await expect(page.locator(".notification", { hasText: "Calendar" })).toBeVisible();
 });

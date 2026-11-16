@@ -29,9 +29,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   const toBacklog = element("dialogBacklog");
   const tagSelect = /** @type {HTMLSelectElement} */ (/** @type {unknown} */ (element("dialogTag")));
   const dateHint = element("dialogDateHint");
-  const weekdayNames = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
-  const longNames = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
-  const units = { DAILY: ["Tag", "Tage"], WEEKLY: ["Woche", "Wochen"], MONTHLY: ["Monat", "Monate"], YEARLY: ["Jahr", "Jahre"] };
+  const weekdayNames = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+  const longNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  const ordinals = ["1st", "2nd", "3rd", "4th"];
+  const units = { DAILY: ["day", "days"], WEEKLY: ["week", "weeks"], MONTHLY: ["month", "months"], YEARLY: ["year", "years"] };
 
   /** @type {MDCDialogHandlers | null} */
   let handlers = null;
@@ -62,12 +63,12 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   /**
-   * Tag dropdown: „Kein Tag“, the configured tags in alphabetical order with color and icon,
+   * Tag dropdown: “No tag”, the configured tags in alphabetical order with color and icon,
    * and an unconfigured tag the item already has, so that it is not lost.
    * @param {string} selected
    */
   function renderTags(selected) {
-    const options = [...(request?.tags || [])].sort((left, right) => left.name.localeCompare(right.name, "de"));
+    const options = [...(request?.tags || [])].sort((left, right) => left.name.localeCompare(right.name, "en"));
     const names = options.map(tag => tag.name);
     /** @param {string} value @param {string} text @param {MDCTag | null} tag */
     const option = (value, text, tag) => {
@@ -89,7 +90,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     };
     // The options are replaced; the button that shows the chosen option (customizable select) stays.
     for (const old of Array.from(tagSelect.options)) old.remove();
-    tagSelect.append(option("", "Kein Tag", null), ...options.map(tag => option(tag.name, tag.name, tag)),
+    tagSelect.append(option("", "No tag", null), ...options.map(tag => option(tag.name, tag.name, tag)),
       ...(selected && !names.includes(selected) ? [option(selected, selected, null)] : []));
     tagSelect.value = selected;
   }
@@ -98,8 +99,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   function updateDateHint() {
     const startKey = dateKey();
     const endKey = multi.getAttribute("aria-pressed") === "true" ? app.calendar.parseDate(endDate.value) : "";
-    const spelled = (/** @type {string} */ key) => app.calendar.formatDay(key, "dddd, D. MMMM YYYY");
-    dateHint.textContent = !startKey ? "" : endKey && endKey !== startKey ? `${spelled(startKey)} bis ${spelled(endKey)}` : spelled(startKey);
+    const spelled = (/** @type {string} */ key) => app.calendar.formatDay(key, "dddd, D MMMM YYYY");
+    dateHint.textContent = !startKey ? "" : endKey && endKey !== startKey ? `${spelled(startKey)} to ${spelled(endKey)}` : spelled(startKey);
   }
 
   /** Rebuilds the recurrence options for the current date, keeping the selection where possible. */
@@ -111,10 +112,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const position = Math.ceil(day / 7);
     const selected = repeat.value;
     /** @type {Array<[string, string]>} */
-    const options = [["", "Keine"], ["DAILY", "Täglich"], ["WEEKLY", "Wöchentlich"], ["MONTHLY_DAY", `Monatlich am ${day}.`]];
-    if (position <= 4) options.push(["MONTHLY_POS", `Monatlich am ${position}. ${longNames[weekday]}`]);
-    if (day + 7 > daysInMonth) options.push(["MONTHLY_LAST", `Monatlich am letzten ${longNames[weekday]}`]);
-    options.push(["YEARLY", `Jährlich am ${app.calendar.formatDay(key, "D. MMMM")}`]);
+    const options = [["", "None"], ["DAILY", "Daily"], ["WEEKLY", "Weekly"], ["MONTHLY_DAY", `Monthly on day ${day}`]];
+    if (position <= 4) options.push(["MONTHLY_POS", `Monthly on the ${ordinals[position - 1]} ${longNames[weekday]}`]);
+    if (day + 7 > daysInMonth) options.push(["MONTHLY_LAST", `Monthly on the last ${longNames[weekday]}`]);
+    options.push(["YEARLY", `Yearly on ${app.calendar.formatDay(key, "D MMMM")}`]);
     repeat.innerHTML = options.map(([value, label]) => `<option value="${value}">${label}</option>`).join("");
     repeat.value = options.some(([value]) => value === selected) ? selected : "";
   }
@@ -125,16 +126,16 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     intervalField.hidden = !frequency;
     weekdays.hidden = frequency !== "WEEKLY";
     if (frequency) intervalUnit.textContent = units[frequency][Number(interval.value) === 1 ? 0 : 1];
-    if (multi.getAttribute("aria-pressed") !== "true") dateLabel.textContent = frequency ? "Beginn" : "Datum";
+    if (multi.getAttribute("aria-pressed") !== "true") dateLabel.textContent = frequency ? "Starts" : "Date";
     until.hidden = !frequency || !request?.rule?.until;
-    until.textContent = request?.rule?.until ? `Endet nach dem ${app.calendar.formatDate(request.rule.until)}` : "";
+    until.textContent = request?.rule?.until ? `Ends after ${app.calendar.formatDate(request.rule.until)}` : "";
   }
 
   /** @param {boolean} on */
   function setMulti(on) {
     multi.setAttribute("aria-pressed", String(on));
     form.classList.toggle("is-multi", on);
-    dateLabel.textContent = on ? "Zeitraum" : repeat.value ? "Beginn" : "Datum";
+    dateLabel.textContent = on ? "Dates" : repeat.value ? "Starts" : "Date";
     if (on && !endDate.value) {
       endDate.value = date.value;
       accepted.set(endDate, endDate.value);
@@ -153,7 +154,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     selectedDays.forEach(day => dayButtons[app.recurrence.weekdays.indexOf(day)]?.setAttribute("aria-pressed", "true"));
   }
 
-  /** Builds the rule from the controls; null for „Keine“. @returns {MDCRule | null} */
+  /** Builds the rule from the controls; null for “None”. @returns {MDCRule | null} */
   function ruleFromControls() {
     const value = repeat.value;
     if (!value) return null;
@@ -184,16 +185,16 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       normalized = "";
     } else if (input === date || input === endDate) {
       const key = app.calendar.parseDate(value);
-      if (!key) message = "Ungültiges Datum (TT.MM.JJJJ)";
-      else if (input === endDate && key < dateKey()) message = "Ende vor Beginn";
+      if (!key) message = "Invalid date (DD.MM.YYYY)";
+      else if (input === endDate && key < dateKey()) message = "End before start";
       else normalized = app.calendar.formatDate(key);
     } else if (input === interval) {
-      if (!/^[1-9]\d{0,2}$/.test(value)) message = "Intervall: 1 bis 999";
+      if (!/^[1-9]\d{0,2}$/.test(value)) message = "Interval: 1 to 999";
     } else if (value) {
       normalized = app.calendar.parseTime(value);
-      if (!normalized) message = "Ungültige Uhrzeit (HH:MM)";
-      else if (input === end && !start.value.trim()) message = "Endzeit ohne Beginn";
-      else if (input === end && normalized < start.value.trim()) message = "Endzeit vor Beginn";
+      if (!normalized) message = "Invalid time (HH:MM)";
+      else if (input === end && !start.value.trim()) message = "End time without start";
+      else if (input === end && normalized < start.value.trim()) message = "End time before start";
     }
     if (message) {
       reject(message);
@@ -214,10 +215,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     request = next;
     handlers = nextHandlers;
     repeatTouched = false;
-    kind.textContent = next.isNew ? "Neuer Eintrag" : { entry: "Eintrag", series: "Serie", multiDay: "Mehrtägig" }[next.kind];
+    kind.textContent = next.isNew ? "New entry" : { entry: "Entry", series: "Recurring", multiDay: "Multi-day" }[next.kind];
     title.value = next.title;
     date.value = next.date ? app.calendar.formatDate(next.date) : "";
-    date.placeholder = next.inBacklog ? "Kein Datum (Backlog)" : "TT.MM.JJJJ";
+    date.placeholder = next.inBacklog ? "No date (backlog)" : "DD.MM.YYYY";
     renderTags(next.tag);
     endDate.value = next.kind === "multiDay" ? app.calendar.formatDate(next.end) : "";
     start.value = next.startTime;
@@ -232,7 +233,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     updateDateHint();
     remove.hidden = next.isNew;
     toBacklog.hidden = next.kind !== "entry" || next.inBacklog;
-    remove.textContent = next.kind === "series" ? "Serie löschen" : "Löschen";
+    remove.textContent = next.kind === "series" ? "Delete series" : "Delete";
     removeOccurrence.hidden = endSeries.hidden = next.kind !== "series" || !next.occurrence;
     updateApply();
     dialog.showModal();

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,7 +14,7 @@
   <script defer src="dist/app.js" onerror="document.documentElement.dataset.build = 'missing'"></script>
 </head>
 <body>
-  <p class="build-missing" role="alert">MD_Calendar ist noch nicht gebaut. Bitte im Ordner MD_Calendar <code>npm ci</code> und <code>npm run build</code> ausführen.</p>
+  <p class="build-missing" role="alert">MD_Calendar is not built yet. Run <code>npm ci</code> and <code>npm run build</code> in the MD_Calendar folder.</p>
   <svg class="icon-sprite" aria-hidden="true">
     <symbol id="icon-building" viewBox="0 0 32 32" fill="none">
     <path d="M8 27V7Q8 5 10 5H22Q24 5 24 7V27M5 27H27M13 10H14M18 10H19M13 15H14M18 15H19M14 27V21H18V27"
@@ -416,24 +416,24 @@
     <header class="hdr glass">
       <div class="hdr__left">
         <img class="logo" src="res/logo/mark.svg" alt="MD_Calendar" width="32" height="32">
-        <button class="hdr__title" id="title" type="button" aria-label="Heute (H)" disabled><span class="hdr__titletext" id="titleText">MD_Calendar</span><span class="hdr__sizer" id="titleSizer" aria-hidden="true"></span></button>
+        <button class="hdr__title" id="title" type="button" aria-label="Today (T)" disabled><span class="hdr__titletext" id="titleText">MD_Calendar</span><span class="hdr__sizer" id="titleSizer" aria-hidden="true"></span></button>
         <div class="edit" data-open-only>
-          <button class="primary primary--icon" id="new" type="button" aria-label="Neuer Eintrag (N)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-plus"></use></svg></button>
-          <button class="iconbtn" id="undo" type="button" aria-label="Rückgängig" disabled><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-undo"></use></svg></button>
-          <button class="iconbtn" id="redo" type="button" aria-label="Wiederholen" disabled><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-redo"></use></svg></button>
-          <button class="save" id="save" type="button" aria-label="Alles gespeichert"><span class="save__icon"><i class="save__dot"></i><svg class="ui-icon save__ok" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-check"></use></svg></span><span class="save__text"></span><b class="save__count"></b></button>
+          <button class="primary primary--icon" id="new" type="button" aria-label="New entry (N)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-plus"></use></svg></button>
+          <button class="iconbtn" id="undo" type="button" aria-label="Undo" disabled><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-undo"></use></svg></button>
+          <button class="iconbtn" id="redo" type="button" aria-label="Redo" disabled><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-redo"></use></svg></button>
+          <button class="save" id="save" type="button" aria-label="All saved"><span class="save__icon"><i class="save__dot"></i><svg class="ui-icon save__ok" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-check"></use></svg></span><span class="save__text"></span><b class="save__count"></b></button>
         </div>
       </div>
-      <div class="seg" role="group" aria-label="Ansicht" data-open-only>
+      <div class="seg" role="group" aria-label="View" data-open-only>
         <span class="seg__thumb" aria-hidden="true"></span>
-        <button id="viewWeek" type="button" aria-pressed="true" aria-label="Woche (W)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-week"></use></svg><span>Woche</span></button>
-        <button id="viewMonth" type="button" aria-pressed="false" aria-label="Monat (M)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-month"></use></svg><span>Monat</span></button>
-        <button id="viewContacts" type="button" aria-pressed="false" aria-label="Kontakte (K)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-contacts"></use></svg><span>Kontakte</span></button>
+        <button id="viewWeek" type="button" aria-pressed="true" aria-label="Week (W)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-week"></use></svg><span>Week</span></button>
+        <button id="viewMonth" type="button" aria-pressed="false" aria-label="Month (M)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-month"></use></svg><span>Month</span></button>
+        <button id="viewContacts" type="button" aria-pressed="false" aria-label="Contacts (C)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-contacts"></use></svg><span>Contacts</span></button>
       </div>
       <div class="hdr__right" data-open-only>
-        <button class="iconbtn" id="helpButton" type="button" aria-expanded="false" aria-controls="helpPanel" aria-label="Hilfe (?)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-help"></use></svg></button>
-        <button class="iconbtn" id="sound" type="button" aria-pressed="false" aria-label="Ton aus"><svg class="ui-icon sound-on" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-volume"></use></svg><svg class="ui-icon sound-off" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-muted"></use></svg></button>
-        <button class="iconbtn" id="holidaysButton" type="button" aria-expanded="false" aria-controls="holidaysPanel" aria-label="Feiertage und Schulferien"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-flag"></use></svg></button>
+        <button class="iconbtn" id="helpButton" type="button" aria-expanded="false" aria-controls="helpPanel" aria-label="Help (?)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-help"></use></svg></button>
+        <button class="iconbtn" id="sound" type="button" aria-pressed="false" aria-label="Mute"><svg class="ui-icon sound-on" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-volume"></use></svg><svg class="ui-icon sound-off" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-muted"></use></svg></button>
+        <button class="iconbtn" id="holidaysButton" type="button" aria-expanded="false" aria-controls="holidaysPanel" aria-label="Holidays"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-flag"></use></svg></button>
         <button class="iconbtn" id="backlogToggle" type="button" aria-pressed="false" aria-controls="backlog" aria-label="Backlog (B)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-inbox"></use></svg></button>
       </div>
     </header>
@@ -441,11 +441,11 @@
       <section class="start" id="start" hidden>
         <img class="start__logo" src="res/logo/mark.svg" alt="" width="64" height="64">
         <h1 class="start__title">MD_Calendar</h1>
-        <p class="start__text">Wähle den Ordner mit deinen Kalenderdateien.</p>
+        <p class="start__text">Choose the folder with your calendar files.</p>
         <div class="start__actions">
           <button class="primary" id="reopen" type="button" hidden></button>
-          <button class="btn btn--ghost" id="pick" type="button">Ordner öffnen</button>
-          <label class="btn btn--ghost start__import"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-import"></use></svg><span>Kalender importieren (.ics)</span><input type="file" id="icsImport" accept=".ics,text/calendar" hidden></label>
+          <button class="btn btn--ghost" id="pick" type="button">Open folder</button>
+          <label class="btn btn--ghost start__import"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-import"></use></svg><span>Import calendar (.ics)</span><input type="file" id="icsImport" accept=".ics,text/calendar" hidden></label>
         </div>
         <p class="start__note" id="startImport" hidden></p>
       </section>
@@ -459,63 +459,63 @@
     </aside>
   </div>
   <div class="lasso" id="lasso" hidden></div>
-  <section class="popover glass" id="holidaysPanel" aria-label="Feiertage und Schulferien" hidden>
+  <section class="popover glass" id="holidaysPanel" aria-label="Holidays" hidden>
     <header class="hp__head">
-      <button class="iconbtn" type="button" data-year="-1" aria-label="Vorheriges Jahr"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-chevron-left"></use></svg></button>
+      <button class="iconbtn" type="button" data-year="-1" aria-label="Previous year"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-chevron-left"></use></svg></button>
       <span class="hp__year" id="holidaysYear"></span>
-      <button class="iconbtn" type="button" data-year="1" aria-label="Nächstes Jahr"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-chevron-right"></use></svg></button>
+      <button class="iconbtn" type="button" data-year="1" aria-label="Next year"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-chevron-right"></use></svg></button>
     </header>
     <div class="hp__content" id="holidaysContent"></div>
   </section>
-  <section class="search glass" id="searchPanel" aria-label="Suche" hidden>
-    <label class="sp__field"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-search"></use></svg><input id="searchInput" placeholder="Kalender durchsuchen …" aria-label="Kalender durchsuchen" autocomplete="off" role="combobox" aria-expanded="true" aria-controls="searchResults"></label>
-    <ul class="sp__results" id="searchResults" role="listbox" aria-label="Treffer"></ul>
+  <section class="search glass" id="searchPanel" aria-label="Search" hidden>
+    <label class="sp__field"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-search"></use></svg><input id="searchInput" placeholder="Search calendar …" aria-label="Search calendar" autocomplete="off" role="combobox" aria-expanded="true" aria-controls="searchResults"></label>
+    <ul class="sp__results" id="searchResults" role="listbox" aria-label="Results"></ul>
   </section>
-  <div class="menu popover glass" id="contextMenu" role="menu" aria-label="Eintrag" hidden></div>
-  <section class="popover glass" id="helpPanel" aria-label="Tastenkürzel" hidden>
-    <header class="hp__head hp__head--center"><span class="hp__year">Tastenkürzel</span></header>
+  <div class="menu popover glass" id="contextMenu" role="menu" aria-label="Entry" hidden></div>
+  <section class="popover glass" id="helpPanel" aria-label="Shortcuts" hidden>
+    <header class="hp__head hp__head--center"><span class="hp__year">Shortcuts</span></header>
     <div class="hp__content" id="helpContent"></div>
   </section>
   <dialog class="dlg" id="dialog" aria-labelledby="dialogKind">
     <form class="dlg__form" method="dialog" novalidate>
       <header class="dlg__head">
         <span class="dlg__kind" id="dialogKind"></span>
-        <button class="dlg__x" type="button" data-close aria-label="Schließen (Esc)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-close"></use></svg></button>
+        <button class="dlg__x" type="button" data-close aria-label="Close (Esc)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-close"></use></svg></button>
       </header>
-      <input class="dlg__title" id="dialogTitle" placeholder="Titel" aria-label="Titel" autocomplete="off">
+      <input class="dlg__title" id="dialogTitle" placeholder="Title" aria-label="Title" autocomplete="off">
       <div class="dlg__grid">
         <div class="dlg__field" id="dialogDateField">
-          <span class="dlg__label"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-calendar"></use></svg><span id="dialogDateLabel">Datum</span>
-            <button class="dlg__toggle" id="dialogMulti" type="button" aria-pressed="false" aria-label="Mehrtägig"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-range"></use></svg></button></span>
-          <span class="dlg__range"><input class="dlg__input" id="dialogDate" placeholder="TT.MM.JJJJ" aria-label="Datum" autocomplete="off" inputmode="numeric" data-picker="date"><span class="dlg__until" aria-hidden="true">–</span><input class="dlg__input dlg__until" id="dialogEndDate" placeholder="TT.MM.JJJJ" aria-label="Bis" autocomplete="off" inputmode="numeric" data-picker="date"></span>
+          <span class="dlg__label"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-calendar"></use></svg><span id="dialogDateLabel">Date</span>
+            <button class="dlg__toggle" id="dialogMulti" type="button" aria-pressed="false" aria-label="Multi-day"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-range"></use></svg></button></span>
+          <span class="dlg__range"><input class="dlg__input" id="dialogDate" placeholder="DD.MM.YYYY" aria-label="Date" autocomplete="off" inputmode="numeric" data-picker="date"><span class="dlg__until" aria-hidden="true">–</span><input class="dlg__input dlg__until" id="dialogEndDate" placeholder="DD.MM.YYYY" aria-label="End date" autocomplete="off" inputmode="numeric" data-picker="date"></span>
           <span class="dlg__hint" id="dialogDateHint"></span>
         </div>
-        <div class="dlg__field" id="dialogTimeField"><span class="dlg__label"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-clock"></use></svg>Uhrzeit</span><span class="dlg__time"><input class="dlg__input" id="dialogStart" placeholder="Beginn" aria-label="Beginn (HH:MM)" autocomplete="off" inputmode="numeric" data-picker="time"><span aria-hidden="true">–</span><input class="dlg__input" id="dialogEnd" placeholder="Ende" aria-label="Ende (HH:MM)" autocomplete="off" inputmode="numeric" data-picker="time"></span></div>
+        <div class="dlg__field" id="dialogTimeField"><span class="dlg__label"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-clock"></use></svg>Time</span><span class="dlg__time"><input class="dlg__input" id="dialogStart" placeholder="Start" aria-label="Start (HH:MM)" autocomplete="off" inputmode="numeric" data-picker="time"><span aria-hidden="true">–</span><input class="dlg__input" id="dialogEnd" placeholder="End" aria-label="End (HH:MM)" autocomplete="off" inputmode="numeric" data-picker="time"></span></div>
         <div class="dlg__field dlg__field--wide" id="dialogRepeatField">
-          <span class="dlg__label"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-repeat"></use></svg>Wiederholung</span>
+          <span class="dlg__label"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-repeat"></use></svg>Repeat</span>
           <span class="dlg__repeat">
-            <select class="dlg__select" id="dialogRepeat" aria-label="Wiederholung"></select>
-            <label class="dlg__interval" id="dialogIntervalField">alle <input class="dlg__input" id="dialogInterval" aria-label="Intervall" autocomplete="off" inputmode="numeric"> <span id="dialogIntervalUnit"></span></label>
+            <select class="dlg__select" id="dialogRepeat" aria-label="Repeat"></select>
+            <label class="dlg__interval" id="dialogIntervalField">every <input class="dlg__input" id="dialogInterval" aria-label="Interval" autocomplete="off" inputmode="numeric"> <span id="dialogIntervalUnit"></span></label>
           </span>
-          <span class="dlg__weekdays" id="dialogWeekdays" role="group" aria-label="Wochentage"></span>
+          <span class="dlg__weekdays" id="dialogWeekdays" role="group" aria-label="Weekdays"></span>
           <span class="dlg__hint" id="dialogUntil"></span>
         </div>
         <label class="dlg__field"><span class="dlg__label">Tag</span><select class="dlg__select" id="dialogTag" aria-label="Tag"><button type="button"><selectedcontent></selectedcontent></button></select></label>
-        <label class="dlg__field"><span class="dlg__label"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-pin"></use></svg>Ort</span><input class="dlg__input" id="dialogLocation" placeholder="Kein Ort" autocomplete="off"></label>
+        <label class="dlg__field"><span class="dlg__label"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-pin"></use></svg>Location</span><input class="dlg__input" id="dialogLocation" placeholder="No location" autocomplete="off"></label>
       </div>
-      <textarea class="dlg__note" id="dialogNote" placeholder="Notiz" aria-label="Notiz" rows="3"></textarea>
+      <textarea class="dlg__note" id="dialogNote" placeholder="Note" aria-label="Note" rows="3"></textarea>
       <footer class="dlg__foot">
-        <button class="btn btn--ghost" id="dialogBacklog" type="button"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-inbox"></use></svg>Ins Backlog</button>
-        <button class="btn btn--danger" id="dialogDelete" type="button">Löschen</button>
-        <button class="btn btn--danger" id="dialogDeleteOccurrence" type="button">Termin löschen</button>
-        <button class="btn btn--ghost" id="dialogEndSeries" type="button">Ab hier beenden</button>
+        <button class="btn btn--ghost" id="dialogBacklog" type="button"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-inbox"></use></svg>To backlog</button>
+        <button class="btn btn--danger" id="dialogDelete" type="button">Delete</button>
+        <button class="btn btn--danger" id="dialogDeleteOccurrence" type="button">Delete occurrence</button>
+        <button class="btn btn--ghost" id="dialogEndSeries" type="button">End series here</button>
         <span class="dlg__spacer"></span>
-        <button class="btn btn--primary" id="dialogApply" type="submit">Übernehmen <kbd>↵</kbd></button>
+        <button class="btn btn--primary" id="dialogApply" type="submit">Apply <kbd>↵</kbd></button>
       </footer>
       <div class="picker" id="picker" hidden></div>
     </form>
   </dialog>
-  <section class="notifications" id="notifications" aria-label="Benachrichtigungen" aria-live="polite"></section>
+  <section class="notifications" id="notifications" aria-label="Notifications" aria-live="polite"></section>
   <div class="app-tooltip" id="appTooltip" role="tooltip" hidden></div>
 </body>
 </html>

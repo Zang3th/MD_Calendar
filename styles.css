@@ -105,7 +105,7 @@ html[data-build="missing"] .build-missing { display: block; max-width: 40rem; ma
 .hdr__title { display: inline-grid; text-align: left; }
 .hdr__titletext, .hdr__sizer, .hdr__sizer > span { grid-area: 1 / 1; }
 .hdr__sizer { display: grid; visibility: hidden; height: 0; overflow: hidden; }
-/* „+“, undo, redo and save sit right of the title as one group, as in MD_Manager. */
+/* “+”, undo, redo and save sit right of the title as one group, as in MD_Manager. */
 .edit { display: flex; align-items: center; }
 .edit .primary--icon { margin-right: 4px; }
 #backlogToggle[aria-pressed="true"] { color: #fff; background: color-mix(in srgb, var(--accent) 26%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent); }
@@ -193,7 +193,7 @@ body.backlog-open .main { margin-right: 354px; }
 .hp__row.is-past { opacity: .55; }
 .hp__date { flex: none; width: 48px; font-weight: 700; font-variant-numeric: tabular-nums; color: color-mix(in srgb, var(--accent-2) 70%, #fff); }
 .hp__date--range { width: 108px; }
-.hp__day { flex: none; width: 22px; color: var(--muted); font-size: 12px; }
+.hp__day { flex: none; width: 30px; color: var(--muted); font-size: 12px; }
 .hp__name { min-width: 0; }
 .hp__empty { padding: 6px; color: var(--faint); }
 
@@ -218,7 +218,7 @@ body.backlog-open .main { margin-right: 354px; }
   border-color: color-mix(in srgb, var(--accent) 70%, transparent);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent), 0 0 36px color-mix(in srgb, var(--accent) 28%, transparent);
 }
-.day.is-today .day__num::after { content: "Heute"; margin-left: 8px; vertical-align: 5px; letter-spacing: 0; padding: 2px 6px; border-radius: 999px; font-size: 11px; font-weight: 800; color: var(--on-accent); background: var(--accent); }
+.day.is-today .day__num::after { content: "Today"; margin-left: 8px; vertical-align: 5px; letter-spacing: 0; padding: 2px 6px; border-radius: 999px; font-size: 11px; font-weight: 800; color: var(--on-accent); background: var(--accent); }
 .day.is-today .day__num { color: color-mix(in srgb, var(--accent) 55%, #fff); }
 .day.is-past::before { background: color-mix(in srgb, var(--card) 45%, transparent); }
 .day__head { height: var(--hdr); flex: none; display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; align-content: center; column-gap: 10px; row-gap: 4px; padding: 0 14px 0 16px; }

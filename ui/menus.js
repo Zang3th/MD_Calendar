@@ -23,9 +23,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
    * The full list is in docs/ui/Interaction.md.
    */
   const columns = [
-    [["Navigation", [["Woche", "W"], ["Monat", "M"], ["Kontakte", "K"], ["Heute", "H"], ["Backlog", "B"], ["Suchen", "F"]]]],
-    [["Einträge", [["Neu", "N"], ["Erledigt", "Leertaste"], ["Kopieren", "Strg+C"], ["Einfügen", "Strg+V"], ["Löschen", "Entf"]]]],
-    [["Bearbeiten", [["Speichern", "Strg+S"], ["Rückgängig", "Strg+Z"], ["Wiederholen", "Strg+Y"]]]]
+    [["Navigation", [["Week", "W"], ["Month", "M"], ["Contacts", "C"], ["Today", "T"], ["Backlog", "B"], ["Search", "F"]]]],
+    [["Entries", [["New", "N"], ["Done", "Space"], ["Copy", "Ctrl+C"], ["Paste", "Ctrl+V"], ["Delete", "Del"]]]],
+    [["Edit", [["Save", "Ctrl+S"], ["Undo", "Ctrl+Z"], ["Redo", "Ctrl+Y"]]]]
   ];
   /** @param {string} keys */
   const caps = keys => keys.split("+").map(key => `<kbd>${key}</kbd>`).join("<span>+</span>");

@@ -153,7 +153,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   /** Marks all entries done, or all open when they are all done already. @param {MDCCalendar} calendar @param {MDCBacklog} backlog @param {MDCEntryRef[]} refs */
   function toggleEntries(calendar, backlog, refs) {
     const done = !refs.every(ref => entryAt(calendar, backlog, ref).done);
-    return snapshot(calendar, backlog, `${refs.length} Einträge`, refs, () => {
+    return snapshot(calendar, backlog, `${refs.length} entries`, refs, () => {
       for (const ref of refs) {
         const entries = list(calendar, backlog, ref);
         entries[ref.index] = { ...entries[ref.index], done };
@@ -171,7 +171,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const ordered = [...refs].sort((left, right) => placeId(left).localeCompare(placeId(right)) || left.index - right.index);
     const moving = ordered.map(ref => entryAt(calendar, backlog, ref));
     const crossing = refs.some(ref => isBacklog(ref) !== isBacklog(target));
-    return snapshot(calendar, backlog, `${refs.length} Einträge`, [...refs, target], () => {
+    return snapshot(calendar, backlog, `${refs.length} entries`, [...refs, target], () => {
       for (const ref of descending(refs)) list(calendar, backlog, ref).splice(ref.index, 1);
       const destination = list(calendar, backlog, target);
       destination.splice(Math.min(target.index, destination.length), 0, ...moving);
@@ -181,7 +181,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   /** Inserts copies at the end of a day; copies are open. @param {MDCCalendar} calendar @param {MDCBacklog} backlog @param {MDCEntry[]} entries @param {string} key */
   function pasteEntries(calendar, backlog, entries, key) {
     const ref = { key, index: 0 };
-    return snapshot(calendar, backlog, entries.length === 1 ? entries[0].title : `${entries.length} Einträge`, [ref], () => {
+    return snapshot(calendar, backlog, entries.length === 1 ? entries[0].title : `${entries.length} entries`, [ref], () => {
       list(calendar, backlog, ref).push(...entries.map(entry => ({ ...entry, done: false, note: [...entry.note], extra: [...entry.extra] })));
     }, undefined);
   }

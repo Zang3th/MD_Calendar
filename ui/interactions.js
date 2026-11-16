@@ -171,11 +171,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }, { when: inCalendar });
   /** @type {Array<[string, () => void, (() => boolean)?]>} */
   const plainKeys = [
-    ["h", () => current().today()],
+    ["t", () => current().today()],
     ["n", () => current().newEntry(current().isContactsView() ? undefined : hoveredDay || undefined)],
     ["w", () => current().showView("week")],
     ["m", () => current().showView("month")],
-    ["k", () => current().showView("contacts")],
+    ["c", () => current().showView("contacts")],
     ["b", () => current().toggleBacklog()],
     ["f", () => current().toggleSearch()],
     ["?", () => current().showHelp()],
@@ -306,7 +306,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     seriesDrag.shown = true;
     suppressClick = true;
     window.setTimeout(() => { suppressClick = false; }, 0);
-    handlers?.notice("Serientermine sind nicht verschiebbar");
+    handlers?.notice("Recurring entries can’t be moved");
   });
   document.addEventListener("pointerup", () => { seriesDrag = null; });
 

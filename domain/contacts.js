@@ -43,7 +43,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const list = [...(byDay.get(monthDay) || []), ...(monthDay === "02-28" && !isLeap(year) ? byDay.get("02-29") || [] : [])];
     return list.filter(occasion => !occasion.year || occasion.year <= year)
       .map(occasion => ({ ...occasion, age: occasion.year ? Number(year) - Number(occasion.year) : null }))
-      .sort((left, right) => Number(Boolean(left.label)) - Number(Boolean(right.label)) || left.name.localeCompare(right.name, "de"));
+      .sort((left, right) => Number(Boolean(left.label)) - Number(Boolean(right.label)) || left.name.localeCompare(right.name, "en"));
   }
 
   /** Days until the next birthday from `today`, its date and the age then. @param {MDCContact} contact @param {string} today */
@@ -116,7 +116,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   /** @param {MDCContacts} contacts @param {MDCContact} contact */
   function create(contacts, contact) {
-    return action(contacts, "Neuer Kontakt", null, { index: contacts.contacts.length, contact });
+    return action(contacts, "New contact", null, { index: contacts.contacts.length, contact });
   }
 
   /**
@@ -127,13 +127,13 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   function update(contacts, index, updated, groupsAfter) {
     const current = contactAt(contacts, index);
     if (JSON.stringify(current) === JSON.stringify(updated) && (!groupsAfter || JSON.stringify(groupsAfter) === JSON.stringify(contacts.groups))) return null;
-    return action(contacts, name(updated) || "Kontakt", { index, contact: current }, { index, contact: updated }, groupsAfter);
+    return action(contacts, name(updated) || "Contact", { index, contact: current }, { index, contact: updated }, groupsAfter);
   }
 
   /** @param {MDCContacts} contacts @param {number} index */
   function remove(contacts, index) {
     const current = contactAt(contacts, index);
-    return action(contacts, name(current) || "Kontakt", { index, contact: current }, null);
+    return action(contacts, name(current) || "Contact", { index, contact: current }, null);
   }
 
   /** Adds a group to the group list and to the contact. @param {MDCContacts} contacts @param {number} index @param {string} group */
@@ -210,7 +210,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return {
       added, merged,
       action: {
-        label: "vCard-Import", days: [], contacts: true, size: after.reduce((total, contact) => total + sizeOf(contact), 0),
+        label: "vCard import", days: [], contacts: true, size: after.reduce((total, contact) => total + sizeOf(contact), 0),
         selectAfter: added ? before.length : -1, selectBefore: -1,
         redo() { set(after); },
         undo() { set(before); }

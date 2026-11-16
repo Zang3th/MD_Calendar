@@ -30,7 +30,6 @@ Each topic has exactly one owning document.
 | Unresolved questions | [docs/OpenQuestions.md](docs/OpenQuestions.md) |
 | Work packages and progress (German, user-owned) | [docs/Roadmap.md](docs/Roadmap.md) |
 | Active work specification | [docs/work/current.md](docs/work/current.md) |
-| Prototypes and the approved visual reference | [prototypes/README.md](prototypes/README.md) |
 
 ## Repository layout
 
@@ -39,7 +38,6 @@ AGENTS.md  CLAUDE.md  README.md
 docs/         documentation (see the map above)
   ui/         UI specification
   work/       active work specification
-prototypes/   UI mockups; 03b is the approved reference
 data/parsing/ golden files that define the data format
 res/logo/     final logo and web icon set
 res/icons/    standalone SVG files of the UI icons

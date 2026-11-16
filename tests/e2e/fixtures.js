@@ -9,7 +9,7 @@ const root = path.resolve(__dirname, "../..");
 /** @type {Record<string, string>} */
 const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".ico": "image/x-icon", ".png": "image/png", ".webmanifest": "application/manifest+json" };
 
-/** Fixed "today" of the tests: Thursday, 12 November 2026, like the prototype. */
+/** Fixed "today" of the tests: Thursday, 12 November 2026. */
 const today = new Date("2026-11-12T10:00:00");
 
 /**
@@ -57,13 +57,13 @@ const test = /** @type {CalendarTest} */ (/** @type {unknown} */ (base.test.exte
     await page.clock.setFixedTime(today);
     await page.addInitScript(() => {
       /** @type {any} */ (window).showDirectoryPicker = async () =>
-        (await navigator.storage.getDirectory()).getDirectoryHandle("Kalender", { create: true });
+        (await navigator.storage.getDirectory()).getDirectoryHandle("Calendar", { create: true });
     });
 
     /** @param {string} name @param {string} text */
     async function writeFile(name, text) {
       await page.evaluate(async ([fileName, content]) => {
-        const folder = await (await navigator.storage.getDirectory()).getDirectoryHandle("Kalender", { create: true });
+        const folder = await (await navigator.storage.getDirectory()).getDirectoryHandle("Calendar", { create: true });
         const writable = await (await folder.getFileHandle(fileName, { create: true })).createWritable();
         await writable.write(content);
         await writable.close();
@@ -73,7 +73,7 @@ const test = /** @type {CalendarTest} */ (/** @type {unknown} */ (base.test.exte
     /** @param {string} name */
     async function readFile(name) {
       return page.evaluate(async fileName => {
-        const folder = await (await navigator.storage.getDirectory()).getDirectoryHandle("Kalender", { create: true });
+        const folder = await (await navigator.storage.getDirectory()).getDirectoryHandle("Calendar", { create: true });
         try { return await (await (await folder.getFileHandle(fileName)).getFile()).text(); } catch { return null; }
       }, name);
     }

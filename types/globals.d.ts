@@ -57,7 +57,6 @@ interface MDCalendarNamespace {
     serializeRule(rule: MDCRule): string;
     occursOn(rule: MDCRule, start: string, key: string): boolean;
     occurrences(calendar: MDCCalendar, key: string): readonly MDCOccurrence[];
-    describe(rule: MDCRule, start: string): string;
     weekday(key: string): number;
     weekdays: string[];
   };

@@ -18,7 +18,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const handler = importHandler;
     void file.text().then(text => {
       handler(text, file.name);
-      note.textContent = `„${file.name}“ wird nach dem Öffnen des Ordners importiert.`;
+      note.textContent = `“${file.name}” is imported once a folder is open.`;
       note.hidden = false;
     });
   });
@@ -26,8 +26,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   /** @param {string | null} remembered Name of the remembered folder. */
   function show(remembered) {
     reopen.hidden = !remembered;
-    reopen.textContent = remembered ? `„${remembered}“ öffnen` : "";
-    pick.textContent = remembered ? "Anderen Ordner wählen" : "Ordner öffnen";
+    reopen.textContent = remembered ? `Open “${remembered}”` : "";
+    pick.textContent = remembered ? "Choose another folder" : "Open folder";
     pick.className = remembered ? "btn btn--ghost" : "primary";
     start.hidden = false;
   }

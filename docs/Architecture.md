@@ -35,7 +35,7 @@ SortableJS and MD_Libs are npm dependencies and are bundled into `dist/app.js`; 
 
 All file access goes through the [storage adapter](#storage-adapter). Every change to persistent data is an action in the [undo history](#undo-history).
 
-SortableJS may be imported only in `ui/`. MD_Libs entry points follow the layers: `domain/` imports `@zang3th/md-libs/core`, `io/` also `/platform`, `ui/` also `/ui`; `app.js` imports any. Dates are day keys `YYYY-MM-DD` without time zones; arithmetic, ISO weeks and formatting come from MD_Libs `core/dates`, the German day and month names from `domain/calendar.js`.
+SortableJS may be imported only in `ui/`. MD_Libs entry points follow the layers: `domain/` imports `@zang3th/md-libs/core`, `io/` also `/platform`, `ui/` also `/ui`; `app.js` imports any. Dates are day keys `YYYY-MM-DD` without time zones; arithmetic, ISO weeks and formatting come from MD_Libs `core/dates`, the day and month names from `domain/calendar.js`.
 
 Layout:
 
@@ -93,7 +93,7 @@ While the page is visible, the stamps of loaded files are checked every two seco
 - Written files are read back once after saving, so that a change right after the write is found.
 - No reload happens while the entry dialog is open.
 - External changes are handled per file. A changed `Holidays.md` or `Config.md` is always reloaded.
-- „Neu laden“ applies the versions of `Calendar.md`, `Backlog.md` and `Contacts.md` last read from disk and discards all local changes. Every reload of a written file starts a new undo history.
+- “Reload” applies the versions of `Calendar.md`, `Backlog.md` and `Contacts.md` last read from disk and discards all local changes. Every reload of a written file starts a new undo history.
 
 ## Undo history
 
@@ -121,14 +121,14 @@ Shared systems come from MD_Libs (`../MD_Libs`, `@zang3th/md-libs`), the tested 
 | System | MD_Libs | Use in MD_Calendar |
 |---|---|---|
 | Undo history | `core/history` | One history for all written files; the unsaved count is its distance to the saved state. |
-| Save, undo and redo controls | `core/history` (`controls`) | German labels in `ui/header.js`. |
+| Save, undo and redo controls | `core/history` (`controls`) | Labels in `ui/header.js`. |
 | Storage adapter, folder memory | `platform/storage`, `platform/handles` | One remembered folder. |
 | Opening, saving, external changes, conflicts | `platform/session` | Reads all files on opening; several files, write order, automatic reload of unchanged files; checks every 2 s, on focus and on visibility, not while the dialog is open; asks before leaving with unsaved changes. |
 | Startup checks | `platform/startup` | Styles, font and logo; codes `MDC-0xx`. |
 | Search | `core/search` | Title, location, note and tag; diacritics ignored; every word must match. |
-| Dates | `core/dates` | Day keys, weeks, the period a view shows, ISO week numbers, displayed dates with German names. |
+| Dates | `core/dates` | Day keys, weeks, the period a view shows, ISO week numbers, displayed dates with English names. |
 | Line handling of the file formats | `core/markdown` | Byte order mark, line endings, trailing tags, `#Key` blocks; a warning for an unreadable character. |
-| Notifications | `ui/notifications` | German texts, codes `MDC-`, action buttons, styled in `styles.css`. |
+| Notifications | `ui/notifications` | Texts, codes `MDC-`, action buttons, styled in `styles.css`. |
 | Tooltips | `ui/tooltips` | No touch tooltips, keyboard focus only. |
 | Completion sound | `platform/audio` | Plays the Arpeggio, which `app.js` defines. |
 | Drag and drop | `ui/sortable` | SortableJS defaults and positions within day lists. |

@@ -68,7 +68,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   async function initialize() {
     const missingApis = app.storage.missingApis();
     if (missingApis.length) {
-      blockStartup("Browser nicht unterstützt", "Chrome oder Edge nötig.", `Der Browser bietet die benötigten Funktionen nicht: ${missingApis.join(", ")}.`, "MDC-002");
+      blockStartup("Browser not supported", "Use Chrome or Edge.", `The browser lacks required features: ${missingApis.join(", ")}.`, "MDC-002");
       return;
     }
 
@@ -79,7 +79,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       images: [{ image: document.querySelector(".logo"), file: "res/logo/mark.svg" }]
     });
     if (missingResources.length) {
-      blockStartup("Anwendungsressourcen fehlen", "Anwendungsordner wiederherstellen, dann neu laden.", `Nicht geladen: ${missingResources.join(", ")}.`, "MDC-003");
+      blockStartup("Application files missing", "Restore the application folder, then reload.", `Not loaded: ${missingResources.join(", ")}.`, "MDC-003");
       return;
     }
     await startApplication();
@@ -199,7 +199,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       if (!warnings.length) return;
       const lines = warnings.map(warning => warning.lineNumber);
       const shown = lines.slice(0, 8).join(", ") + (lines.length > 8 ? " …" : "");
-      app.notifications.show("warning", `${name}: ${warnings.length === 1 ? "Zeile" : "Zeilen"} ${shown} unverständlich`, "");
+      app.notifications.show("warning", `${name}: ${warnings.length === 1 ? "line" : "lines"} ${shown} not understood`, "");
     }
 
     /** Parses one file (`null`: missing) into the model; writable files start a new history. @param {MDCFileName} name @param {string | null} text */
@@ -231,9 +231,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         warnings = parsed.warnings;
         const unknown = app.tiles.setTags(config.tags);
         if (unknown.length) {
-          app.notifications.show("error", "Unbekannte Tag-Icons", unknown.map(tag => `${tag.name}: ${tag.icon || "kein Icon"}`).join(", "), {
+          app.notifications.show("error", "Unknown tag icons", unknown.map(tag => `${tag.name}: ${tag.icon || "no icon"}`).join(", "), {
             code: "MDC-301",
-            details: `Bekannte Icon-IDs: ${app.tiles.tagIconIds().join(", ")}.`
+            details: `Known icon IDs: ${app.tiles.tagIconIds().join(", ")}.`
           });
         }
       }
@@ -241,7 +241,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       if (text === null) return;
       reportWarnings(name, warnings);
       const invalid = markdown.invalidCharacter(text);
-      if (invalid) app.notifications.show("warning", `${name}: Zeile ${invalid.line} enthält ein unlesbares Zeichen`, "");
+      if (invalid) app.notifications.show("warning", `${name}: line ${invalid.line} has an unreadable character`, "");
     }
 
     function clearConflict() {
@@ -289,10 +289,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       });
       started.on("reloaded", ({ file }) => {
         render();
-        app.notifications.show("info", `${file} neu geladen`, "");
+        app.notifications.show("info", `${file} reloaded`, "");
       });
       started.on("checkError", ({ error }) => {
-        app.notifications.show("error", "Dateiprüfung fehlgeschlagen", "", {
+        app.notifications.show("error", "File check failed", "", {
           details: error instanceof Error ? error.message : String(error),
           code: "MDC-202"
         });
@@ -311,14 +311,14 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         pendingImport = null;
         importCalendar(text, name);
       }
-      app.notifications.show("info", `Ordner „${opened.name}“ geöffnet`, "");
+      app.notifications.show("info", `Folder “${opened.name}” opened`, "");
     }
 
     /** @param {unknown} error @param {string} code */
     function reportOpenError(error, code) {
       if (error instanceof DOMException && error.name === "AbortError") return;
       const details = error instanceof Error ? error.message : String(error);
-      app.notifications.show("error", "Ordner nicht geöffnet", "", { details, code });
+      app.notifications.show("error", "Folder not opened", "", { details, code });
     }
 
     /** Updates what an action changed. @param {MDCUndoAction} action */
@@ -379,11 +379,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       if (conflictNotice?.isOpen() || !fileSession) return;
       const changed = fileSession.conflicts;
       const deleted = changed.filter(conflict => conflict.text === null);
-      conflictNotice = app.notifications.show("warning", `${changed.map(conflict => conflict.file).join(", ")} ${deleted.length === changed.length ? "gelöscht" : deleted.length ? "geändert oder gelöscht" : "außerhalb geändert"}`, "", {
+      conflictNotice = app.notifications.show("warning", `${changed.map(conflict => conflict.file).join(", ")} ${deleted.length === changed.length ? "deleted" : deleted.length ? "changed or deleted" : "changed outside"}`, "", {
         persistent: true,
         actions: [
-          { label: "Neu laden", run: reloadWritable, primary: false },
-          { label: "Überschreiben", run: () => { void save(true); }, primary: true }
+          { label: "Reload", run: reloadWritable, primary: false },
+          { label: "Overwrite", run: () => { void save(true); }, primary: true }
         ]
       });
       updateHeader();
@@ -394,7 +394,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       if (!fileSession?.reload()) return;
       clearConflict();
       render();
-      app.notifications.show("info", "Neu geladen", "");
+      app.notifications.show("info", "Reloaded", "");
     }
 
     /** @param {MDCFileName} name */
@@ -414,7 +414,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       try {
         await fileSession.save(force);
       } catch (error) {
-        app.notifications.show("error", "Speichern fehlgeschlagen", "", {
+        app.notifications.show("error", "Save failed", "", {
           details: error instanceof Error ? error.message : String(error),
           code: "MDC-201"
         });
@@ -440,7 +440,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
     /** @param {string} title */
     function confirmDeleted(title) {
-      app.notifications.show("info", `„${title}“ gelöscht`, "");
+      app.notifications.show("info", `“${title}” deleted`, "");
     }
 
     function inboxIndex() {
@@ -555,12 +555,12 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         deleteOccurrence: () => {
           if (!calendar) return;
           execute(app.calendar.deleteOccurrence(calendar, index, key));
-          confirmDeleted(`${series.title} am ${app.calendar.formatDate(key)}`);
+          confirmDeleted(`${series.title} on ${app.calendar.formatDate(key)}`);
         },
         endSeries: () => {
           if (!calendar) return;
           execute(app.calendar.endSeries(calendar, index, key));
-          app.notifications.show("info", `„${series.title}“ endet am ${app.calendar.formatDate(key)}`, "");
+          app.notifications.show("info", `“${series.title}” ends on ${app.calendar.formatDate(key)}`, "");
         }
       });
     }
@@ -609,7 +609,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     }
 
     /** Entries and multi-day entries with this tag are the vacations of the holiday overview (docs/ui/Views.md#holiday-overview). */
-    const vacationTag = "Urlaub";
+    const vacationTag = "Vacation";
 
     /** @param {MDCEntryRef} left @param {MDCEntryRef} right */
     function sameRef(left, right) {
@@ -653,7 +653,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         ...app.calendar.changeOccurrences(calendar, occurrencesOf(picks), done ? "done" : "open")
       ];
       if (!actions.length) return;
-      execute(actions.length === 1 ? actions[0] : app.calendar.combine(`${picks.length} Einträge`, actions));
+      execute(actions.length === 1 ? actions[0] : app.calendar.combine(`${picks.length} entries`, actions));
       app.interactions.refreshSelection();
       if (done) void app.sounds.play();
     }
@@ -662,7 +662,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     function removeMany(picks) {
       if (!calendar || !backlog || !picks.length) return;
       const refs = refsOf(picks);
-      const label = picks.length === 1 ? pickTitle(picks[0]) : `${picks.length} Einträge`;
+      const label = picks.length === 1 ? pickTitle(picks[0]) : `${picks.length} entries`;
       const actions = [
         ...(refs.length ? [app.backlog.removeEntries(calendar, backlog, refs, label)] : []),
         ...app.calendar.changeOccurrences(calendar, occurrencesOf(picks), "delete")
@@ -686,14 +686,14 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
           : [];
       });
       if (!clipboard.length) return;
-      app.notifications.show("info", clipboard.length === 1 ? `„${clipboard[0].title}“ kopiert` : `${clipboard.length} Einträge kopiert`, "");
+      app.notifications.show("info", clipboard.length === 1 ? `“${clipboard[0].title}” copied` : `${clipboard.length} entries copied`, "");
     }
 
     /** Inserts open copies of the clipboard at the end of a day. @param {string} key */
     function paste(key) {
       if (!calendar || !backlog || view === "contacts") return;
       if (!clipboard.length) {
-        app.notifications.show("info", "Nichts zum Einfügen", "");
+        app.notifications.show("info", "Nothing to paste", "");
         return;
       }
       execute(app.backlog.pasteEntries(calendar, backlog, clipboard, key || visibleDay()));
@@ -736,21 +736,21 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       if (!calendar) return;
       const { events, skipped } = app.ics.parse(text);
       if (!events.length) {
-        app.notifications.show("warning", `Keine Termine in „${name}“`, "");
+        app.notifications.show("warning", `No events in “${name}”`, "");
         return;
       }
       const result = app.calendar.importEvents(calendar, events, today);
       if (!result.action) {
-        app.notifications.show("info", "Alle Termine schon vorhanden", "");
+        app.notifications.show("info", "All events already exist", "");
         return;
       }
       if (view === "contacts") view = portrait.matches ? "month" : "week";
       execute(result.action);
       if (events.length === 1) showDay(events[0].start);
       const imported = result.entries + result.series + result.multiDay;
-      const notes = [result.duplicates + skipped ? `${result.duplicates + skipped} übersprungen` : "",
-        result.simplified ? `${result.simplified} Serien als Einzeltermin` : ""].filter(Boolean);
-      app.notifications.show("info", `${imported} ${imported === 1 ? "Termin" : "Termine"} importiert`, notes.join(", "));
+      const notes = [result.duplicates + skipped ? `${result.duplicates + skipped} skipped` : "",
+        result.simplified ? `${result.simplified} series as single events` : ""].filter(Boolean);
+      app.notifications.show("info", `${imported} ${imported === 1 ? "event" : "events"} imported`, notes.join(", "));
     }
 
     app.contactsView.init({
@@ -766,7 +766,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       },
       remove(index) {
         if (!contacts || !contacts.contacts[index]) return;
-        const name = app.contacts.name(contacts.contacts[index]) || "Kontakt";
+        const name = app.contacts.name(contacts.contacts[index]) || "Contact";
         execute(app.contacts.remove(contacts, index));
         confirmDeleted(name);
       },
@@ -775,24 +775,24 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         const found = app.vcard.parse(text);
         const result = app.contacts.importContacts(contacts, found);
         if (!found.length) {
-          app.notifications.show("warning", `Keine Kontakte in „${name}“`, "");
+          app.notifications.show("warning", `No contacts in “${name}”`, "");
           return;
         }
         execute(result.action);
-        app.notifications.show("info", `${result.added} neu, ${result.merged} zusammengeführt`, "");
+        app.notifications.show("info", `${result.added} new, ${result.merged} merged`, "");
       },
       exportOne(index) {
         const contact = contacts?.contacts[index];
-        if (contact) download(`${app.contacts.name(contact) || "Kontakt"}.vcf`, app.vcard.serialize([contact]));
+        if (contact) download(`${app.contacts.name(contact) || "Contact"}.vcf`, app.vcard.serialize([contact]));
       },
       exportAll() {
         if (contacts?.contacts.length) download("Contacts.vcf", app.vcard.serialize(contacts.contacts));
-        else app.notifications.show("info", "Keine Kontakte", "");
+        else app.notifications.show("info", "No contacts", "");
       },
       copy(text) {
         void navigator.clipboard.writeText(text).then(
-          () => app.notifications.show("info", "Adresse kopiert", ""),
-          () => app.notifications.show("warning", "Kopieren nicht möglich", ""));
+          () => app.notifications.show("info", "Address copied", ""),
+          () => app.notifications.show("warning", "Copy failed", ""));
       },
       reject(message) {
         app.notifications.show("warning", message, "");
@@ -809,7 +809,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         try {
           const opened = await app.storage.reopenFolder();
           if (opened) await openFolder(opened);
-          else app.notifications.show("warning", "Kein Zugriff auf den Ordner", "");
+          else app.notifications.show("warning", "No access to the folder", "");
         } catch (error) {
           reportOpenError(error, "MDC-102");
         }
@@ -854,12 +854,12 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         const items = [];
         if (picks.length) {
           const open = picks.some(pick => !pickDone(pick));
-          items.push({ label: open ? "Erledigt" : "Nicht erledigt", icon: "check", run: () => toggleMany(picks) });
-          items.push({ label: picks.length > 1 ? `${picks.length} Einträge kopieren` : "Kopieren", icon: "copy", run: () => copy(picks) });
-          items.push({ label: picks.length > 1 ? `${picks.length} Einträge löschen` : "Löschen", icon: "trash", danger: true, run: () => removeMany(picks) });
+          items.push({ label: open ? "Done" : "Not done", icon: "check", run: () => toggleMany(picks) });
+          items.push({ label: picks.length > 1 ? `Copy ${picks.length} entries` : "Copy", icon: "copy", run: () => copy(picks) });
+          items.push({ label: picks.length > 1 ? `Delete ${picks.length} entries` : "Delete", icon: "trash", danger: true, run: () => removeMany(picks) });
         } else {
-          items.push({ label: "Neuer Eintrag", icon: "plus", run: () => newEntry(key) });
-          if (clipboard.length) items.push({ label: clipboard.length > 1 ? `${clipboard.length} Einträge einfügen` : "Einfügen", icon: "clipboard", run: () => paste(key) });
+          items.push({ label: "New entry", icon: "plus", run: () => newEntry(key) });
+          if (clipboard.length) items.push({ label: clipboard.length > 1 ? `Paste ${clipboard.length} entries` : "Paste", icon: "clipboard", run: () => paste(key) });
         }
         app.menus.showContext(items, x, y);
       },
@@ -920,7 +920,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     try {
       remembered = await app.storage.rememberedFolder();
     } catch (error) {
-      blockStartup("Browserspeicher gesperrt", "Browserspeicher erlauben, dann neu laden.", error instanceof Error ? error.message : String(error), "MDC-004");
+      blockStartup("Browser storage blocked", "Allow site data, then reload.", error instanceof Error ? error.message : String(error), "MDC-004");
       return;
     }
     if (remembered?.granted) {
@@ -940,6 +940,6 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   void initialize().catch(error => {
-    blockStartup("Start fehlgeschlagen", "Seite neu laden.", error instanceof Error ? error.stack || error.message : String(error), "MDC-005");
+    blockStartup("Startup failed", "Reload the page.", error instanceof Error ? error.stack || error.message : String(error), "MDC-005");
   });
 })(window.MDCalendar);

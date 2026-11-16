@@ -2,12 +2,12 @@ import { notifications } from "@zang3th/md-libs/ui";
 
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
-// Notifications of MD_Libs ui/notifications with German texts and MDC codes (see docs/Architecture.md#notifications).
+// Notifications of MD_Libs ui/notifications with English texts and MDC codes (see docs/Architecture.md#notifications).
 (function (app) {
   /** @param {unknown} value */
   function errorMessage(value) {
     if (value instanceof Error) return value.stack || value.message;
-    return typeof value === "string" ? value : "Unbekannter Fehler.";
+    return typeof value === "string" ? value : "Unknown error.";
   }
 
   const stack = notifications.create({
@@ -17,13 +17,13 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     defaultCode: "MDC-000",
     strings: {
       tag: (severity, code) => severity === "error" ? code : "",
-      close: "Schließen",
-      copy: "Fehler kopieren",
-      copied: "Kopiert",
-      copiedTooltip: "Kopiert",
-      copyFailed: "Kopieren fehlgeschlagen",
+      close: "Close",
+      copy: "Copy error",
+      copied: "Copied",
+      copiedTooltip: "Copied",
+      copyFailed: "Copy failed",
       copyNote: "",
-      copyText: (code, title, details) => `Fehler ${code}: ${title}\nDetails: ${details}`
+      copyText: (code, title, details) => `Error ${code}: ${title}\nDetails: ${details}`
     },
     block() {
       document.body.classList.add("startup-blocked");
@@ -33,8 +33,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       });
     },
     globalErrors: {
-      title: "Unerwarteter Fehler",
-      body: "In der Anwendung ist ein unerwarteter Fehler aufgetreten.",
+      title: "Unexpected error",
+      body: "An unexpected error occurred in the application.",
       codes: { error: "MDC-900", rejection: "MDC-901" },
       details: (_kind, value) => errorMessage(value)
     }

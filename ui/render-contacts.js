@@ -4,10 +4,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 // Contacts view: list with search, filters and sort on the left, inline editor on the right (docs/ui/Views.md#contacts).
 (function (app) {
   const board = /** @type {HTMLElement} */ (document.getElementById("contacts"));
-  /** Data labels (English) and their German UI names; a click on a label cycles through them. */
-  const labelNames = /** @type {Record<string, string>} */ ({ Mobile: "Mobil", Home: "Privat", Work: "Arbeit", Other: "Sonstige" });
+  /** Labels of the data format, shown as they are; a click on a label cycles through them. */
   const labelCycles = { phones: ["Mobile", "Home", "Work", "Other"], emails: ["Home", "Work", "Other"], addresses: ["Home", "Work", "Other"] };
-  const addNames = { phones: "Telefon", emails: "E-Mail", addresses: "Adresse" };
+  const addNames = { phones: "Phone", emails: "Email", addresses: "Address" };
   /** @type {MDCContactsHandlers | null} */
   let handlers = null;
   /** @type {{contacts: MDCContacts, selected: number, today: string} | null} */
@@ -34,7 +33,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   /** @param {MDCContact} contact */
   function shownName(contact) {
-    return app.contacts.name(contact) || contact.nickname || "Ohne Namen";
+    return app.contacts.name(contact) || contact.nickname || "No name";
   }
 
   /** @param {MDCContact} contact @param {"sm" | "lg"} size */
@@ -44,7 +43,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   /** @param {number} days */
   function when(days) {
-    return days === 0 ? "heute" : days === 1 ? "morgen" : `in ${days} Tagen`;
+    return days === 0 ? "today" : days === 1 ? "tomorrow" : `in ${days} days`;
   }
 
   /** @param {MDCContact} contact */
@@ -59,28 +58,28 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const next = app.contacts.nextBirthday(contact, today);
     const soon = next && (sort === "birthday" || next.days <= 14);
     const sub = soon && next
-      ? `<span class="cx-row__soon">${icon("cake")}${when(next.days)}${next.age !== null ? ` · wird ${next.age}` : ""}</span>`
+      ? `<span class="cx-row__soon">${icon("cake")}${when(next.days)}${next.age !== null ? ` · turns ${next.age}` : ""}</span>`
       : escape(contact.company || contact.groups.join(", ") || contact.phones[0]?.value || "");
     return `<button class="cx-row${shown && index === shown.selected ? " is-sel" : ""}" type="button" data-contact="${index}">` +
       `${avatar(contact, "sm")}<span class="cx-row__main"><b>${escape(shownName(contact))}</b><small>${sub}</small></span>` +
-      `${contact.favorite ? `<span class="cx-row__fav" aria-label="Favorit">${icon("star")}</span>` : ""}</button>`;
+      `${contact.favorite ? `<span class="cx-row__fav" aria-label="Favorite">${icon("star")}</span>` : ""}</button>`;
   }
 
   /** @param {MDCContacts} contacts @param {string} today */
   function rows(contacts, today) {
     const list = contacts.contacts.map((contact, index) => ({ contact, index }))
       .filter(item => matchesFilter(item.contact) && app.contacts.matches(item.contact, query));
-    if (!list.length) return `<div class="cx-empty">${contacts.contacts.length ? `Keine Treffer${query ? ` für „${escape(query)}“` : ""}` : "Noch keine Kontakte."}</div>`;
+    if (!list.length) return `<div class="cx-empty">${contacts.contacts.length ? `No results${query ? ` for “${escape(query)}”` : ""}` : "No contacts yet."}</div>`;
     const section = (/** @type {string} */ title, /** @type {typeof list} */ items) =>
       items.length ? `<div class="cx-sec-h">${escape(title)}</div>${items.map(item => row(item.contact, item.index, today)).join("")}` : "";
     if (sort === "birthday") {
       const withBirthday = list.filter(item => item.contact.birthday)
         .map(item => ({ ...item, days: app.contacts.nextBirthday(item.contact, today)?.days ?? 0 }))
         .sort((left, right) => left.days - right.days);
-      return section("Nächste 30 Tage", withBirthday.filter(item => item.days <= 30)) + section("Später", withBirthday.filter(item => item.days > 30)) +
-        section("Ohne Geburtstag", list.filter(item => !item.contact.birthday));
+      return section("Next 30 days", withBirthday.filter(item => item.days <= 30)) + section("Later", withBirthday.filter(item => item.days > 30)) +
+        section("No birthday", list.filter(item => !item.contact.birthday));
     }
-    const byName = [...list].sort((left, right) => app.contacts.sortName(left.contact).localeCompare(app.contacts.sortName(right.contact), "de"));
+    const byName = [...list].sort((left, right) => app.contacts.sortName(left.contact).localeCompare(app.contacts.sortName(right.contact), "en"));
     const pinned = filter === "fav" ? [] : byName.filter(item => item.contact.favorite);
     /** @type {Map<string, typeof list>} */
     const letters = new Map();
@@ -89,12 +88,12 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       const letter = (app.contacts.sortName(item.contact)[0] || "#").toUpperCase();
       letters.set(letter, [...(letters.get(letter) || []), item]);
     }
-    return section("Favoriten", pinned) + Array.from(letters, ([letter, items]) => section(letter, items)).join("");
+    return section("Favorites", pinned) + Array.from(letters, ([letter, items]) => section(letter, items)).join("");
   }
 
   /** @param {MDCContacts} contacts */
   function filters(contacts) {
-    const chips = [["all", "Alle"], ["fav", "Favoriten"], ...contacts.groups.map(group => [group, group])];
+    const chips = [["all", "All"], ["fav", "Favorites"], ...contacts.groups.map(group => [group, group])];
     if (!chips.some(([value]) => value === filter)) filter = "all";
     return chips.map(([value, label]) => `<button class="cx-chip" type="button" data-filter="${escape(value)}" aria-pressed="${value === filter}">` +
       `${value === "fav" ? icon("star") : ""}${escape(label)}</button>`).join("");
@@ -105,64 +104,64 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const items = contact[kind];
     const link = (/** @type {string} */ value) => kind === "phones" ? `tel:${value.replace(/[^\d+]/g, "")}` : `mailto:${value}`;
     return items.map((item, index) =>
-      `<div class="cx-field"><button class="cx-label" type="button" data-cycle="${kind}:${index}" aria-label="Bezeichnung: ${escape(labelNames[item.label] || item.label || "Ohne")}">${escape(labelNames[item.label] || item.label || "–")}</button>` +
+      `<div class="cx-field"><button class="cx-label" type="button" data-cycle="${kind}:${index}" aria-label="Label: ${escape(item.label || "None")}">${escape(item.label || "–")}</button>` +
       `<input class="cx-in" data-key="${kind}:${index}" value="${escape(item.value)}" placeholder="${addNames[kind]}" autocomplete="off" aria-label="${addNames[kind]}">` +
       (kind === "addresses"
-        ? `<button class="cx-go" type="button" data-copy="${index}" aria-label="Adresse kopieren"${item.value ? "" : " disabled"}>${icon("copy")}</button>`
-        : item.value ? `<a class="cx-go" href="${escape(link(item.value))}" aria-label="${kind === "phones" ? "Anrufen" : "Mail schreiben"}">${icon(kind === "phones" ? "phone" : "mail")}</a>` : `<span class="cx-go"></span>`) +
-      `<button class="cx-x" type="button" data-remove="${kind}:${index}" aria-label="${addNames[kind]} entfernen">${icon("close")}</button></div>`).join("") +
-      `<button class="cx-add" type="button" data-add="${kind}">${icon("plus")}${addNames[kind]} hinzufügen</button>`;
+        ? `<button class="cx-go" type="button" data-copy="${index}" aria-label="Copy address"${item.value ? "" : " disabled"}>${icon("copy")}</button>`
+        : item.value ? `<a class="cx-go" href="${escape(link(item.value))}" aria-label="${kind === "phones" ? "Call" : "Send email"}">${icon(kind === "phones" ? "phone" : "mail")}</a>` : `<span class="cx-go"></span>`) +
+      `<button class="cx-x" type="button" data-remove="${kind}:${index}" aria-label="Remove ${addNames[kind].toLowerCase()}">${icon("close")}</button></div>`).join("") +
+      `<button class="cx-add" type="button" data-add="${kind}">${icon("plus")}Add ${addNames[kind].toLowerCase()}</button>`;
   }
 
   /** @param {MDCContacts} contacts @param {number} selected @param {string} today */
   function detail(contacts, selected, today) {
     const contact = contacts.contacts[selected];
-    if (!contact) return `<section class="cx-detail cx-detail--empty"><p>${contacts.contacts.length ? "Kein Kontakt ausgewählt." : "Lege mit + den ersten Kontakt an oder importiere eine vCard."}</p></section>`;
+    if (!contact) return `<section class="cx-detail cx-detail--empty"><p>${contacts.contacts.length ? "No contact selected." : "Create the first contact with + or import a vCard."}</p></section>`;
     const next = app.contacts.nextBirthday(contact, today);
     const phone = contact.phones.find(item => item.value);
     const mail = contact.emails.find(item => item.value);
     const card = next
       ? `<div class="cx-bcard${next.days === 0 ? " is-today" : next.days <= 14 ? " is-soon" : ""}"><span class="cx-bcard__icon">${icon("cake")}</span>` +
-        `<b>${next.days === 0 ? "Heute!" : when(next.days)}</b><span>${app.calendar.formatDay(next.date, "D. MMMM")}${next.age !== null ? ` · wird ${next.age}` : ""}</span></div>`
-      : `<div class="cx-bcard cx-bcard--none"><span class="cx-bcard__icon">${icon("cake")}</span><span>Kein Geburtstag</span></div>`;
+        `<b>${next.days === 0 ? "Today!" : when(next.days)}</b><span>${app.calendar.formatDay(next.date, "D MMMM")}${next.age !== null ? ` · turns ${next.age}` : ""}</span></div>`
+      : `<div class="cx-bcard cx-bcard--none"><span class="cx-bcard__icon">${icon("cake")}</span><span>No birthday</span></div>`;
     const field = (/** @type {string} */ key, /** @type {string} */ value, /** @type {string} */ placeholder, /** @type {string} */ classes) =>
       `<input class="cx-in ${classes}" data-key="${key}" value="${escape(value)}" placeholder="${placeholder}" aria-label="${placeholder}" autocomplete="off">`;
     return `<section class="cx-detail" aria-label="${escape(shownName(contact))}">` +
       `<header class="cx-hero">${avatar(contact, "lg")}<div class="cx-hero__text">` +
-      `<div class="cx-names">${field("firstName", contact.firstName, "Vorname", "cx-in--name")}${field("lastName", contact.lastName, "Nachname", "cx-in--name")}</div>` +
-      `<div class="cx-subline">${field("nickname", contact.nickname, "Spitzname", "cx-in--sub")}<span class="cx-subline__icon">${icon("building")}</span>` +
-      `${field("company", contact.company, "Firma", "cx-in--sub")}${field("position", contact.position, "Position", "cx-in--sub")}</div>` +
+      `<div class="cx-names">${field("firstName", contact.firstName, "First name", "cx-in--name")}${field("lastName", contact.lastName, "Last name", "cx-in--name")}</div>` +
+      `<div class="cx-subline">${field("nickname", contact.nickname, "Nickname", "cx-in--sub")}<span class="cx-subline__icon">${icon("building")}</span>` +
+      `${field("company", contact.company, "Company", "cx-in--sub")}${field("position", contact.position, "Position", "cx-in--sub")}</div>` +
       `<div class="cx-actions">` +
-      (phone ? `<a class="cx-act" href="tel:${escape(phone.value.replace(/[^\d+]/g, ""))}">${icon("phone")}Anrufen</a>` : "") +
-      (mail ? `<a class="cx-act" href="mailto:${escape(mail.value)}">${icon("mail")}Mail</a>` : "") +
-      `<button class="cx-act${contact.favorite ? " is-fav" : ""}" type="button" data-action="favorite" aria-pressed="${contact.favorite}">${icon("star")}Favorit</button>` +
+      (phone ? `<a class="cx-act" href="tel:${escape(phone.value.replace(/[^\d+]/g, ""))}">${icon("phone")}Call</a>` : "") +
+      (mail ? `<a class="cx-act" href="mailto:${escape(mail.value)}">${icon("mail")}Email</a>` : "") +
+      `<button class="cx-act${contact.favorite ? " is-fav" : ""}" type="button" data-action="favorite" aria-pressed="${contact.favorite}">${icon("star")}Favorite</button>` +
       `<button class="cx-act" type="button" data-action="export">${icon("download")}vCard</button><span class="cx-grow"></span>` +
-      `<button class="cx-act cx-act--danger" type="button" data-action="delete">${icon("trash")}Löschen</button></div></div>${card}</header>` +
+      `<button class="cx-act cx-act--danger" type="button" data-action="delete">${icon("trash")}Delete</button></div></div>${card}</header>` +
       `<div class="cx-grid">` +
-      `<section class="cx-sec"><h3>${icon("phone")}Telefon</h3>${labelledRows("phones", contact)}</section>` +
-      `<section class="cx-sec"><h3>${icon("mail")}E-Mail</h3>${labelledRows("emails", contact)}</section>` +
-      `<section class="cx-sec"><h3>${icon("pin")}Adressen</h3>${labelledRows("addresses", contact)}</section>` +
-      `<section class="cx-sec"><h3>${icon("cake")}Daten</h3><div class="cx-field"><span class="cx-label cx-label--fixed">Geburtstag</span>` +
-      `${field("birthday", contact.birthday ? app.contactsFormat.formatBirthday(contact.birthday) : "", "TT.MM.JJJJ oder TT.MM.", "")}` +
-      `<span class="cx-hint">${next?.age !== null && next ? `wird ${next.age}` : ""}</span><span></span></div>` +
+      `<section class="cx-sec"><h3>${icon("phone")}Phone</h3>${labelledRows("phones", contact)}</section>` +
+      `<section class="cx-sec"><h3>${icon("mail")}Email</h3>${labelledRows("emails", contact)}</section>` +
+      `<section class="cx-sec"><h3>${icon("pin")}Addresses</h3>${labelledRows("addresses", contact)}</section>` +
+      `<section class="cx-sec"><h3>${icon("cake")}Dates</h3><div class="cx-field"><span class="cx-label cx-label--fixed">Birthday</span>` +
+      `${field("birthday", contact.birthday ? app.contactsFormat.formatBirthday(contact.birthday) : "", "DD.MM.YYYY or DD.MM.", "")}` +
+      `<span class="cx-hint">${next?.age !== null && next ? `turns ${next.age}` : ""}</span><span></span></div>` +
       contact.anniversaries.map((item, index) => `<div class="cx-field">` +
-        `<input class="cx-label cx-label--input" data-key="anniversaryLabel:${index}" value="${escape(item.label)}" placeholder="Jahrestag" aria-label="Bezeichnung des Jahrestags" autocomplete="off">` +
-        `${field(`anniversaryDate:${index}`, app.calendar.formatDate(item.date), "TT.MM.JJJJ", "")}<span class="cx-hint">${icon("heart")}</span>` +
-        `<button class="cx-x" type="button" data-remove="anniversaries:${index}" aria-label="Jahrestag entfernen">${icon("close")}</button></div>`).join("") +
-      `<button class="cx-add" type="button" data-add="anniversaries">${icon("plus")}Jahrestag hinzufügen</button></section>` +
-      `<section class="cx-sec"><h3>${icon("contacts")}Gruppen</h3><div class="cx-groups">` +
+        `<input class="cx-label cx-label--input" data-key="anniversaryLabel:${index}" value="${escape(item.label)}" placeholder="Anniversary" aria-label="Anniversary label" autocomplete="off">` +
+        `${field(`anniversaryDate:${index}`, app.calendar.formatDate(item.date), "DD.MM.YYYY", "")}<span class="cx-hint">${icon("heart")}</span>` +
+        `<button class="cx-x" type="button" data-remove="anniversaries:${index}" aria-label="Remove anniversary">${icon("close")}</button></div>`).join("") +
+      `<button class="cx-add" type="button" data-add="anniversaries">${icon("plus")}Add anniversary</button></section>` +
+      `<section class="cx-sec"><h3>${icon("contacts")}Groups</h3><div class="cx-groups">` +
       contacts.groups.map(group => `<button class="cx-chip" type="button" data-group="${escape(group)}" aria-pressed="${contact.groups.includes(group)}">${escape(group)}</button>`).join("") +
-      `<input class="cx-newgroup" data-key="newGroup" placeholder="+ Neue Gruppe" aria-label="Neue Gruppe" autocomplete="off"></div></section>` +
-      `<section class="cx-sec cx-sec--wide"><h3>${icon("note")}Notiz</h3><textarea class="cx-in cx-in--note" data-key="note" placeholder="Notizen zum Kontakt …" aria-label="Notiz">${escape(contact.note.join("\n"))}</textarea></section>` +
+      `<input class="cx-newgroup" data-key="newGroup" placeholder="+ New group" aria-label="New group" autocomplete="off"></div></section>` +
+      `<section class="cx-sec cx-sec--wide"><h3>${icon("note")}Note</h3><textarea class="cx-in cx-in--note" data-key="note" placeholder="Notes …" aria-label="Note">${escape(contact.note.join("\n"))}</textarea></section>` +
       `</div></section>`;
   }
 
   function build() {
-    board.innerHTML = `<aside class="cx-list" aria-label="Kontaktliste">` +
-      `<label class="cx-search">${icon("search")}<input id="contactsQuery" placeholder="Name, Firma, Mail, Telefon …" aria-label="Kontakte durchsuchen" autocomplete="off"></label>` +
+    board.innerHTML = `<aside class="cx-list" aria-label="Contact list">` +
+      `<label class="cx-search">${icon("search")}<input id="contactsQuery" placeholder="Name, company, email, phone …" aria-label="Search contacts" autocomplete="off"></label>` +
       `<div class="cx-filters" id="contactsFilters" role="group" aria-label="Filter"></div>` +
-      `<div class="cx-bar"><div class="cx-sort" role="group" aria-label="Sortierung"><button type="button" data-sort="name" aria-pressed="true">A–Z</button>` +
-      `<button type="button" data-sort="birthday" aria-pressed="false">${icon("cake")}Geburtstag</button></div>` +
+      `<div class="cx-bar"><div class="cx-sort" role="group" aria-label="Sort"><button type="button" data-sort="name" aria-pressed="true">A–Z</button>` +
+      `<button type="button" data-sort="birthday" aria-pressed="false">${icon("cake")}Birthday</button></div>` +
       `<span class="cx-tools"><label class="cx-import">${icon("upload")}Import<input type="file" id="contactsImport" accept=".vcf,text/vcard" hidden></label>` +
       `<button class="cx-import" type="button" data-action="exportAll">${icon("download")}Export</button></span></div>` +
       `<div class="cx-scroll" id="contactsRows"></div><div class="cx-count" id="contactsCount"></div></aside><div class="cx-slot" id="contactsDetail"></div>`;
@@ -181,7 +180,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     /** @type {HTMLElement} */ (board.querySelector("#contactsFilters")).innerHTML = filters(contacts);
     for (const button of board.querySelectorAll("[data-sort]")) button.setAttribute("aria-pressed", String(/** @type {HTMLElement} */ (button).dataset.sort === sort));
     /** @type {HTMLElement} */ (board.querySelector("#contactsRows")).innerHTML = rows(contacts, today);
-    /** @type {HTMLElement} */ (board.querySelector("#contactsCount")).textContent = `${contacts.contacts.length} Kontakt${contacts.contacts.length === 1 ? "" : "e"} · Contacts.md`;
+    /** @type {HTMLElement} */ (board.querySelector("#contactsCount")).textContent = `${contacts.contacts.length} contact${contacts.contacts.length === 1 ? "" : "s"} · Contacts.md`;
     /** @type {HTMLElement} */ (board.querySelector("#contactsDetail")).innerHTML = detail(contacts, selected, today);
     const detailElement = /** @type {HTMLElement | null} */ (board.querySelector(".cx-detail"));
     if (detailElement && sameContact) detailElement.scrollTop = scroll;
@@ -227,14 +226,14 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     if (name === "birthday") {
       const birthday = trimmed ? app.contactsFormat.parseBirthday(trimmed) : "";
       if (trimmed && !birthday) {
-        handlers?.reject("Ungültiger Geburtstag (TT.MM.JJJJ oder TT.MM.)");
+        handlers?.reject("Invalid birthday (DD.MM.YYYY or DD.MM.)");
         return;
       }
       contact.birthday = birthday;
     } else if (name === "anniversaryDate") {
       const date = app.calendar.parseDate(trimmed);
       if (!date) {
-        handlers?.reject("Ungültiges Datum (TT.MM.JJJJ)");
+        handlers?.reject("Invalid date (DD.MM.YYYY)");
         return;
       }
       contact.anniversaries[index].date = date;

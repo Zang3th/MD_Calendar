@@ -26,7 +26,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const element = document.createElement("section");
     element.className = "day";
     element.dataset.day = key;
-    element.setAttribute("aria-label", app.calendar.formatDay(key, "dddd, D. MMMM YYYY"));
+    element.setAttribute("aria-label", app.calendar.formatDay(key, "dddd, D MMMM YYYY"));
     element.innerHTML = `<header class="day__head"><span class="day__dow">${app.calendar.formatDay(key, "dddd")}</span><span class="day__num">${app.calendar.formatDay(key, "D")}</span><span class="day__badges"></span></header>` +
       `<div class="day__spacer"></div><div class="day__list" data-day="${key}"></div>`;
     return element;

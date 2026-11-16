@@ -294,7 +294,7 @@ Die Kontakte-Ansicht wird ein vollwertiger Kontakt-Editor. `Contacts.md` bleibt 
 - [x] ~Hintergrundlicht in der Mitte entfernt~
 - [x] ~Rahmen von Header + Hintergrund entfernt~
 - [x] ~Undo-Zähler: unveränderter Stand gilt als gespeichert~
-- [ ] Übersetzung: Das ganze Projekt auf Englisch umstellen
+- [x] ~Übersetzung: Das ganze Projekt auf Englisch umstellen~
 
 ### Release
 

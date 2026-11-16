@@ -22,10 +22,10 @@ Rotating the screen switches to the default view of the new orientation. The bac
 
 ## Day header
 
-- Weekday and date. Today: weekday in the accent color, a „Heute“ pill in the accent color next to the date and an accent-tinted day card with an accent outline and glow, so that today stands out wherever it is in the week. In the month view the date of today sits on an accent pill.
+- Weekday and date. Today: weekday in the accent color, a “Today” pill in the accent color next to the date and an accent-tinted day card with an accent outline and glow, so that today stands out wherever it is in the week. In the month view the date of today sits on an accent pill.
 - **Badges** next to the date: the holiday first, then birthdays and anniversaries, stacked vertically while there is room.
   - Holiday badge in `--accent-2`; birthday badges in `--warm` with a cake icon, first and last name and the age the contact turns; anniversary badges in `--warm` with a heart icon, the name and the number of years.
-  - Maximum badges: 3 in the landscape week, 5 in the portrait week, 1 in the month view. Beyond the maximum the last badge shows „+X"; its accessible name lists the others with ages.
+  - Maximum badges: 3 in the landscape week, 5 in the portrait week, 1 in the month view. Beyond the maximum the last badge shows “+X”; its accessible name lists the others with ages.
   - Clicking a birthday or anniversary badge opens the contact in the contacts view.
 - School vacations are not shown in the week and month views; they appear only in the [holiday overview](#holiday-overview).
 
@@ -33,9 +33,9 @@ Rotating the screen switches to the default view of the new orientation. The bac
 
 An icon button in the right zone of the header toggles a small floating glass panel below the button. It shows the lists of one year; arrows switch the year:
 
-- „Feiertage“: date, weekday and name of each public holiday.
-- „Urlaub“: only when there are own vacations, that is entries and multi-day entries with the tag „Urlaub“; date or date range and title. Consecutive days with the same title form one range.
-- „Schulferien“: date range and name of each school vacation of North Rhine-Westphalia.
+- “Holidays”: date, weekday and name of each public holiday.
+- “Vacation”: only when there are own vacations, that is entries and multi-day entries with the tag “Vacation”; date or date range and title. Consecutive days with the same title form one range.
+- “School vacations”: date range and name of each school vacation of North Rhine-Westphalia.
 
 Past holidays and vacations are dimmed.
 
@@ -55,8 +55,8 @@ Past holidays and vacations are dimmed.
 
 - Grid of week rows, Monday to Sunday. Days outside the month are faded.
 - A slim column (20px) on the left shows the ISO week number of each row, without a column heading. The current week's number is highlighted in the accent color.
-- Each cell: date (the first of a month shows the month name), at most one badge plus „+X", compact entry list.
-- Visible entries per cell: at most 3 in landscape and 4 in portrait, fewer when the cell is too low (bar lanes, small window). Further entries collapse into a „+N" chip; clicking it opens the week of that day.
+- Each cell: date (the first of a month shows the month name), at most one badge plus “+X”, compact entry list.
+- Visible entries per cell: at most 3 in landscape and 4 in portrait, fewer when the cell is too low (bar lanes, small window). Further entries collapse into a “+N” chip; clicking it opens the week of that day.
 - In narrow cells (portrait) tiles show only check box and title.
 - Multi-day bars run across the cells of each week row; only the cells a bar covers make room for it.
 
@@ -67,24 +67,24 @@ A full contact editor with a list on the left and the selected contact on the ri
 ### List
 
 - Search field across name, company, email and phone; filters while typing.
-- Filter chips: „Alle", „Favoriten", one chip per contact group.
-- Sort: „A–Z" or „Geburtstag" (next birthday first).
-- Sorted by name: favorites pinned at the top, then sections by initial letter. Sorted by birthday: „Nächste 30 Tage", „Später", „Ohne Geburtstag".
-- Row: initials avatar with a color gradient derived from the name, display name, and either an upcoming birthday („heute · wird 32", „in 7 Tagen") in `--warm` or company, groups or first phone number. Favorites show a star.
-- „Import" opens a vCard file; the result is reported in a notification. „Export" saves all contacts as one vCard file.
+- Filter chips: “All”, “Favorites”, one chip per contact group.
+- Sort: “A–Z” or “Birthday” (next birthday first).
+- Sorted by name: favorites pinned at the top, then sections by initial letter. Sorted by birthday: “Next 30 days”, “Later”, “No birthday”.
+- Row: initials avatar with a color gradient derived from the name, display name, and either an upcoming birthday (“today · turns 32”, “in 7 days”) in `--warm` or company, groups or first phone number. Favorites show a star.
+- “Import” opens a vCard file; the result is reported in a notification. “Export” saves all contacts as one vCard file.
 - Footer: number of contacts and the file name.
 
 ### Detail
 
 - Header: large avatar; first name, last name, nickname, company and position as inline fields.
-- Actions: „Anrufen" (`tel:`), „Mail" (`mailto:`), „Favorit", „vCard" (export), „Löschen".
-- Birthday card on the right: countdown („Heute!", „morgen", „in N Tagen"), date and age; highlighted in `--warm` when the birthday is today or within 14 days.
+- Actions: “Call” (`tel:`), “Email” (`mailto:`), “Favorite”, “vCard” (export), “Delete”.
+- Birthday card on the right: countdown (“Today!”, “tomorrow”, “in N days”), date and age; highlighted in `--warm` when the birthday is today or within 14 days.
 - Section cards in two columns:
-  - „Telefon", „E-Mail", „Adressen": one row per value with a label button (click cycles through the labels), the value, a direct link (call, mail) or a copy button (address), and a remove button; „… hinzufügen" adds a row.
-  - „Daten": birthday (`TT.MM.JJJJ` or `TT.MM.`) with the upcoming age, anniversaries with an editable label and a date.
-  - „Gruppen": toggle chips per group and an input to create a new group with Enter.
-  - „Notiz": full width.
+  - “Phone”, “Email”, “Addresses”: one row per value with a label button (click cycles through the labels), the value, a direct link (call, mail) or a copy button (address), and a remove button; “Add …” adds a row.
+  - “Dates”: birthday (`DD.MM.YYYY` or `DD.MM.`) with the upcoming age, anniversaries with an editable label and a date.
+  - “Groups”: toggle chips per group and an input to create a new group with Enter.
+  - “Note”: full width.
 - Inline fields have no frame; a surface appears on hover and an accent outline on focus. Remove buttons are always visible.
-- „Daten“: an invalid birthday or anniversary date is rejected with a notification and the field returns to its value.
-- „+“ in the header and `N` create a new contact and focus its first name.
+- “Dates”: an invalid birthday or anniversary date is rejected with a notification and the field returns to its value.
+- “+” in the header and `N` create a new contact and focus its first name.
 - Portrait: narrower list, single-column detail, birthday card as a row below the header.

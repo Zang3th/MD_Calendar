@@ -63,7 +63,7 @@ Rules have no end when created. Actions on a series:
 
 Single occurrences cannot be moved or renamed.
 
-- „End series from here“ sets `UNTIL` to the date of the chosen occurrence; it stays the last one.
+- “End series here” sets `UNTIL` to the date of the chosen occurrence; it stays the last one.
 - A whole series can be deleted.
 - Deleting an occurrence also removes its done mark.
 - Occurrences are computed per day and cached until a series changes.
@@ -83,14 +83,14 @@ An entry, a recurring entry and a multi-day entry can be turned into each other 
 
 - Tags are defined by hand in `Config.md`, each with a color and an icon ID; the app does not create or edit tags. The icon ID names one of the tag icons (see [Design System](ui/DesignSystem.md#tag-icons)).
 - An unknown or missing icon ID is an error. It is reported when `Config.md` is read, through the [notifications](Architecture.md#notifications) with the code `MDC-301`; the tag keeps its color and shows no icon.
-- The tag named „Urlaub“ marks vacations: its entries and multi-day entries are listed in the [holiday overview](ui/Views.md#holiday-overview).
+- The tag named “Vacation” marks vacations: its entries and multi-day entries are listed in the [holiday overview](ui/Views.md#holiday-overview).
 - An entry has at most one tag. Without a tag it has no color and no icon.
 
 ## Contact
 
 | Field | Rule |
 |---|---|
-| First name, last name | The display name is first name plus last name. A contact without both shows „Ohne Namen“. |
+| First name, last name | The display name is first name plus last name. A contact without both shows “No name”. |
 | Nickname | Optional. |
 | Birthday | Optional; the year is optional. |
 | Phone numbers | Any number, each with a label (for example Mobile, Home, Work). |
@@ -123,7 +123,7 @@ An entry, a recurring entry and a multi-day entry can be turned into each other 
 ## Search
 
 - The search covers the whole calendar and the backlog: entries, recurring entries, multi-day entries and backlog entries, by title, location, note and tag.
-- It is the fuzzy search of MD_Manager (MD_Libs `core/search`): the letters of a word must appear in order, so letters may be missing („zhnrzt“ finds „Zahnarzt“). Case and diacritics are ignored („muller“ finds „Müller“). Every word of the query must match.
+- It is the fuzzy search of MD_Manager (MD_Libs `core/search`): the letters of a word must appear in order, so letters may be missing (“dntst” finds “Dentist”). Case and diacritics are ignored (“muller” finds “Müller”). Every word of the query must match.
 - Hits in the title rank before hits elsewhere; contiguous letters, word starts and shorter texts rank higher; equally good hits closer to today come first.
 - A hit on a recurring entry leads to its next occurrence from today on.
 

@@ -15,7 +15,7 @@ Rules for every agent working in this repository. This file contains rules only;
 ## Documentation
 
 - **Single source of truth.** Every fact lives in exactly one document; the map in [README.md](README.md) says which. Link to it instead of restating it. When a change makes a statement elsewhere obsolete, update or remove that statement in the same change.
-- **Language.** `docs/Roadmap.md` is German. Every other file is English: documentation, code, comments, identifiers, and the entire data format (file names, headings, `#Key` lines, labels, fixed values, golden files). User-facing text in the application is German.
+- **Language.** `docs/Roadmap.md` is German. Every other file is English: documentation, code, comments, identifiers, and the entire data format (file names, headings, `#Key` lines, labels, fixed values, golden files). User-facing text in the application is English.
 - **Roadmap.** `docs/Roadmap.md` is owned by the user and changes only on explicit request. It uses the MD_Manager Markdown layout.
 - **Keep docs current.** A change in behavior, format or architecture updates the owning document in the same change.
 - **Decisions and questions.** A new product or technical decision is appended to [Decisions](docs/Decisions.md); a changed decision is rewritten in place and a dropped one removed. Never keep superseded decisions or history in the documentation. A resolved question is removed from [Open Questions](docs/OpenQuestions.md) and its outcome is written to the owning document.
@@ -33,9 +33,6 @@ Rules for every agent working in this repository. This file contains rules only;
 ## User Interface
 
 - [Design System](docs/ui/DesignSystem.md), [Shell](docs/ui/Shell.md), [Views](docs/ui/Views.md) and [Interaction](docs/ui/Interaction.md) are binding. Deviations need the user's approval.
-- [prototypes/README.md](prototypes/README.md) names the approved visual reference. Where a document and the prototype disagree, the document wins.
-- Prototype code is not production code. Do not load or import anything from `prototypes/` in the application; port behavior deliberately into the layered structure.
-- Do not modify the prototypes unless explicitly asked.
 
 ## User Experience
 

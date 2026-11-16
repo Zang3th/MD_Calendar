@@ -10,7 +10,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   const panel = /** @type {HTMLElement} */ (document.getElementById("searchPanel"));
   const input = /** @type {HTMLInputElement} */ (document.getElementById("searchInput"));
   const list = /** @type {HTMLElement} */ (document.getElementById("searchResults"));
-  const kinds = { entry: ["calendar", ""], series: ["repeat", "Serie"], multiDay: ["range", "Mehrtägig"], backlog: ["inbox", "Backlog"] };
+  const kinds = { entry: ["calendar", ""], series: ["repeat", "Recurring"], multiDay: ["range", "Multi-day"], backlog: ["inbox", "Backlog"] };
   /** @type {((query: string) => MDCSearchItem[]) | null} */
   let source = null;
   /** @type {((item: MDCSearchItem) => void) | null} */
@@ -32,7 +32,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     if (item.kind === "backlog") return "Backlog";
     const date = app.calendar.formatDay(item.key, "dd, DD.MM.YYYY");
     if (item.kind === "multiDay" && item.end) return `${date} – ${app.calendar.formatDay(item.end, "DD.MM.YYYY")}`;
-    return item.kind === "series" ? `ab ${date}` : date;
+    return item.kind === "series" ? `from ${date}` : date;
   }
 
   function fill() {
@@ -42,7 +42,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       ? results.map((item, index) => `<li class="sp__hit" role="option" id="searchHit${index}" data-hit="${index}" aria-selected="${index === active}">` +
         `${item.tag && app.tiles.tagIcon(item.tag) ? `<span class="sp__tagwrap"${app.tiles.tint(item.tag).style}>${app.tiles.tagIcon(item.tag, "sp__tag")}</span>` : app.tiles.icon(kinds[item.kind][0])}<span class="sp__title">${app.tiles.escape(item.title)}</span>` +
         `<span class="sp__when">${kinds[item.kind][1] && item.kind !== "backlog" ? `${kinds[item.kind][1]} · ` : ""}${when(item)}</span></li>`).join("")
-      : input.value.trim() ? `<li class="sp__empty">Keine Treffer</li>` : "";
+      : input.value.trim() ? `<li class="sp__empty">No results</li>` : "";
     list.hidden = !list.childElementCount;
     input.setAttribute("aria-activedescendant", results.length ? `searchHit${active}` : "");
   }

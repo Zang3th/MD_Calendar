@@ -136,7 +136,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       const parsedRule = ruleText && !recurrenceId ? rule(ruleText, start.key) : null;
       const except = (item.EXDATE || []).flatMap(value => value.value.split(",").map(part => moment(part, value.parameters)?.key || "")).filter(Boolean);
       events.push({
-        uid, title: unescape(first("SUMMARY")?.value || "").trim() || "(ohne Titel)",
+        uid, title: unescape(first("SUMMARY")?.value || "").trim() || "(No title)",
         location: unescape(first("LOCATION")?.value || "").replace(/\n/g, ", ").trim(),
         note: unescape(first("DESCRIPTION")?.value || "").split("\n").map(line => line.trimEnd()).filter(Boolean),
         start: start.key, end: end.key, startTime: start.time, endTime: end.key === start.key ? end.time : "",
