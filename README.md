@@ -2,62 +2,160 @@
 <h1 align="center">MD_Calendar</h1>
 <p align="center">
 
-A local-first calendar built around ordered to-do lists per day, with a backlog and a contact book. All data lives in human-readable Markdown files in a synced folder. It runs directly from the local filesystem in Chrome or Edge, without installation or a server.
+MD_Calendar is an interactive, fully local Markdown calendar built around ordered to-do lists per day.<br>
+Plan your days while keeping your data open, portable, and human-readable.
 
-## Status
+![MD_Calendar week view with the backlog panel](res/screenshots/week-backlog_v060.png)
 
-Releases 0.1.0 to 0.5.0 of the [Roadmap](docs/Roadmap.md) are implemented: week and month views, recurring and multi-day entries, backlog, holidays, tags with icons, the contact editor with birthdays and vCard import and export, search, shortcuts, selection with copy and paste, and the ICS import. The current release is 0.6.0 "Refactorings": the build step and the shared library MD_Libs.
+## Key features
 
-Build once with `npm ci` and `npm run build` (requires Node.js), then open `MD_Calendar.html` in Chrome or Edge and choose the calendar folder. After pulling changes, run `npm run build` again.
+- Week and month views. Optimized for both landscape and portrait monitors.
+- Entries with optional time, location, note and tag; multi-day and recurring entries.
+- Grouped backlog for entries that are not scheduled yet.
+- Contact editor with birthdays and anniversaries.
+- Drag and drop, multi-selection, copy and paste, and keyboard controls.
+- Undo and redo across everything with calendar-wide fuzzy search.
+- ICS import of a calendar history or a single invitation.
+- External-change detection, reload or overwrite resolution, and retryable saves.
+- Fully local and offline, with no cloud services, installation, or web server.
 
-## Documentation map
+<table>
+  <tr>
+    <td width="50%"><img src="res/screenshots/month_v060.png" alt="Month view"></td>
+    <td width="50%"><img src="res/screenshots/contacts_v060.png" alt="Contact editor"></td>
+  </tr>
+  <tr>
+    <td align="center">Month view</td>
+    <td align="center">Contact editor</td>
+  </tr>
+</table>
 
-Each topic has exactly one owning document.
+<p align="center"><em>Theme: Nord.</em></p>
 
-| Topic | Document |
-|---|---|
-| Rules for agents and contributors | [AGENTS.md](AGENTS.md) |
-| Vision, problems solved, scope, out of scope, cutover | [docs/Product.md](docs/Product.md) |
-| Business model and rules: entries, day order, recurrence, backlog, tags, contacts, holidays, search, selection, imports | [docs/Domain.md](docs/Domain.md) |
-| Calendar folder, files, storage rules, parsing rules, format drafts | [docs/DataFormat.md](docs/DataFormat.md) |
-| Runtime, dependencies, layers, storage adapter, saving, external changes, undo, notifications, startup, systems from MD_Libs | [docs/Architecture.md](docs/Architecture.md) |
-| Visual language, color tokens, lights, borders, past dimming, typography, spacing, shapes, logo, icons, tag icons, motion, completion sound | [docs/ui/DesignSystem.md](docs/ui/DesignSystem.md) |
-| Page layout, header, search bar, help, save control, backlog panel, entry dialog, notifications, settings | [docs/ui/Shell.md](docs/ui/Shell.md) |
-| Week, month and contacts views; entry tiles; day header badges | [docs/ui/Views.md](docs/ui/Views.md) |
-| Shortcuts, pointer gestures, creating, selection, drag and drop, editing, undo, deleting | [docs/ui/Interaction.md](docs/ui/Interaction.md) |
-| Mobile phase: plan, obstacles, interim options | [docs/Mobile.md](docs/Mobile.md) |
-| Decisions with reasons and rejected alternatives, research notes | [docs/Decisions.md](docs/Decisions.md) |
-| Unresolved questions | [docs/OpenQuestions.md](docs/OpenQuestions.md) |
-| Work packages and progress (German, user-owned) | [docs/Roadmap.md](docs/Roadmap.md) |
-| Active work specification | [docs/work/current.md](docs/work/current.md) |
+## Quick Start
 
-## Repository layout
+### Launching
+
+From a clone of the repository, run `npm ci` and `npm run build` once; this bundles [MD_Libs](https://github.com/Zang3th/MD_Libs) into `dist/app.js`.
+
+Then open `MD_Calendar.html` in a Chromium-based browser with support for the File System Access API and choose the calendar folder.
+
+### Markdown Example
+
+Examples of every file are stored locally in [`data/parsing/`](https://github.com/Zang3th/MD_Calendar/tree/master/data/parsing); they also serve as the golden files for parsing.
+
+### Data
+
+- One folder holds all data, kept in sync by a sync client of your choice.
+- Markdown is the canonical format; parsing creates plain JavaScript state.
+- Serialization writes state changes back to the files in the folder.
+- The handle of the last opened folder is stored in IndexedDB.
+  - Calendar content remains in its Markdown files.
+
+| File | Content | Written by the app |
+|:-----|:--------|:-------------------|
+| `Calendar.md` | Entries, multi-day entries, recurring entries | yes |
+| `Backlog.md` | Backlog groups and their entries | yes |
+| `Contacts.md` | Contacts and contact groups | yes |
+| `Holidays.md` | Public holidays and school vacations, generated outside the app | no |
+| `Config.md` | Tags with colors and icons, maintained by hand | no |
+
+The calendar document base structure is:
 
 ```text
-AGENTS.md  CLAUDE.md  README.md
-docs/         documentation (see the map above)
-  ui/         UI specification
-  work/       active work specification
-data/parsing/ golden files that define the data format
-res/logo/     final logo and web icon set
-res/icons/    standalone SVG files of the UI icons
-res/tag-icons/ standalone SVG files of the tag icons
-vendor/       Plus Jakarta Sans
-tools/        build, architecture checker, line count
-dist/         generated bundle (npm run build), not committed
-tests/        unit/ (node:test), e2e/ (Playwright)
-types/        type declarations for checkJs
+# Calendar
+├── ## November 2026
+│   └── ### 18.11.2026
+│       └── - [ ] 14:00 - 15:00 Customer call #Work
+├── ## Multi-day
+│   └── ### Conference #Work
+└── ## Recurring
+    └── ### Gym #Training
 ```
 
-## Development
+Supported metadata:
 
-Requires Node.js. Once after cloning:
+- `#Start` and `#End` define the range of a multi-day entry.
+- `#Start` and `#Repeat` define a recurring entry; `#Repeat` holds an RFC 5545 `RRULE` (daily, weekly, monthly by day or position, yearly).
+- `#Except` and `#Done` list skipped and finished occurrences of a recurring entry.
+- `#Location` and `#Note` add details to multi-day and recurring entries.
+- A trailing `#Tag` on an entry line or heading assigns one of the tags from `Config.md`.
 
-```sh
-npm install
-npx playwright install chromium
+## Technical implementation
+
+MD_Calendar uses a layered architecture built around Markdown as the data source. Pure domain operations manage entries, recurrence, the backlog and contacts independently of the DOM, the I/O layer handles parsing, ICS and vCard conversion and local file access, and the UI layer renders state and delegates persistent changes back to the domain. `app.js` connects these layers and coordinates the application lifecycle, keeping business rules, persistence, and presentation independently testable.
+
+Undo and redo, saving, file conflicts, notifications and the build come from the shared application core [MD_Libs](https://github.com/Zang3th/MD_Libs).
+
+### Project structure
+
+```text
+MD_Calendar/
+├── data/
+│   └── parsing/             # Golden files that define the data format
+├── docs/                    # Product, domain, architecture and UI specification
+├── domain/                  # Pure business rules and state transitions
+├── io/                      # Markdown, ICS, vCard and local file access
+├── res/
+│   ├── icons/               # Standalone SVG files of the UI icons
+│   ├── logo/                # Application logo and web icon set
+│   ├── screenshots/         # README screenshots
+│   └── tag-icons/           # Standalone SVG files of the tag icons
+├── tests/
+│   ├── e2e/                 # Playwright interaction and layout tests
+│   └── unit/                # DOM-independent Node.js tests
+├── tools/                   # Build, architecture and statistics checks
+├── types/                   # Global JSDoc type declarations
+├── ui/                      # Rendering, layout, and interactions
+├── vendor/                  # Local interface font
+├── dist/                    # Generated bundle (npm run build), not committed
+├── app.js                   # Bundle entry, application wiring and lifecycle
+├── MD_Calendar.html         # Entry point
+└── styles.css               # Styles and theme tokens
 ```
 
-`npm run verify` builds the bundle and runs type checking, linting, the architecture checker, the unit tests and the browser tests and stops at the first failure. It is the Definition of Done (see [AGENTS.md](AGENTS.md#harness-and-tests)).
+### Testing and verification
 
-The application layout is described in [docs/Architecture.md](docs/Architecture.md#layers).
+Node.js and npm are required for development checks:
+
+```bash
+npm ci
+npm run verify
+```
+
+The verification pipeline builds the bundle and runs strict TypeScript checking for JavaScript with JSDoc, ESLint with zero warnings, architecture-boundary checks, unit tests, and Playwright tests in Chromium.
+
+### Releases
+
+<table>
+  <thead>
+    <tr>
+      <th rowspan="2">Release</th>
+      <th rowspan="2">Date</th>
+      <th colspan="3">Lines of code</th>
+      <th rowspan="2">Tests</th>
+      <th rowspan="2">Main features</th>
+    </tr>
+    <tr>
+      <th>HTML</th>
+      <th>CSS</th>
+      <th>JS</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>master</td><td>16.11.2026</td><td>517</td><td>606</td><td>4,070</td><td>59</td><td>See <a href="https://github.com/Zang3th/MD_Calendar/blob/master/docs/Roadmap.md">roadmap</a></td></tr>
+    <tr><td>v0.6.0</td><td>16.11.2026</td><td>517</td><td>606</td><td>4,070</td><td>59</td><td>Project baseline with MD_Libs as application core</td></tr>
+  </tbody>
+</table>
+
+### Vendor
+
+| Component | Version | Functionality | License |
+|:----------|:--------|:--------------|:--------|
+| [MD_Libs](https://github.com/Zang3th/MD_Libs) | master | Shared application core and build | [MIT](https://github.com/Zang3th/MD_Libs/blob/master/LICENSE) |
+| [SortableJS](https://github.com/SortableJS/Sortable) | 1.15.7 | Drag and drop | [MIT](https://github.com/SortableJS/Sortable/blob/master/LICENSE) |
+| [Plus Jakarta Sans](https://github.com/tokotype/PlusJakartaSans) | 2.071 | Interface typography | [SIL OFL 1.1](https://github.com/Zang3th/MD_Calendar/blob/master/vendor/fonts/LICENSE) |
+
+## License
+
+MD_Calendar is licensed under the [MIT License](https://github.com/Zang3th/MD_Calendar/blob/master/LICENSE).

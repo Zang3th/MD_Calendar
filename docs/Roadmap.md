@@ -165,7 +165,7 @@ Erste nutzbare Version: Ordner öffnen, Woche ansehen, Einträge pflegen und spe
 
 - [x] ~Docs aktualisieren~
 
-## Kontakte und Tags
+## Kontakte
 
 #Version
 - 0.4.0
@@ -258,24 +258,19 @@ Die Kontakte-Ansicht wird ein vollwertiger Kontakt-Editor. `Contacts.md` bleibt 
 
 - [x] ~Docs aktualisieren~
 
-#Pin
 ## Refactorings
 
 #Version
 - 0.6.0
 
 #Date
-- 10.11.2026 - TBD
+- 10.11.2026 - 16.11.2026
 
 ### MD_Libs
 
 - [x] ~Auf MD_Libs als Applikationskern umsteigen~
 - [x] ~Tests anpassen und reduzieren~
 - [x] ~Dokumentation und README anpassen~
-
-### Neu-Dialog
-
-- [ ] Grundsätzlich überarbeiten
 
 ### Bugs und Verbesserungen
 
@@ -298,12 +293,41 @@ Die Kontakte-Ansicht wird ein vollwertiger Kontakt-Editor. `Contacts.md` bleibt 
 
 ### Release
 
+- [x] ~Docs + README aktualisieren~
+
+#Pin
+## Dummy-Daten
+
+#Version
+- 0.7.0
+
+#Date
+- 16.11.2026 - TBD
+
+### Allgemeines
+
+- [ ] Dummy-Daten in GDrive ablegen
+- [ ] Holidays korrekt erzeugen und ablegen
+
+### Neu-Dialog
+
+- [ ] Grundsätzlich überarbeiten
+
+### Bugs und Verbesserungen
+
+- [ ] "Kalendereinträge einpflegen" von der Startseite entfernen
+
+### Release
+
 - [ ] Docs + README aktualisieren
 
 ## Umstieg und Nutzung
 
 #Version
-- 0.7.0
+- 0.8.0
+
+#Date
+- TBD
 
 #Info
 Ab hier ersetzt MD_Calendar den Google-Kalender als Daily-Driver. Google bleibt noch als Archiv bestehen.
@@ -311,8 +335,10 @@ Ab hier ersetzt MD_Calendar den Google-Kalender als Daily-Driver. Google bleibt 
 ### Umstieg
 
 - [ ] Stichtag festlegen
-- [ ] Google-Kalender exportieren + importieren
-- [ ] Google-Kontakte per vCard importieren
+- [ ] Kalenderdaten exportieren
+- [ ] Kalender: Januar, Februar und März discarden
+- [ ] Kalender: Einträge neutralisieren, einordnen und taggen
+- [ ] Kontaktdaten exportieren
 - [ ] Ordner ins NAS-Backup aufnehmen
 
 ### Bugs und Verbesserungen
