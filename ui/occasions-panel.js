@@ -11,10 +11,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   const icons = { anniversary: "heart", birthday: "gift", holiday: "holiday" };
 
   /**
-   * Shows the list below an anchor whose right edge is `right`.
-   * @param {MDCOccasionList} list @param {number} right @param {number} top
+   * Shows the list below an anchor that spans `left` to `right`.
+   * @param {MDCOccasionList} list @param {number} left @param {number} right @param {number} top
    */
-  function show(list, right, top) {
+  function show(list, left, right, top) {
     actions = list.items.map(item => item.open || (() => {}));
     panel.className = `occ popover glass occ--${list.kind}`;
     panel.setAttribute("aria-label", `${list.title}, ${list.date}`);
@@ -29,9 +29,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
           : `<li class="occ__row occ__row--static">${content}</li>`;
       }).join("")}</ul>`;
     floating.open();
-    // One read for the width, then writes only: right-aligned to the badge, kept inside the window.
+    // One read for the width, then writes only: right-aligned to the badge, or left-aligned to it when there is no
+    // room to its left (badges at the left edge, as in the portrait week); kept inside the window.
     const width = panel.getBoundingClientRect().width;
-    panel.style.left = `${Math.round(Math.max(8, Math.min(right - width, window.innerWidth - width - 8)))}px`;
+    const start = right - width >= 8 ? right - width : left;
+    panel.style.left = `${Math.round(Math.max(8, Math.min(start, window.innerWidth - width - 8)))}px`;
     panel.style.top = `${Math.round(top)}px`;
     /** @type {HTMLElement | null} */ (panel.querySelector("button.occ__row"))?.focus();
   }

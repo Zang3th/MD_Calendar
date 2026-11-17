@@ -312,8 +312,8 @@ Die Kontakte-Ansicht wird ein vollwertiger Kontakt-Editor. `Contacts.md` bleibt 
 
 ### Backlog
 
-- [ ] Grundsätzlich keine Icons in Backlog-Gruppen
-- [ ] New/New-Group fehlt => gute Lösung finden
+- [x] ~Gruppen minimieren können~
+- [ ] Single-Left-Click: Öffnet Kontext => New ToDo or Group
 
 ### Kontake
 
@@ -327,17 +327,33 @@ Die Kontakte-Ansicht wird ein vollwertiger Kontakt-Editor. `Contacts.md` bleibt 
 
 - [x] ~Grundsätzlich überarbeiten~
 
+### Controls
+
+#### Wochen- und Monatsansicht
+- [ ] Single-Left-Click auf leeren Platz im Tag: New ToDo
+- [ ] Hover mit Tastatureingabe muss funktionieren
+- [ ] STRG + X ergänzen
+- [ ] Single-Right-Click auf ToDo: Schnelle, einzelne Kopie
+- [ ] Right-Click: Ansonsten komplett abklemmen
+
+#### Nur in der Wochenansicht
+- [ ] Double-Left-Click auf leeren Platz im Tag: Focus-Mode
+- [ ] Right-Click-Hold: Drag View (Ziehen + Snap auf Tage)
+
 ### Bugs und Verbesserungen
 
 - [x] ~Tabs in der Feiertage-/Urlaubsansicht~
 - [x] ~Notifications verbessern~
 - [x] ~Zeiträume: CSS verbessern~
 - [x] ~+-Button: New/Import~
-- [ ] Alignment von Karten links/rechts anpassen
-- [ ] Größe von Icons anpassen
-- [ ] Single-Left-Click: New
-- [ ] Double-Left-Click: Focus-/Zen-Mode
-- [ ] Drag-and-Drop Test zwischen Backlog und Tagen ist wackelig im parallelen Lauf
+- [x] ~Alignment von Karten links/rechts anpassen~
+- [x] ~Größe von Icons anpassen~
+- [x] ~Monatsansicht: +X Verhalten anpassen~
+- [x] ~Hochkantansicht: CSS fixen~
+- [x] ~Tastaturhighlighting abklemmen~
+- [x] ~Drag-and-Drop Test zwischen Backlog und Tagen ist wackelig im parallelen Lauf~
+- [ ] Highlighting von markierten ToDos fixen
+- [ ] Loading-Animation beim Save hinzufügen um Schreibzyklen zu maskieren
 
 ### Release
 

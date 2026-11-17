@@ -425,7 +425,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         return;
       }
       if (view !== "contacts") renderer().renderDays(calendar, action.days || [], today);
-      if (action.backlog) app.backlogPanel.render(backlog, backlogOpen);
+      // A changed group order rebuilds the backlog lists, which then need their drag and drop again.
+      if (action.backlog && app.backlogPanel.render(backlog, backlogOpen)) bindLists();
       updateHeader();
     }
 
@@ -934,11 +935,6 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         render();
       },
       openContact,
-      openWeek(key) {
-        if (view === "contacts") return;
-        view = "week";
-        showDay(key);
-      },
       toggleBacklog() {
         if (!calendar) return;
         backlogOpen = !backlogOpen;
@@ -951,7 +947,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         if (calendar) app.searchPanel.toggle();
       },
       showHelp() { app.menus.showHelp(); },
-      showOccasions(key, kind, right, top) {
+      showOccasions(key, kind, left, right, top) {
         const items = app.tiles.dayOccasions(key)[kind];
         const words = { anniversary: ["Anniversary", "anniversaries"], birthday: ["Birthday", "birthdays"], holiday: ["Holiday", "holidays"] }[kind];
         app.occasionsPanel.show({
@@ -965,7 +961,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
             badge: item.age === null ? "" : kind === "birthday" ? `turns ${item.age}` : `${item.age} ${item.age === 1 ? "year" : "years"}`,
             open: item.index >= 0 ? () => openContact(item.index) : null
           }))
-        }, right, top);
+        }, left, right, top);
       },
       showOptions() { app.menus.showOptions(); },
       showNewMenu() {
@@ -1022,6 +1018,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
           renderer().renderDays(calendar, [from.key, to.key], today);
           app.backlogPanel.render(backlog, backlogOpen);
         }
+      },
+      moveGroup(from, to) {
+        if (backlog) execute(app.backlog.moveGroup(backlog, from, to));
       },
       moveMultiDay(index, start, end) {
         const item = calendar?.multiDay[index];

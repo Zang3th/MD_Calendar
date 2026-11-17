@@ -115,6 +115,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       suppressClick = false;
       return;
     }
+    // A click elsewhere in the month shrinks the enlarged cell back (docs/ui/Views.md#month).
+    if (event.target.closest(".month") && !event.target.closest(".mcell.is-expanded")) app.month.collapse();
     const button = event.target.closest("button");
     if (!button || button.disabled) return;
     if (button.dataset.recent) {
@@ -143,11 +145,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       else current.openOccurrence(index, key);
     } else if (button.classList.contains("ev__check") && tile) current.toggle(entryRef(button));
     else if (button.classList.contains("ev__open") && tile) current.openEntry(entryRef(button));
-    else if (button.dataset.more) current.openWeek(button.dataset.more);
+    else if (button.dataset.more) app.month.toggle(button.dataset.more);
     else if (button.dataset.multi) current.openMultiDay(Number(button.dataset.multi));
     else if (button.dataset.occasions) {
       const bounds = button.getBoundingClientRect();
-      current.showOccasions(button.dataset.occasions, /** @type {MDCBadgeKind} */ (button.dataset.kind), bounds.right, bounds.bottom + 6);
+      current.showOccasions(button.dataset.occasions, /** @type {MDCBadgeKind} */ (button.dataset.kind), bounds.left, bounds.right, bounds.bottom + 6);
     }
   });
 
@@ -209,7 +211,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       clearSelection();
       current().removeMany(picks);
     }, inCalendar],
-    ["escape", () => clearSelection()]
+    ["escape", () => {
+      clearSelection();
+      app.month.collapse();
+    }]
   ];
   for (const [key, run, when = free] of plainKeys) shortcuts.bind(`shift?+${key}`, run, { when, repeat: false });
   shortcuts.bind("shift?+arrowleft", () => current().previous(), { when: inCalendar });
@@ -231,8 +236,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       filter: ".ev__check, .ev--series",
       ghostClass: "ev--ghost",
       dragClass: "ev--drag",
+      // While an entry is dragged, the backlog title shows where ungrouped entries can be dropped.
+      onStart() { document.body.classList.add("is-sorting"); },
       /** @param {{from: HTMLElement, to: HTMLElement, item: HTMLElement, oldIndex: number}} event */
       onEnd(event) {
+        document.body.classList.remove("is-sorting");
         const from = place(event.from, Number(event.item.dataset.index));
         const id = idOf({ ref: from, key: from.key });
         const others = selection.has(id) ? tiles().filter(tile => tile !== event.item && selection.has(idOf(pickOf(tile))) && !tile.classList.contains("ev--series")) : [];
@@ -249,6 +257,24 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       }
     } }));
   }
+
+  // Backlog groups are reordered by dragging their head (docs/ui/Interaction.md#drag-and-drop). The container stays for
+  // the whole session, so this sortable is created once; ungrouped entries are not a group and stay first.
+  sortable.create({ Sortable, window, element: /** @type {HTMLElement} */ (document.getElementById("backlogGroups")), options: {
+    group: "backlog-groups",
+    handle: ".bl__head",
+    draggable: ".bl__group:not(.bl__group--ungrouped)",
+    delay: 180,
+    delayOnTouchOnly: true,
+    fallbackTolerance: 3,
+    ghostClass: "bl__group--ghost",
+    onStart() { document.body.classList.add("is-sorting-groups"); },
+    /** @param {{oldDraggableIndex: number, newDraggableIndex: number}} event */
+    onEnd(event) {
+      document.body.classList.remove("is-sorting-groups");
+      if (event.oldDraggableIndex !== event.newDraggableIndex) handlers?.moveGroup(event.oldDraggableIndex, event.newDraggableIndex);
+    }
+  } });
 
   // ---------- Lasso: dragging on free space selects the tiles it touches ----------
 

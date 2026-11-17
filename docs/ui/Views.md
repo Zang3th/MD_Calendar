@@ -13,10 +13,10 @@ Rotating the screen switches to the default view of the new orientation. The bac
 
 ## Entry tile
 
-- Check box, optional time, tag icon, title. A recurring entry shows a repeat icon (16px, 13px in the month view) at the right end, vertically centered on the whole tile.
+- Check box, optional time, tag icon, title. A recurring entry shows a repeat icon (16px, 12px in the month view) at the right end, vertically centered on the whole tile.
 - The tile is tinted with its tag color and shows the tag icon; without a tag it uses the neutral item surface and has no icon.
 - Time: in the week view (landscape) on its own small line above the title in the tag color; elsewhere inline before the title.
-- Done: 60 % opacity, title struck through, check box filled.
+- Done: `--o-past` opacity (55 %), title struck through, check box filled.
 - Overdue: red check box border and a red outline.
 - Hover lifts the tile slightly.
 
@@ -26,7 +26,7 @@ Rotating the screen switches to the default view of the new orientation. The bac
 - **Badges** start at the top right of the day card, by priority: anniversaries (heart, `--heart`), then birthdays (gift, `--warm`), then holidays (calendar with a star, `--accent-2`).
   - **Written out** (week, while they fit: 2 badges in the landscape week, 5 in the portrait week): an anniversary or birthday shows the icon, the name and the age or number of years; several of one kind share one badge with the icon and their count; a holiday shows its name. Badges stack downwards.
   - **Compact** (month, and the week when the written-out badges do not fit): one icon badge per kind in a row, with the count when there are several.
-  - Every anniversary or birthday badge, also for a single person, and every compact holiday badge opens a list below it, right-aligned to it, in the color of its kind: a header with the icon on a tinted tile, the title (“2 birthdays”, “Anniversary”, “2 holidays”) and the weekday and date; below it one row per name. Birthdays show “turns 32” as a pill, anniversaries their label (“Wedding”) and “6 years”; rows of people end with a chevron and open the contact, holidays are only listed.
+  - Every anniversary or birthday badge, also for a single person, and every compact holiday badge opens a list below it, right-aligned to it, or left-aligned when there is no room to its left (badges at the left edge, as in the portrait week), in the color of its kind: a header with the icon on a tinted tile, the title (“2 birthdays”, “Anniversary”, “2 holidays”) and the weekday and date; below it one row per name. Birthdays show “turns 32” as a pill, anniversaries their label (“Wedding”) and “6 years”; rows of people end with a chevron and open the contact, holidays are only listed.
 - School vacations are not shown in the week and month views; they appear only in the [holiday overview](#holiday-overview).
 
 ## Holiday overview
@@ -49,7 +49,7 @@ Past holidays and vacations are dimmed.
 
 ## Week, portrait
 
-- The seven days are rows stacked vertically. Each row: day header on the left (badges below the date), multi-day lane, entry grid.
+- The seven days are rows stacked vertically. Each row: day header on the left, at the top of the row and level with the first entries (weekday, date, badges below the date), multi-day lane, entry grid.
 - **Entry grid: 3 columns × 4 entries = 12 entries at a glance.** Spacing and heights are tuned for this. Entries fill column by column. A 13th entry starts a fourth column and the row scrolls horizontally.
 - Multi-day entries become vertical bars between day header and grid, spanning the covered rows, with vertical text.
 
@@ -58,7 +58,8 @@ Past holidays and vacations are dimmed.
 - Grid of week rows, Monday to Sunday. Days outside the month are faded.
 - A slim column (20px) on the left shows the ISO week number of each row, without a column heading. The current week's number is highlighted in the accent color.
 - Each cell: date (the first of a month shows the month name), compact badges (see [Day header](#day-header)), compact entry list.
-- Visible entries per cell: at most 3 in landscape and 4 in portrait, fewer when the cell is too low (bar lanes, small window). Further entries collapse into a “+N” chip; clicking it opens the week of that day.
+- Visible entries per cell: as many as the cell's height leaves room for next to its bar lanes. When not all fit, the remaining ones collapse into a “+N” chip, which takes the place of the last entry row.
+- Clicking “+N” enlarges the cell in place, at its width, until all its entries show: it lies over the cells below it, or, when they lack the room, aligned to the bottom of the month and over the cells above it; then it covers the bars of its own row. A cell taller than the month scrolls. The chip then reads “Less” and shrinks the cell back, as do Escape, a click elsewhere in the month and a change of month. At most one cell is enlarged; it closes by itself once its entries fit again. Its entries behave as everywhere else: check, open, select and drag and drop within the cell and to other days.
 - In narrow cells (portrait) tiles show only check box and title.
 - Multi-day bars run across the cells of each week row; only the cells a bar covers make room for it.
 

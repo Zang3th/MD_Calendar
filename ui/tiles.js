@@ -56,7 +56,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   /**
-   * The day list of one day: occurrences first, then the entries in their order.
+   * The day list of one day in display order (occurrences in their time slots between the entries).
    * @param {MDCCalendar} calendar @param {string} key @param {string} today @param {{limit?: number, compact?: boolean}} [options]
    */
   function dayTiles(calendar, key, today, options = {}) {
@@ -65,14 +65,13 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const limit = options.limit ?? Infinity;
     const compact = Boolean(options.compact);
     const html = [];
-    for (const occurrence of occurrences.slice(0, limit)) {
-      const item = { title: occurrence.series.title, done: occurrence.done, start: occurrence.series.startTime, end: occurrence.series.endTime, tag: occurrence.series.tag };
-      // Occurrences of recurring entries are never overdue (docs/Domain.md#entry).
-      html.push(tile(item, `data-series="${occurrence.index}" data-key="${key}"`, false, true, compact));
+    for (const item of app.recurrence.dayOrder(occurrences, entries).slice(0, limit)) {
+      if ("occurrence" in item) {
+        const { series, index, done } = item.occurrence;
+        // Occurrences of recurring entries are never overdue (docs/Domain.md#entry).
+        html.push(tile({ title: series.title, done, start: series.startTime, end: series.endTime, tag: series.tag }, `data-series="${index}" data-key="${key}"`, false, true, compact));
+      } else html.push(tile(item.entry, `data-index="${item.index}"`, app.calendar.isOverdue(item.entry, key, today), false, compact));
     }
-    entries.slice(0, Math.max(0, limit - occurrences.length)).forEach((entry, index) => {
-      html.push(tile(entry, `data-index="${index}"`, app.calendar.isOverdue(entry, key, today), false, compact));
-    });
     return { html: html.join(""), hidden: Math.max(0, occurrences.length + entries.length - limit) };
   }
 

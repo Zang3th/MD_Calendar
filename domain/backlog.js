@@ -4,6 +4,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 // An entry place is a day ({key, index}) or a backlog group ({group, index}).
 (function (app) {
   const calendarFile = "Calendar.md";
+  /** Group number that addresses the ungrouped entries in an entry place. */
+  const ungrouped = -1;
   const backlogFile = "Backlog.md";
 
   /** @param {MDCEntryRef} ref */
@@ -14,6 +16,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   /** The mutable list of a place. @param {MDCCalendar} calendar @param {MDCBacklog} backlog @param {MDCEntryRef} ref */
   function list(calendar, backlog, ref) {
     if (!isBacklog(ref)) return app.calendar.dayList(calendar, ref.key);
+    if (ref.group === ungrouped) return backlog.ungrouped;
     const group = backlog.groups[/** @type {number} */ (ref.group)];
     if (!group) throw new Error(`No backlog group #${ref.group}.`);
     return group.entries;
@@ -106,6 +109,24 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return action(calendar, backlog, entry.title, { ref: from, entry }, { ref: to, entry });
   }
 
+  /**
+   * Moves the group at `from` to position `to` among the groups, as one undoable action.
+   * @param {MDCBacklog} backlog @param {number} from @param {number} to
+   * @returns {MDCDayAction | null}
+   */
+  function moveGroup(backlog, from, to) {
+    const group = backlog.groups[from];
+    if (!group || to < 0 || to >= backlog.groups.length) throw new Error("Invalid group position.");
+    if (from === to) return null;
+    /** @param {number} source @param {number} target */
+    const apply = (source, target) => backlog.groups.splice(target, 0, ...backlog.groups.splice(source, 1));
+    return {
+      label: group.name, days: [], backlog: true, size: 64,
+      redo() { apply(from, to); },
+      undo() { apply(to, from); }
+    };
+  }
+
   // ---------- Several entries at once: selection, paste ----------
 
   /** @param {MDCEntryRef} ref */
@@ -186,5 +207,5 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     }, undefined);
   }
 
-  app.backlog = { entryAt, create, update, remove, toggle, move, isBacklog, removeEntries, toggleEntries, moveEntries, pasteEntries };
+  app.backlog = { ungrouped, entryAt, create, update, remove, toggle, move, moveGroup, isBacklog, removeEntries, toggleEntries, moveEntries, pasteEntries };
 })(window.MDCalendar);

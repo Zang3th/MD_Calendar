@@ -9,18 +9,12 @@ test("entries move between the backlog and the days, and saving writes both file
   });
   await page.keyboard.press("b");
   const inbox = page.locator('.bl__list[data-group="0"]');
-  await inbox.locator(".ev").dragTo(page.locator(`${thursday} .ev`));
+  await calendar.drag(inbox.locator(".ev"), page.locator(`${thursday} .ev`));
   await expect(page.locator(`${thursday} .ev__title`)).toHaveText(["Someday task", "Day entry"]);
   await expect(inbox.locator(".ev")).toHaveCount(0);
 
-  // Step through the move like a real pointer, so that the empty target list receives several dragover events.
-  const source = /** @type {{x: number, y: number, width: number, height: number}} */ (await page.locator(`${thursday} .ev`, { hasText: "Day entry" }).boundingBox());
-  const target = /** @type {{x: number, y: number, width: number, height: number}} */ (await page.locator('.bl__list[data-group="1"]').boundingBox());
-  await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: 12 });
-  await page.mouse.move(target.x + target.width / 2 + 2, target.y + target.height / 2, { steps: 2 });
-  await page.mouse.up();
+  // The drag steps like a real pointer, so that the empty target list receives several dragover events.
+  await calendar.drag(page.locator(`${thursday} .ev`, { hasText: "Day entry" }), page.locator('.bl__list[data-group="1"]'));
   await expect(page.locator('.bl__list[data-group="1"] .ev__title')).toHaveText(["Day entry"]);
   await expect(page.locator(".bl__count").nth(1)).toHaveText("1");
 
@@ -62,6 +56,52 @@ test("holidays show in the day header and tags take their color from Config.md",
   await expect(page.locator(`${thursday} .ev`).first()).toBeVisible();
   await expect(page.locator(`${thursday} .ev__tag`)).toBeHidden();
   await expect(page.locator("#hideIcons")).toHaveAttribute("aria-checked", "true");
+});
+
+test("an entry dropped on the backlog title becomes ungrouped without moving the panel, and is saved above the groups", async ({ page, calendar }) => {
+  await calendar.openApp({
+    "Calendar.md": "# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] Day entry\n",
+    "Backlog.md": "# Backlog\n\n## Inbox\n- [ ] Someday task\n"
+  });
+  await page.keyboard.press("b");
+  const head = page.locator(".bl__head").first();
+  await expect(head).toBeInViewport({ ratio: 1 });
+  const source = /** @type {{x: number, y: number, width: number, height: number}} */ (await page.locator(`${thursday} .ev`).boundingBox());
+  const title = /** @type {{x: number, y: number, width: number, height: number}} */ (await page.locator(".backlog__title").boundingBox());
+  const before = await head.boundingBox();
+  await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(source.x + source.width / 2 - 20, source.y + source.height / 2, { steps: 4 });
+  // Starting the drag moves nothing in the panel; the title shows the drop hint.
+  await expect(page.locator("body")).toHaveClass(/is-sorting/);
+  expect((await head.boundingBox())?.y).toBe(before?.y);
+  await page.mouse.move(title.x + title.width / 2, title.y + title.height / 2, { steps: 12 });
+  await page.mouse.move(title.x + title.width / 2 + 2, title.y + title.height / 2, { steps: 2 });
+  await page.mouse.up();
+  await expect(page.locator('.bl__list[data-group="-1"] .ev__title')).toHaveText(["Day entry"]);
+
+  await page.keyboard.press("Control+s");
+  await expect(page.locator("#save")).not.toHaveClass(/is-dirty/);
+  expect(await calendar.readFile("Backlog.md")).toBe("# Backlog\n\n- [ ] Day entry\n\n## Inbox\n- [ ] Someday task\n");
+});
+
+test("backlog groups are reordered by dragging their head, saved in that order and undone in one step", async ({ page, calendar }) => {
+  await calendar.openApp({ "Calendar.md": "# Calendar\n", "Backlog.md": "# Backlog\n\n- [ ] Loose\n\n## Inbox\n- [ ] A\n\n## Later\n- [ ] B\n" });
+  await page.keyboard.press("b");
+  const heads = page.locator(".bl__head .bl__name");
+  await expect(heads).toHaveText(["Inbox", "Later"]);
+  await calendar.drag(page.locator(".bl__head", { hasText: "Later" }), page.locator(".bl__head", { hasText: "Inbox" }));
+  await expect(heads).toHaveText(["Later", "Inbox"]);
+  // The drag did not collapse a group, and the moved group still takes entries.
+  await expect(page.locator(".bl__group.is-collapsed")).toHaveCount(0);
+  await page.keyboard.press("Control+s");
+  await expect(page.locator("#save")).not.toHaveClass(/is-dirty/);
+  expect(await calendar.readFile("Backlog.md")).toBe("# Backlog\n\n- [ ] Loose\n\n## Later\n- [ ] B\n\n## Inbox\n- [ ] A\n");
+  await page.keyboard.press("Control+z");
+  await expect(heads).toHaveText(["Inbox", "Later"]);
+  // The rebuilt lists keep their drag and drop.
+  await calendar.drag(page.locator(".bl__list .ev", { hasText: "A" }), page.locator(".bl__list .ev", { hasText: "B" }), 0.8);
+  await expect(page.locator('.bl__list[data-group="1"] .ev__title')).toHaveText(["B", "A"]);
 });
 
 test("the holiday overview shows vacations, holidays and school vacations as tabs", async ({ page, calendar }) => {

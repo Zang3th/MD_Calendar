@@ -1,9 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg"
      viewBox="0 0 32 32"
      fill="none">
+    <g transform="translate(0 -1.75)">
     <path d="M6 13H26V18H6ZM8 18V27H24V18M16 13V27M16 13Q10 6 8.5 10Q8 13 16 13Q24 13 23.5 10Q22 6 16 13"
           stroke="currentColor"
           stroke-width="3"
           stroke-linecap="round"
           stroke-linejoin="round"/>
+    </g>
 </svg>

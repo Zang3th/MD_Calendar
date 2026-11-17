@@ -6,6 +6,8 @@ Keyboard, pointer and editing behavior. Layout and appearance are defined in [Sh
 
 Single-key shortcuts are ignored while a text field has focus.
 
+Keyboard navigation of controls is not supported, so keyboard focus is never shown: no focus ring on buttons, fields or other controls. A text field shows its usual focus border while it is being edited, however it was entered, and arrow keys in menus and lists still mark the current item.
+
 | Key | Action |
 |---|---|
 | `W` | Week view |
@@ -25,7 +27,7 @@ Single-key shortcuts are ignored while a text field has focus.
 | `Ctrl+S` | Save |
 | `Ctrl+Z` | Undo |
 | `Ctrl+Y`, `Ctrl+Shift+Z` | Redo |
-| `Esc` | Close the picker, dialog, menu or panel; otherwise clear the selection |
+| `Esc` | Close the picker, dialog, menu or panel; otherwise clear the selection and shrink an enlarged month cell |
 | `Enter` | Confirm the dialog; in an inline field, finish editing |
 
 The arrows, `Space`, `Del` and `Ctrl+A` do nothing in the contacts view. The help (see [Shell](Shell.md#help)) lists the main ones.
@@ -62,7 +64,8 @@ Rules in [Domain](../Domain.md#selection-copy-and-paste).
 - Move an entry to another day.
 - Move a multi-day bar; drag one of its ends to change the start or end date. The duration stays when the bar is moved.
 - Move a backlog entry onto a day, and an entry from a day into any backlog group.
-- Reorder backlog entries and move them between groups.
+- Reorder backlog entries and move them between the ungrouped entries and the groups; an entry dropped onto the panel title becomes ungrouped.
+- Reorder backlog groups by dragging their head; a click on the head still collapses or expands the group. The ungrouped entries stay first. The new order is saved to `Backlog.md` and is undoable.
 - Every drop is one undoable action.
 
 ## Checking off

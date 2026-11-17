@@ -232,6 +232,30 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 **Reasons:** a later comparison between devices needs data that is independent of device clocks and of file times a sync client rewrites; content hashes and device IDs provide it. Requiring the file keeps the app from opening an arbitrary folder as an empty calendar.
 **Rejected:** INI (no standard, flat, untyped); TOML and YAML (need a parser for a file nobody edits by hand); front matter in the Markdown files; timestamps alone as the comparison.
 
+## D44 · No visible keyboard focus
+
+**Decision:** Keyboard navigation of controls is not supported, so keyboard focus is never drawn: no focus ring or outline on buttons, fields or other controls. Text fields keep their focus border while they are edited, and arrow-key navigation in menus and lists keeps marking the current item. → [Interaction](ui/Interaction.md#keyboard-shortcuts)
+**Reasons:** keyboard input (shortcuts, typing) made the browser show focus rings on fields and buttons at random; a highlight for a navigation the app does not offer only distracts.
+**Rejected:** a styled focus ring, which would promise keyboard navigation the app does not provide.
+
+## D45 · Occurrences sit in their time slot
+
+**Decision:** Occurrences of recurring entries are placed among the normal entries of a day by their start time; normal entries keep their stored, freely sortable order and are never reordered by time. → [Domain](Domain.md#day-list-order)
+**Reasons:** a series at 19:00 above a 09:00 entry misread the day; placing only the fixed occurrences keeps the user's own order intact.
+**Rejected:** occurrences always on top (the former rule); sorting all entries by time, which would take the free order away.
+
+## D46 · “+N” enlarges the month cell in place
+
+**Decision:** Month cells show as many entries as fit, with no fixed maximum. “+N” enlarges the cell in place over its neighbors until all entries show; it no longer opens the week. → [Views](ui/Views.md#month)
+**Reasons:** a fixed maximum hid entries in cells with room for them; jumping to the week lost the month overview for one look at a day.
+**Rejected:** a popover list (drops the cell's look and its drag and drop); opening the week.
+
+## D47 · Ungrouped backlog entries and movable groups
+
+**Decision:** Backlog entries may stand outside any group: in `Backlog.md` directly below `# Backlog`, in the panel above the groups. An entry dropped onto the panel title becomes ungrouped. Groups are reordered by dragging their head. → [Domain](Domain.md#backlog), [DataFormat](DataFormat.md#backlog), [Shell](ui/Shell.md#backlog-panel)
+**Reasons:** not every backlog entry fits a group; the format needs no new syntax and old files stay valid. The title as drop area avoids a drop zone that appears on drag start and moves the panel under the pointer.
+**Rejected:** a reserved “Ungrouped” group heading; a drop area shown only while dragging.
+
 ## Research notes
 
 Open-source projects that were evaluated and what they contributed:

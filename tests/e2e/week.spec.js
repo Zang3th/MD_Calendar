@@ -44,7 +44,7 @@ test("an external change without local changes is reloaded", async ({ page, cale
 
 test("drag and drop moves an entry as one undoable action", async ({ page, calendar }) => {
   await calendar.openApp({ "Calendar.md": "# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] A\n- [ ] B\n\n### 13.11.2026\n- [ ] C\n" });
-  await page.locator(`${thursday} .ev`, { hasText: "B" }).dragTo(page.locator(`${friday} .ev`, { hasText: "C" }));
+  await calendar.drag(page.locator(`${thursday} .ev`, { hasText: "B" }), page.locator(`${friday} .ev`, { hasText: "C" }));
   await expect(titles(page, thursday)).toHaveText(["A"]);
   await expect(titles(page, friday)).toHaveText(["B", "C"]);
   await expect(page.locator("#undo")).toHaveAttribute("aria-label", "Undo “B” (Ctrl+Z)");
@@ -62,10 +62,10 @@ test("drag and drop moves an entry as one undoable action", async ({ page, calen
 
 test("moving an entry and moving it back leaves nothing unsaved", async ({ page, calendar }) => {
   await calendar.openApp({ "Calendar.md": "# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] A\n- [ ] B\n" });
-  await page.locator(`${thursday} .ev`, { hasText: "B" }).dragTo(page.locator(`${thursday} .ev`, { hasText: "A" }));
+  await calendar.drag(page.locator(`${thursday} .ev`, { hasText: "B" }), page.locator(`${thursday} .ev`, { hasText: "A" }));
   await expect(titles(page, thursday)).toHaveText(["B", "A"]);
   await expect(page.locator("#save .save__count")).toHaveText("1");
-  await page.locator(`${thursday} .ev`, { hasText: "A" }).dragTo(page.locator(`${thursday} .ev`, { hasText: "B" }));
+  await calendar.drag(page.locator(`${thursday} .ev`, { hasText: "A" }), page.locator(`${thursday} .ev`, { hasText: "B" }));
   await expect(titles(page, thursday)).toHaveText(["A", "B"]);
   await expect(page.locator("#save")).not.toHaveClass(/is-dirty/);
   await page.keyboard.press("Control+z");

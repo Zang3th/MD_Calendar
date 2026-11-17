@@ -22,7 +22,8 @@ const today = new Date("2026-11-12T10:00:00");
  *   errors: string[],
  *   openApp(files?: Record<string, string>): Promise<void>,
  *   writeFile(name: string, text: string): Promise<void>,
- *   readFile(name: string): Promise<string | null>
+ *   readFile(name: string): Promise<string | null>,
+ *   drag(source: import("@playwright/test").Locator, target: import("@playwright/test").Locator, height?: number): Promise<void>
  * }} CalendarFixture
  */
 
@@ -91,7 +92,40 @@ const test = /** @type {CalendarTest} */ (/** @type {unknown} */ (base.test.exte
       await base.expect(page.locator("#week:not([hidden]), #month:not([hidden])")).toBeVisible();
     }
 
-    await use({ origin, errors, openApp, writeFile, readFile });
+    /**
+     * Drags an entry onto the center of `target` like a pointer does. SortableJS reports a drag as started only in the
+     * task after `dragstart` (`awaitingDragStarted`) and ignores a drop before that; Chromium runs input before timers,
+     * so a drag sent at test speed could end before it had started and leave the entry in place. The drag therefore
+     * waits until the app marks it as running (`is-sorting`, set in SortableJS's onStart), and measures the target
+     * only then.
+     * `height` is where on the target the pointer ends, as a share of its height: SortableJS keeps the entry in place
+     * at a tile's exact middle, so a drop below or above another tile names its side.
+     * @param {import("@playwright/test").Locator} source @param {import("@playwright/test").Locator} target @param {number} [height]
+     */
+    async function drag(source, target, height = 0.5) {
+      const body = page.locator("body");
+      // Hovering waits until the source stands still (the backlog panel slides in), then the box is exact.
+      await source.hover();
+      const from = /** @type {{x: number, y: number, width: number, height: number}} */ (await source.boundingBox());
+      const x = from.x + from.width / 2;
+      const y = from.y + from.height / 2;
+      await page.mouse.move(x, y);
+      await page.mouse.down();
+      await page.mouse.move(x + 6, y + 6, { steps: 3 });
+      await base.expect(body).toHaveClass(/is-sorting/);
+      // Jump next to the target, as dragTo does, so that no list on the way catches the entry; then step onto the
+      // target's center, so that it receives several dragover events.
+      const to = /** @type {{x: number, y: number, width: number, height: number}} */ (await target.boundingBox());
+      const centerX = to.x + to.width / 2;
+      const centerY = to.y + to.height * height;
+      await page.mouse.move(centerX - Math.min(12, to.width / 4), centerY);
+      await page.mouse.move(centerX, centerY, { steps: 4 });
+      await page.mouse.move(centerX + 2, centerY, { steps: 2 });
+      await page.mouse.up();
+      await base.expect(body).not.toHaveClass(/is-sorting/);
+    }
+
+    await use({ origin, errors, openApp, writeFile, readFile, drag });
     base.expect(errors).toEqual([]);
   }
 }))));

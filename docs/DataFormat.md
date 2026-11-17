@@ -96,6 +96,7 @@ The conventions follow MD_Manager: headings structure the file, `#Key` lines sta
 
 ### Backlog
 
+- Entries directly below `# Backlog`, before the first `##` heading, are ungrouped. Without ungrouped entries the file has no such lines.
 - Each `##` heading is a group in display order. `Inbox` always exists; a file without it gets it as the first group. Empty groups are kept.
 - Entries use the same syntax as day entries. Unknown lines are reported and kept after the element they followed, as in the calendar file.
 

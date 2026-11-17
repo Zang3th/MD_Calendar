@@ -57,16 +57,20 @@ interface MDCalendarNamespace {
     serializeRule(rule: MDCRule): string;
     occursOn(rule: MDCRule, start: string, key: string): boolean;
     occurrences(calendar: MDCCalendar, key: string): readonly MDCOccurrence[];
+    dayOrder(occurrences: readonly MDCOccurrence[], entries: readonly MDCEntry[]): Array<{ occurrence: MDCOccurrence } | { entry: MDCEntry; index: number }>;
     weekday(key: string): number;
     weekdays: string[];
   };
   backlog: {
+    /** Group number that addresses the ungrouped entries in an entry place. */
+    ungrouped: number;
     entryAt(calendar: MDCCalendar, backlog: MDCBacklog, ref: MDCEntryRef): MDCEntry;
     create(calendar: MDCCalendar, backlog: MDCBacklog, group: number, fields: MDCEntryFields & Partial<Pick<MDCEntry, "tag" | "extra">>): MDCDayAction;
     update(calendar: MDCCalendar, backlog: MDCBacklog, ref: MDCEntryRef, target: { key: string; group?: number }, fields: Partial<MDCEntry>): MDCDayAction | null;
     remove(calendar: MDCCalendar, backlog: MDCBacklog, ref: MDCEntryRef): MDCDayAction;
     toggle(calendar: MDCCalendar, backlog: MDCBacklog, ref: MDCEntryRef): MDCDayAction;
     move(calendar: MDCCalendar, backlog: MDCBacklog, from: MDCEntryRef, to: MDCEntryRef): MDCDayAction | null;
+    moveGroup(backlog: MDCBacklog, from: number, to: number): MDCDayAction | null;
     isBacklog(ref: MDCEntryRef): boolean;
     removeEntries(calendar: MDCCalendar, backlog: MDCBacklog, refs: MDCEntryRef[], label: string): MDCDayAction;
     toggleEntries(calendar: MDCCalendar, backlog: MDCBacklog, refs: MDCEntryRef[]): MDCDayAction;
@@ -154,7 +158,7 @@ interface MDCalendarNamespace {
   };
   searchPanel: { init(search: (query: string) => MDCSearchItem[], jump: (item: MDCSearchItem) => void): void; toggle(): void; isOpen(): boolean };
   start: { show(folders: MDCRecentFolder[]): void; hide(): void };
-  occasionsPanel: { show(list: MDCOccasionList, right: number, top: number): void; isOpen(): boolean };
+  occasionsPanel: { show(list: MDCOccasionList, left: number, right: number, top: number): void; isOpen(): boolean };
   tiles: {
     escape(value: string): string;
     icon(name: string): string;
@@ -176,7 +180,7 @@ interface MDCalendarNamespace {
   backlogPanel: { render(backlog: MDCBacklog, open: boolean): boolean; lists(): HTMLElement[] };
   holidaysPanel: { update(holidays: MDCHolidays, today: string): void; toggle(holidays: MDCHolidays, today: string, vacations: (year: number) => MDCPeriod[]): void; isOpen(): boolean };
   week: MDCViewRenderer;
-  month: MDCViewRenderer;
+  month: MDCViewRenderer & { toggle(key: string): void; collapse(): void };
   dialog: { open(request: MDCDialogRequest, handlers: MDCDialogHandlers): void; close(): void; isOpen(): boolean };
   interactions: {
     init(handlers: MDCInteractionHandlers): void;
@@ -283,7 +287,7 @@ type MDCInteractionHandlers = {
   showOptions(): void;
   showNewMenu(): void;
   openContact(index: number): void;
-  showOccasions(key: string, kind: MDCBadgeKind, right: number, top: number): void;
+  showOccasions(key: string, kind: MDCBadgeKind, left: number, right: number, top: number): void;
   isContactsView(): boolean;
   notice(title: string, body: MDCNotificationBody): void;
   contextMenu(picks: MDCPick[], x: number, y: number, key: string): void;
@@ -293,7 +297,6 @@ type MDCInteractionHandlers = {
   paste(key: string): void;
   moveMany(refs: MDCEntryRef[], dragged: MDCEntryRef, target: MDCEntryRef): void;
   moveMultiDay(index: number, start: string, end: string): void;
-  openWeek(key: string): void;
   newEntry(key?: string): void;
   openEntry(ref: MDCEntryRef): void;
   openOccurrence(index: number, key: string): void;
@@ -301,6 +304,7 @@ type MDCInteractionHandlers = {
   toggle(ref: MDCEntryRef): void;
   toggleOccurrence(index: number, key: string): void;
   move(from: MDCEntryRef, to: MDCEntryRef): void;
+  moveGroup(from: number, to: number): void;
   undo(): void;
   redo(): void;
   save(): void;
@@ -414,7 +418,8 @@ type MDCFormatWarning = { lineNumber: number; kind: MDCFormatWarningKind; text: 
 /** An entry is addressed by its day (or backlog group) and its position in that list (see docs/DataFormat.md#entry-identity). */
 type MDCEntryRef = { key: string; index: number; group?: number };
 type MDCBacklogGroup = { name: string; entries: MDCEntry[]; extra: string[] };
-type MDCBacklog = { newline: string; head: string[]; groups: MDCBacklogGroup[] };
+/** `ungrouped`: entries before the first group; entry places address them as group -1. */
+type MDCBacklog = { newline: string; head: string[]; ungrouped: MDCEntry[]; groups: MDCBacklogGroup[] };
 type MDCHolidays = { holidays: Array<{ date: string; name: string }>; vacations: Array<{ start: string; end: string; name: string }> };
 type MDCTag = { name: string; color: string; icon: string };
 type MDCPeriod = { start: string; end: string; title: string };

@@ -63,4 +63,21 @@ test("occurrences skip exceptions, carry done state and are ordered by time, the
   assert.deepEqual(plain(recurrence.occurrences(calendar, "2026-11-12").map((/** @type {any} */ item) => item.done)), [true, false, true]);
 });
 
+test("occurrences take their time slot among the entries, which keep their stored order", () => {
+  /** @param {string} title @param {string} startTime */
+  const occurrence = (title, startTime) => ({ series: { title, startTime }, index: 0, key: "2026-11-12", done: false });
+  /** @param {string} title @param {string} start */
+  const entry = (title, start) => ({ done: false, start, end: "", title, tag: "", location: "", note: [], extra: [] });
+  /** @param {any[]} occurrences @param {any[]} entries */
+  const order = (occurrences, entries) => plain(recurrence.dayOrder(occurrences, entries)
+    .map((/** @type {any} */ item) => "occurrence" in item ? item.occurrence.series.title : `${item.entry.title}#${item.index}`));
+  const occurrences = [occurrence("Early", "07:00"), occurrence("Noon", "12:00"), occurrence("Late", "21:00"), occurrence("Anytime", "")];
+  // Stored order is not chronological; an untimed entry between timed ones does not count.
+  const entries = [entry("Nine", "09:00"), entry("Loose", ""), entry("Fourteen", "14:00"), entry("Ten", "10:00"), entry("Untimed", "")];
+  assert.deepEqual(order(occurrences, entries), ["Anytime", "Early", "Nine#0", "Loose#1", "Noon", "Fourteen#2", "Ten#3", "Late", "Untimed#4"]);
+  // The same start time goes after the entry; without timed entries all occurrences come first.
+  assert.deepEqual(order([occurrence("Same", "09:00")], [entry("Nine", "09:00"), entry("Later", "")]), ["Nine#0", "Same", "Later#1"]);
+  assert.deepEqual(order(occurrences.slice(0, 2), [entry("A", ""), entry("B", "")]), ["Early", "Noon", "A#0", "B#1"]);
+});
+
 /** @typedef {Record<string, unknown>} MDCSeriesLike */

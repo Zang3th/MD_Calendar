@@ -33,6 +33,15 @@ test("a backlog without Inbox gets one, and unknown lines stay", () => {
   assert.equal(app.backlogFormat.serialize(backlog), "# Backlog\n\n## Inbox\n\n## Later\n- [ ] A\nloose\n");
 });
 
+test("entries before the first backlog group are ungrouped and are written back there", () => {
+  const source = "# Backlog\n\n- [ ] Loose A\n- [x] Loose B\n  - Note\n\n## Inbox\n- [ ] In the inbox\n";
+  const { backlog, warnings } = app.backlogFormat.parse(source);
+  assert.deepEqual(plain(warnings), []);
+  assert.deepEqual(plain(backlog.ungrouped.map((/** @type {any} */ entry) => [entry.title, entry.done, entry.note])), [["Loose A", false, []], ["Loose B", true, ["Note"]]]);
+  assert.deepEqual(plain(backlog.groups.map((/** @type {any} */ group) => group.name)), ["Inbox"]);
+  assert.equal(app.backlogFormat.serialize(backlog), source);
+});
+
 test("holidays and school vacations are read from their golden file", () => {
   const { holidays, warnings } = app.holidaysFormat.parse(golden("Holidays.md"));
   assert.deepEqual(plain(warnings), []);

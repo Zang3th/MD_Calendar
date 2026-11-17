@@ -79,7 +79,8 @@ Clicking the control saves.
 
 - Landscape: floating glass panel on the right, below the header; the main panel narrows to make room.
 - Portrait: drawer at the bottom, about 28 % of the window height; groups are laid out side by side.
-- Shows the groups in order with their entry counts. Entries look like calendar entries; they are never overdue. An empty group shows a dashed drop area.
+- Shows the ungrouped entries first, as a list without a head, then the groups in order. While there are no ungrouped entries their list takes no room; an entry dropped onto the panel title “Backlog” becomes ungrouped, in landscape and portrait. While an entry is being dragged, the title shows a dashed frame as the drop hint. Nothing moves when a drag starts.
+- Each group head shows the name, the entry count right after it and a chevron at the right (down while open, right while collapsed). The whole head is one button that collapses the group to its head or expands it again; it gets a surface on hover. The collapsed groups are kept while the app is open, not stored. Entries look like calendar entries; they are never overdue. An empty group shows a dashed drop area.
 - Opened and closed with the backlog toggle and `B`; the state is not stored. New backlog entries are created with “To backlog” in the entry dialog; groups are maintained in `Backlog.md`.
 
 ## Entry dialog
@@ -99,7 +100,7 @@ Clicking the control saves.
 
 ## Notifications
 
-- Appear in the bottom right corner, above the main panel and the backlog panel, as a stack of cards 280px wide (narrower on small screens). Text is left-aligned; buttons sit at the bottom right.
+- Appear in the bottom right corner, above the main panel and the backlog panel, as a stack of cards 270px wide (narrower on small screens). Text is left-aligned; buttons sit at the bottom right.
 - Each notification has three parts: the **severity** as a colored dot (info accent, warning yellow, error red), the **title** and an optional **body** below a thin line, indented to the title.
 - Used for results and hints, for example import results, reloads after external changes, deletions, copying, the attempt to drag an occurrence of a series, and errors.
 - The title is short, precise and unambiguous: it names what happened (*Call Lena* deleted, 3 entries copied, Invalid time, Folder not found). The body holds the rest in a few words, without prose, each fact on its own line: which file or folder, why, what the user can do (Use *HH:MM*. / Undo with `Ctrl`+`Z`. / Set it up with [New calendar].). A plain confirmation without anything to add has no body (*Calendar* opened, Address copied). Errors also show their code and offer copyable details.

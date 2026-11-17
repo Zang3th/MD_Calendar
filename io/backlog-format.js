@@ -15,7 +15,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const { lines, newline } = markdown.split(source);
 
     /** @type {MDCBacklog} */
-    const backlog = { newline, head: [], groups: [] };
+    const backlog = { newline, head: [], ungrouped: [], groups: [] };
     /** @type {MDCFormatWarning[]} */
     const warnings = [];
     let hasHeader = false;
@@ -28,7 +28,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
     lines.forEach((line, index) => {
       if (line.trim() === "") return;
-      if (line === "# Backlog" && !hasHeader && !backlog.groups.length) {
+      if (line === "# Backlog" && !hasHeader && !backlog.groups.length && !backlog.ungrouped.length) {
         hasHeader = true;
         return;
       }
@@ -40,9 +40,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         return;
       }
       const item = format.pattern.exec(line);
-      if (item && group && item[2].trim()) {
+      // Entries before the first group are ungrouped.
+      if (item && item[2].trim() && (group || hasHeader)) {
         entry = { done: item[1] !== " ", ...format.text(item[2]), location: "", note: [], extra: [] };
-        group.entries.push(entry);
+        (group ? group.entries : backlog.ungrouped).push(entry);
         extraTarget = entry.extra;
         return;
       }
@@ -65,6 +66,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   /** @param {MDCBacklog} backlog */
   function serialize(backlog) {
     const lines = ["# Backlog", ...backlog.head];
+    if (backlog.ungrouped.length) lines.push("");
+    for (const entry of backlog.ungrouped) lines.push(...app.calendarFormat.entry.lines(entry));
     for (const group of backlog.groups) {
       lines.push("", `## ${group.name}`, ...group.extra);
       for (const entry of group.entries) lines.push(...app.calendarFormat.entry.lines(entry));

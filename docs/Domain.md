@@ -27,7 +27,7 @@ An entry belongs to one day of the calendar.
 - All entries can be edited, including entries on past days.
 - An **open entry on a past day is overdue**. It stays on its day and is highlighted. It is never moved automatically.
 - Occurrences of recurring entries are never overdue.
-- A time does not influence the order within the day.
+- A time does not change the stored order of normal entries; it only places occurrences of recurring entries (see [Day list order](#day-list-order)).
 
 ## Multi-day entry
 
@@ -36,10 +36,10 @@ An entry belongs to one day of the calendar.
 
 ## Day list order
 
-Within one day the order is fixed by kind:
-
-1. Occurrences of recurring entries, ordered by time, then by title. Not sortable.
-2. Normal entries in their stored order. Freely sortable.
+- Normal entries keep their stored order and are freely sortable; their times do not reorder them.
+- Occurrences of recurring entries are not sortable; they sit in their time slot among the normal entries. A timed occurrence goes directly before the first normal entry with a later start time. When no normal entry starts later, it goes directly after the last normal entry with a time. Normal entries without a time do not count.
+- Occurrences without a time, and all occurrences of a day whose normal entries have no time, come first.
+- Occurrences that land in the same place are ordered by time, then by title.
 
 Birthdays, anniversaries and holidays are not list items; they belong to the day itself.
 
@@ -75,9 +75,9 @@ An entry, a recurring entry and a multi-day entry can be turned into each other 
 ## Backlog
 
 - The backlog holds entries without a date: same fields as an entry except date and position.
-- It is divided into ordered **groups**. The group **Inbox** always exists and is the target for quick capture from outside the app.
-- Scheduling a backlog entry **moves** it into a day. An entry can move from a day back into any backlog group.
-- Entries can be reordered and moved between groups.
+- It holds **ungrouped** entries and ordered **groups**. Ungrouped entries belong to the backlog itself and come before all groups. The group **Inbox** always exists and is the target for quick capture from outside the app.
+- Scheduling a backlog entry **moves** it into a day. An entry can move from a day back into the ungrouped entries or any backlog group.
+- Entries can be reordered and moved between the ungrouped entries and the groups. Groups can be reordered; the ungrouped entries always come first.
 
 ## Tags
 

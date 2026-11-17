@@ -140,5 +140,37 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return result;
   }
 
-  app.recurrence = { parseRule, serializeRule, occursOn, occurrences, weekday, weekdays };
+  /**
+   * The day list in display order (docs/Domain.md#day-list-order): normal entries keep their stored order, and each timed
+   * occurrence goes directly before the first normal entry with a later start time, or after the last timed one.
+   * Occurrences without a time, and all occurrences of a day without timed entries, come first.
+   * @param {readonly MDCOccurrence[]} occurrences @param {readonly MDCEntry[]} entries
+   * @returns {Array<{occurrence: MDCOccurrence} | {entry: MDCEntry, index: number}>}
+   */
+  function dayOrder(occurrences, entries) {
+    let lastTimed = -1;
+    entries.forEach((entry, index) => { if (entry.start) lastTimed = index; });
+    /** @type {Array<{occurrence: MDCOccurrence} | {entry: MDCEntry, index: number}>} */
+    const order = [];
+    /** @type {Map<number, MDCOccurrence[]>} Occurrences placed before the entry at that index; lastTimed + 1 means after it. */
+    const placed = new Map();
+    for (const occurrence of occurrences) {
+      const time = occurrence.series.startTime;
+      if (!time || lastTimed < 0) {
+        order.push({ occurrence });
+        continue;
+      }
+      const later = entries.findIndex(entry => entry.start !== "" && entry.start > time);
+      const slot = later < 0 ? lastTimed + 1 : later;
+      placed.set(slot, [...(placed.get(slot) || []), occurrence]);
+    }
+    entries.forEach((entry, index) => {
+      for (const occurrence of placed.get(index) || []) order.push({ occurrence });
+      order.push({ entry, index });
+    });
+    for (const occurrence of placed.get(entries.length) || []) order.push({ occurrence });
+    return order;
+  }
+
+  app.recurrence = { parseRule, serializeRule, occursOn, occurrences, dayOrder, weekday, weekdays };
 })(window.MDCalendar);

@@ -20,6 +20,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     for (const [key, day] of calendar.days) day.entries.forEach((entry, position) => add({ kind: "entry", key, ref: { key, index: position } }, entry));
     calendar.series.forEach((series, position) => { if (!("raw" in series)) add({ kind: "series", key: series.start, series: position }, series); });
     calendar.multiDay.forEach((item, position) => { if (!("raw" in item)) add({ kind: "multiDay", key: item.start, end: item.end, multi: position }, item); });
+    backlog.ungrouped.forEach((entry, position) => add({ kind: "backlog", key: "", ref: { key: "", group: app.backlog.ungrouped, index: position } }, entry));
     backlog.groups.forEach((group, groupIndex) => group.entries.forEach((entry, position) => add({ kind: "backlog", key: "", ref: { key: "", group: groupIndex, index: position } }, entry)));
     return found;
   }

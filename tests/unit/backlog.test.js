@@ -14,7 +14,7 @@ function fixture() {
     newline: "\n", head: [], multiDay: [], series: [], multiDayHead: [], seriesHead: [], seriesRevision: 0,
     days: new Map([["2026-11-12", { key: "2026-11-12", extra: [], entries: [entry("Day A")] }]])
   };
-  const backlog = { newline: "\n", head: [], groups: [{ name: "Inbox", extra: [], entries: [entry("Inbox A")] }, { name: "Later", extra: [], entries: [entry("Later A"), entry("Later B")] }] };
+  const backlog = { newline: "\n", head: [], ungrouped: [entry("Loose A")], groups: [{ name: "Inbox", extra: [], entries: [entry("Inbox A")] }, { name: "Later", extra: [], entries: [entry("Later A"), entry("Later B")] }] };
   return { calendar, backlog };
 }
 
@@ -53,6 +53,36 @@ test("moves between backlog groups and days are single undoable actions", () => 
   const between = app.backlog.move(calendar, backlog, { key: "", group: 0, index: 0 }, { key: "", group: 1, index: 0 });
   assert.equal(between.target, undefined);
   assert.deepEqual(roundTrip(state, between), { days: [["2026-11-12", ["Later B"]]], groups: [["Day A"], ["Inbox A", "Later A"]] });
+});
+
+test("ungrouped backlog entries move to and from days and groups like a group", () => {
+  const state = fixture();
+  const { calendar, backlog } = state;
+  /** Titles of the ungrouped entries after an action, checked for undo and redo like the rest of the state. @param {any} action */
+  const ungrouped = action => {
+    const before = JSON.stringify(backlog.ungrouped.map((/** @type {any} */ item) => item.title));
+    action.redo();
+    const after = backlog.ungrouped.map((/** @type {any} */ item) => item.title);
+    action.undo();
+    assert.equal(JSON.stringify(backlog.ungrouped.map((/** @type {any} */ item) => item.title)), before, `${action.label}: undo restores`);
+    action.redo();
+    return JSON.parse(JSON.stringify(after));
+  };
+  const toGroup = app.backlog.move(calendar, backlog, { key: "", group: app.backlog.ungrouped, index: 0 }, { key: "", group: 1, index: 0 });
+  assert.deepEqual(ungrouped(toGroup), []);
+  assert.deepEqual(backlog.groups[1].entries.map((/** @type {any} */ item) => item.title), ["Loose A", "Later A", "Later B"]);
+  const fromDay = app.backlog.move(calendar, backlog, { key: "2026-11-12", index: 0 }, { key: "", group: app.backlog.ungrouped, index: 0 });
+  assert.equal(fromDay.target, "Backlog.md");
+  assert.deepEqual(ungrouped(fromDay), ["Day A"]);
+});
+
+test("backlog groups are reordered as one undoable action", () => {
+  const state = fixture();
+  const names = () => state.backlog.groups.map((/** @type {any} */ group) => group.name).join(",");
+  assert.deepEqual(roundTrip(state, app.backlog.moveGroup(state.backlog, 1, 0)).groups, [["Later A", "Later B"], ["Inbox A"]]);
+  assert.equal(names(), "Later,Inbox");
+  assert.equal(app.backlog.moveGroup(state.backlog, 0, 0), null);
+  assert.throws(() => app.backlog.moveGroup(state.backlog, 0, 2));
 });
 
 test("backlog entries are created, edited, checked off, scheduled and deleted", () => {
