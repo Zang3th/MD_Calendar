@@ -58,6 +58,7 @@ Rules for every agent working in this repository. This file contains rules only;
 - Keep exactly one active work item. Check the specification for unhappy paths, persistence, undo/redo, conflicts, portrait and landscape before implementing.
 - Implement in small steps that each leave the project working. Update the specification before expanding scope.
 - Finish with a short review: changed files and why, evidence for each acceptance criterion, commands run with results, and remaining risks.
+- The final review always updates the `master` row of the release table in [README.md](README.md): date, lines of code and test count from `node tools/project-stats.js`. The rest of the README is only updated for releases.
 - After completion, reset `docs/work/current.md` to its empty state.
 
 ## Harness and Tests

@@ -145,7 +145,7 @@ The verification pipeline builds the bundle and runs strict TypeScript checking 
     </tr>
   </thead>
   <tbody>
-    <tr><td>master</td><td>16.11.2026</td><td>545</td><td>679</td><td>4,432</td><td>67</td><td>See <a href="https://github.com/Zang3th/MD_Calendar/blob/master/docs/Roadmap.md">roadmap</a></td></tr>
+    <tr><td>master</td><td>17.11.2026</td><td>551</td><td>720</td><td>4,556</td><td>73</td><td>See <a href="https://github.com/Zang3th/MD_Calendar/blob/master/docs/Roadmap.md">roadmap</a></td></tr>
     <tr><td>v0.6.0</td><td>16.11.2026</td><td>517</td><td>606</td><td>4,070</td><td>59</td><td>Project baseline with MD_Libs as application core</td></tr>
   </tbody>
 </table>
