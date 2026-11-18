@@ -27,7 +27,7 @@ An entry belongs to one day of the calendar.
 - All entries can be edited, including entries on past days.
 - An **open entry on a past day is overdue**. It stays on its day and is highlighted. It is never moved automatically.
 - Occurrences of recurring entries are never overdue.
-- A time does not change the stored order of normal entries; it only places occurrences of recurring entries (see [Day list order](#day-list-order)).
+- A time places an entry when it lands on a day and always places occurrences of recurring entries (see [Day list order](#day-list-order)).
 
 ## Multi-day entry
 
@@ -36,8 +36,10 @@ An entry belongs to one day of the calendar.
 
 ## Day list order
 
-- Normal entries keep their stored order and are freely sortable; their times do not reorder them.
-- Occurrences of recurring entries are not sortable; they sit in their time slot among the normal entries. A timed occurrence goes directly before the first normal entry with a later start time. When no normal entry starts later, it goes directly after the last normal entry with a time. Normal entries without a time do not count.
+- The **time slot** of a start time: directly before the first normal entry with a later start time; when no normal entry starts later, directly after the last normal entry with a time; when no normal entry has a time, first. Normal entries without a time do not count.
+- A normal entry with a time goes into its time slot when it is created, pasted or imported, when it moves to another day (in the dialog or by dragging it in from another day or the backlog) and when its start time changes. A new or pasted entry without a time goes to the end of the day; one dragged in lands where it is dropped.
+- After that, normal entries keep their stored order and are freely sortable: dragging within a day puts an entry exactly where it is dropped, and other edits keep its place.
+- Occurrences of recurring entries are not sortable; they always sit in their time slot among the normal entries.
 - Occurrences without a time, and all occurrences of a day whose normal entries have no time, come first.
 - Occurrences that land in the same place are ordered by time, then by title.
 
@@ -129,9 +131,10 @@ An entry, a recurring entry and a multi-day entry can be turned into each other 
 
 ## Selection, copy and paste
 
-- Several entries and occurrences can be selected together. A selection can be checked off, copied, deleted and dragged as one undoable action.
+- Several entries and occurrences can be selected together. A selection can be checked off, copied, cut, deleted and dragged as one undoable action.
 - Checking off a selection marks all of it done; when all of it is done already, it marks all of it open.
-- Copying keeps the entries in an app-internal clipboard. Pasting inserts copies at the end of a day; copies are open. A copied occurrence becomes a normal entry with the fields of its series.
+- Copying keeps the entries in an app-internal clipboard. Pasting inserts copies into a day like new entries (see [Day list order](#day-list-order)); copies are open. A copied occurrence becomes a normal entry with the fields of its series.
+- Cutting copies the selection and deletes it; undoing the cut restores the entries, the clipboard keeps them.
 - Deleting an occurrence in a selection deletes that occurrence only.
 
 ## Imports and exports

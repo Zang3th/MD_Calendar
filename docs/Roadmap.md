@@ -1,5 +1,192 @@
 # MD_Calendar
 
+## Refactorings
+
+#Version
+- 0.6.0
+
+#Date
+- 10.11.2026 - 16.11.2026
+
+### MD_Libs
+
+- [x] ~Auf MD_Libs als Applikationskern umsteigen~
+- [x] ~Tests anpassen und reduzieren~
+- [x] ~Dokumentation und README anpassen~
+
+### Bugs und Verbesserungen
+
+- [x] ~Tag-Icons für Spielen + Finanzen ergänzen~
+- [x] ~Header: Pfeile + KW raus, „+“, Undo, Redo + Speichern wie MD_Manager~
+- [x] ~Header rechts: Hilfe, Ton, Ferien, Backlog => Optionsmenü entfällt~
+- [x] ~Suche nur per `F`, als Leiste unten mittig~
+- [x] ~Hilfe als Panel wie die Ferienansicht, mit Tastenkappen in drei Spalten~
+- [x] ~Heute auf `H`~
+- [x] ~Kalender importieren nur noch auf der Startseite~
+- [x] ~Notifications knapp, zentriert + nur so breit wie nötig~
+- [x] ~Ordner-Meldung eindeutig („Ordner „…“ geöffnet“)~
+- [x] ~Kontextmenü ohne Tastenkürzel~
+- [x] ~Kein Hover-Highlight in reinen Anzeige-Panels~
+- [x] ~Wiederholungs-Icon größer + vertikal zentriert~
+- [x] ~Hintergrundlicht in der Mitte entfernt~
+- [x] ~Rahmen von Header + Hintergrund entfernt~
+- [x] ~Undo-Zähler: unveränderter Stand gilt als gespeichert~
+- [x] ~Übersetzung: Das ganze Projekt auf Englisch umstellen~
+
+### Release
+
+- [x] ~Docs + README aktualisieren~
+
+#Pin
+## Dummy-Daten
+
+#Version
+- 0.7.0
+
+#Date
+- 16.11.2026 - TBD
+
+### Allgemeines
+
+- [x] ~Dummy-Daten erstellen und ablegen~
+- [x] ~Holidays korrekt erzeugen und ablegen~
+- [x] ~MD_Calendar.json ausarbeiten und erstellen~
+
+### Backlog
+
+- [x] ~Gruppen minimieren können~
+- [ ] Single-Left-Click: Öffnet Kontext => New ToDo or Group
+- [ ] Controls reparieren
+- [ ] Gruppen und Tag-Zuordnungen reparieren
+
+### Kontake
+
+- [ ] Grundsätzlich überarbeiten
+
+### Neu-Dialog
+
+- [ ] Grundsätzlich überarbeiten
+
+### Startseite
+
+- [x] ~Grundsätzlich überarbeiten~
+
+### Suche
+
+- [x] ~Scrollbar fixen~
+- [ ] Springen + Hightlighting fixen
+
+### Controls
+
+#### Wochen- und Monatsansicht
+- [x] ~Single-Left-Click auf den Body vom Tag: New ToDo~
+- [x] ~STRG + X ergänzen~
+- [x] ~Hover mit Tastatureingabe muss funktionieren~
+- [x] ~Single-Right-Click auf ToDo: Schnelle, einzelne Kopie~
+- [x] ~Right-Click: Ansonsten komplett abklemmen~
+
+#### Nur in der Wochenansicht
+- [ ] Double-Left-Click den Header vom Tag: Focus-Mode
+- [ ] Middle-Click-Hold: Drag View (Ziehen + Snap auf Tage)
+
+### Bugs und Verbesserungen
+
+- [x] ~Tabs in der Feiertage-/Urlaubsansicht~
+- [x] ~Notifications verbessern~
+- [x] ~Zeiträume: CSS verbessern~
+- [x] ~+-Button: New/Import~
+- [x] ~Alignment von Karten links/rechts anpassen~
+- [x] ~Größe von Icons anpassen~
+- [x] ~Monatsansicht: +X Verhalten anpassen~
+- [x] ~Hochkantansicht: CSS fixen~
+- [x] ~Tastaturhighlighting abklemmen~
+- [x] ~Drag-and-Drop Test zwischen Backlog und Tagen ist wackelig im parallelen Lauf~
+- [x] ~Highlighting von markierten ToDos fixen~
+- [ ] ?-Menü überarbeiten + Rechtsklick ergänzen
+- [ ] Sprung-Animation verformt Icons => Visual Glitch
+- [ ] Loading-Animation beim Save hinzufügen um Schreibzyklen zu maskieren
+
+### Release
+
+- [ ] Dummy-Daten verschieben
+- [ ] Screenshots erneuern
+- [ ] Docs + README aktualisieren
+
+## Umstieg und Nutzung
+
+#Version
+- 0.8.0
+
+#Date
+- TBD
+
+#Info
+Ab hier ersetzt MD_Calendar den Google-Kalender als Daily-Driver.
+
+### Umstieg
+
+- [ ] Stichtag festlegen
+- [ ] Kalenderdaten exportieren
+- [ ] Kalender: Januar, Februar und März discarden
+- [ ] Kalender: Einträge neutralisieren, einordnen und taggen
+- [ ] Kontaktdaten exportieren
+- [x] ~Ordner ins NAS-Backup aufnehmen~
+
+### Statistiken und Analyse
+
+- [ ] Feature ausarbeiten
+
+### Bugs und Verbesserungen
+
+- [ ] Farben für die Tags finalisieren
+
+### Release
+
+- [ ] Docs + README aktualisieren
+
+## Mobile
+
+#Version
+- 0.9.0
+
+#Date
+- TBD
+
+#Info
+Dieselbe App als gehostete PWA auf dem iPhone.
+
+### Plattform
+
+- [ ] Hosting festlegen (NAS oder GitHub Pages)
+- [ ] Service Worker + Installation auf dem Home-Bildschirm
+
+### Speicher
+
+- [ ] Konflikte zwischen Geräten behandeln => neu laden + eigene Änderungen erneut anwenden
+
+### Layout
+
+- [ ] Mobile Skizze erstellen (Tag/Agenda)
+- [ ] Mobiles Layout umsetzen inkl. Backlog + Inbox
+- [ ] Touch-Bedienung prüfen
+
+## Feintuning
+
+#Version
+- 0.9.1
+
+#Date
+- TBD
+
+### Bugs und Verbesserungen
+
+### Release
+
+- [ ] Docs + README aktualisieren
+
+#Archive
+# Archive
+
 ## Projektbasis
 
 #Version
@@ -257,162 +444,3 @@ Die Kontakte-Ansicht wird ein vollwertiger Kontakt-Editor. `Contacts.md` bleibt 
 ### Release
 
 - [x] ~Docs aktualisieren~
-
-## Refactorings
-
-#Version
-- 0.6.0
-
-#Date
-- 10.11.2026 - 16.11.2026
-
-### MD_Libs
-
-- [x] ~Auf MD_Libs als Applikationskern umsteigen~
-- [x] ~Tests anpassen und reduzieren~
-- [x] ~Dokumentation und README anpassen~
-
-### Bugs und Verbesserungen
-
-- [x] ~Tag-Icons für Spielen + Finanzen ergänzen~
-- [x] ~Header: Pfeile + KW raus, „+“, Undo, Redo + Speichern wie MD_Manager~
-- [x] ~Header rechts: Hilfe, Ton, Ferien, Backlog => Optionsmenü entfällt~
-- [x] ~Suche nur per `F`, als Leiste unten mittig~
-- [x] ~Hilfe als Panel wie die Ferienansicht, mit Tastenkappen in drei Spalten~
-- [x] ~Heute auf `H`~
-- [x] ~Kalender importieren nur noch auf der Startseite~
-- [x] ~Notifications knapp, zentriert + nur so breit wie nötig~
-- [x] ~Ordner-Meldung eindeutig („Ordner „…“ geöffnet“)~
-- [x] ~Kontextmenü ohne Tastenkürzel~
-- [x] ~Kein Hover-Highlight in reinen Anzeige-Panels~
-- [x] ~Wiederholungs-Icon größer + vertikal zentriert~
-- [x] ~Hintergrundlicht in der Mitte entfernt~
-- [x] ~Rahmen von Header + Hintergrund entfernt~
-- [x] ~Undo-Zähler: unveränderter Stand gilt als gespeichert~
-- [x] ~Übersetzung: Das ganze Projekt auf Englisch umstellen~
-
-### Release
-
-- [x] ~Docs + README aktualisieren~
-
-#Pin
-## Dummy-Daten
-
-#Version
-- 0.7.0
-
-#Date
-- 16.11.2026 - TBD
-
-### Allgemeines
-
-- [x] ~Dummy-Daten erstellen und ablegen~
-- [x] ~Holidays korrekt erzeugen und ablegen~
-- [x] ~MD_Calendar.json ausarbeiten und erstellen~
-
-### Backlog
-
-- [x] ~Gruppen minimieren können~
-- [ ] Single-Left-Click: Öffnet Kontext => New ToDo or Group
-
-### Kontake
-
-- [ ] Grundsätzlich überarbeiten
-
-### Neu-Dialog
-
-- [ ] Grundsätzlich überarbeiten
-
-### Startseite
-
-- [x] ~Grundsätzlich überarbeiten~
-
-### Controls
-
-#### Wochen- und Monatsansicht
-- [ ] Single-Left-Click auf leeren Platz im Tag: New ToDo
-- [ ] Hover mit Tastatureingabe muss funktionieren
-- [ ] STRG + X ergänzen
-- [ ] Single-Right-Click auf ToDo: Schnelle, einzelne Kopie
-- [ ] Right-Click: Ansonsten komplett abklemmen
-
-#### Nur in der Wochenansicht
-- [ ] Double-Left-Click auf leeren Platz im Tag: Focus-Mode
-- [ ] Right-Click-Hold: Drag View (Ziehen + Snap auf Tage)
-
-### Bugs und Verbesserungen
-
-- [x] ~Tabs in der Feiertage-/Urlaubsansicht~
-- [x] ~Notifications verbessern~
-- [x] ~Zeiträume: CSS verbessern~
-- [x] ~+-Button: New/Import~
-- [x] ~Alignment von Karten links/rechts anpassen~
-- [x] ~Größe von Icons anpassen~
-- [x] ~Monatsansicht: +X Verhalten anpassen~
-- [x] ~Hochkantansicht: CSS fixen~
-- [x] ~Tastaturhighlighting abklemmen~
-- [x] ~Drag-and-Drop Test zwischen Backlog und Tagen ist wackelig im parallelen Lauf~
-- [ ] Highlighting von markierten ToDos fixen
-- [ ] Loading-Animation beim Save hinzufügen um Schreibzyklen zu maskieren
-
-### Release
-
-- [ ] Docs + README aktualisieren
-
-## Umstieg und Nutzung
-
-#Version
-- 0.8.0
-
-#Date
-- TBD
-
-#Info
-Ab hier ersetzt MD_Calendar den Google-Kalender als Daily-Driver.
-
-### Umstieg
-
-- [ ] Stichtag festlegen
-- [ ] Kalenderdaten exportieren
-- [ ] Kalender: Januar, Februar und März discarden
-- [ ] Kalender: Einträge neutralisieren, einordnen und taggen
-- [ ] Kontaktdaten exportieren
-- [ ] Ordner ins NAS-Backup aufnehmen
-
-### Statistiken und Analyse
-
-- [ ] Feature ausarbeiten
-
-### Bugs und Verbesserungen
-
-- [ ] Farben für die Tags finalisieren
-
-### Release
-
-- [ ] Docs + README aktualisieren
-
-## Mobile
-
-#Version
-- 0.9.0
-
-#Date
-- TBD
-
-#Info
-Dieselbe App als gehostete PWA auf dem iPhone.
-
-### Plattform
-
-- [ ] Hosting festlegen (NAS oder GitHub Pages)
-- [ ] Service Worker + Installation auf dem Home-Bildschirm
-
-### Speicher
-
-- [ ] Konflikte zwischen Geräten behandeln => neu laden + eigene Änderungen erneut anwenden
-
-### Layout
-
-- [ ] Mobile Skizze erstellen (Tag/Agenda)
-- [ ] Mobiles Layout umsetzen inkl. Backlog + Inbox
-- [ ] Touch-Bedienung prüfen

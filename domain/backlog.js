@@ -69,7 +69,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   /**
-   * Changes an entry and puts it at `target`: its own place, the end of a day or the end of a backlog group.
+   * Changes an entry and puts it at `target`: its own place, its time slot of a day (when the day or the start time
+   * changes, docs/Domain.md#day-list-order) or the end of a backlog group.
    * @param {MDCCalendar} calendar @param {MDCBacklog} backlog @param {MDCEntryRef} ref
    * @param {{key: string, group?: number}} target @param {Partial<MDCEntry>} fields
    * @returns {MDCDayAction | null}
@@ -79,7 +80,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const updated = { ...entry, ...fields };
     const samePlace = target.group === ref.group && (isBacklog(ref) || target.key === ref.key);
     if (samePlace && JSON.stringify(updated) === JSON.stringify(entry)) return null;
-    const index = samePlace ? ref.index : list(calendar, backlog, { ...target, index: 0 }).length;
+    const destination = list(calendar, backlog, { ...target, index: 0 });
+    const index = samePlace && (isBacklog(ref) || updated.start === entry.start) ? ref.index
+      : isBacklog({ ...target, index: 0 }) ? destination.length
+        : app.calendar.timeSlot(destination.filter((_, position) => !samePlace || position !== ref.index), updated.start);
     return action(calendar, backlog, updated.title, { ref, entry }, { ref: { ...target, index }, entry: updated });
   }
 
@@ -96,7 +100,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   /**
-   * Moves an entry between any two places; `to.index` is the position after the entry was removed.
+   * Moves an entry between any two places; `to.index` is the position after the entry was removed. A timed entry that
+   * arrives on a day from elsewhere goes into its time slot instead (docs/Domain.md#day-list-order).
    * @param {MDCCalendar} calendar @param {MDCBacklog} backlog @param {MDCEntryRef} from @param {MDCEntryRef} to
    * @returns {MDCDayAction | null}
    */
@@ -106,7 +111,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const entry = entryAt(calendar, backlog, from);
     const length = list(calendar, backlog, to).length - (sameList ? 1 : 0);
     if (to.index < 0 || to.index > length) throw new Error("Invalid target position.");
-    return action(calendar, backlog, entry.title, { ref: from, entry }, { ref: to, entry });
+    const target = !sameList && !isBacklog(to) && entry.start ? { ...to, index: app.calendar.timeSlot(list(calendar, backlog, to), entry.start) } : to;
+    return action(calendar, backlog, entry.title, { ref: from, entry }, { ref: target, entry });
   }
 
   /**
@@ -184,7 +190,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   /**
    * Moves several entries to one place, in their order, starting at `target.index` of the target list
-   * after they were removed. `dragged` is the entry the pointer moved; it keeps its place among them.
+   * after they were removed. `dragged` is the entry the pointer moved; it keeps its place among them. Timed entries that
+   * arrive on a day from elsewhere go into their time slots instead (docs/Domain.md#day-list-order).
    * @param {MDCCalendar} calendar @param {MDCBacklog} backlog @param {MDCEntryRef[]} refs @param {MDCEntryRef} target
    * @returns {MDCDayAction}
    */
@@ -195,15 +202,21 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return snapshot(calendar, backlog, `${refs.length} entries`, [...refs, target], () => {
       for (const ref of descending(refs)) list(calendar, backlog, ref).splice(ref.index, 1);
       const destination = list(calendar, backlog, target);
-      destination.splice(Math.min(target.index, destination.length), 0, ...moving);
+      const slotted = moving.map((entry, index) => Boolean(entry.start) && !isBacklog(target) && placeId(ordered[index]) !== placeId(target));
+      destination.splice(Math.min(target.index, destination.length), 0, ...moving.filter((_, index) => !slotted[index]));
+      for (const entry of moving.filter((_, index) => slotted[index])) destination.splice(app.calendar.timeSlot(destination, entry.start), 0, entry);
     }, crossing ? (isBacklog(target) ? backlogFile : calendarFile) : undefined);
   }
 
-  /** Inserts copies at the end of a day; copies are open. @param {MDCCalendar} calendar @param {MDCBacklog} backlog @param {MDCEntry[]} entries @param {string} key */
+  /**
+   * Inserts copies into a day: timed ones into their time slots, the others at the end; copies are open.
+   * @param {MDCCalendar} calendar @param {MDCBacklog} backlog @param {MDCEntry[]} entries @param {string} key
+   */
   function pasteEntries(calendar, backlog, entries, key) {
     const ref = { key, index: 0 };
     return snapshot(calendar, backlog, entries.length === 1 ? entries[0].title : `${entries.length} entries`, [ref], () => {
-      list(calendar, backlog, ref).push(...entries.map(entry => ({ ...entry, done: false, note: [...entry.note], extra: [...entry.extra] })));
+      const day = list(calendar, backlog, ref);
+      for (const entry of entries) day.splice(app.calendar.timeSlot(day, entry.start), 0, { ...entry, done: false, note: [...entry.note], extra: [...entry.extra] });
     }, undefined);
   }
 

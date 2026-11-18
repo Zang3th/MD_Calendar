@@ -58,8 +58,6 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   const note = app.notifications.text;
   /** A button or function of MD_Calendar in a notification text. */
   const feature = app.notifications.control;
-  /** A shortcut in a notification text, shown as keys. */
-  const shortcut = app.notifications.key;
 
   const calendarFile = "Calendar.md";
   const backlogFile = "Backlog.md";
@@ -211,7 +209,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       if (!warnings.length) return;
       const lines = warnings.map(warning => warning.lineNumber);
       const shown = lines.slice(0, 8).join(", ") + (lines.length > 8 ? " …" : "");
-      app.notifications.show("warning", note`Unreadable lines in ${name}`, `${warnings.length === 1 ? "Line" : "Lines"} ${shown}, kept as is.`);
+      app.notifications.show("warning", "Unreadable lines", note`${name}, ${warnings.length === 1 ? "line" : "lines"} ${shown}\nKept as is.`);
     }
 
     /** Parses one file (`null`: missing) into the model; writable files start a new history. @param {MDCFileName} name @param {string | null} text */
@@ -243,7 +241,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         warnings = parsed.warnings;
         const unknown = app.tiles.setTags(config.tags);
         if (unknown.length) {
-          app.notifications.show("error", note`Unknown tag icons in ${"Config.md"}`, note`${unknown.map(tag => `${tag.name}: ${tag.icon || "no icon"}`).join(", ")}\nShown without icon.`, {
+          app.notifications.show("error", "Unknown tag icons", note`${"Config.md"}\n${unknown.map(tag => `${tag.name}: ${tag.icon || "no icon"}`).join(", ")}\nShown without icon.`, {
             code: "MDC-301",
             details: `Known icon IDs: ${app.tiles.tagIconIds().join(", ")}.`
           });
@@ -253,7 +251,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       if (text === null) return;
       reportWarnings(name, warnings);
       const invalid = markdown.invalidCharacter(text);
-      if (invalid) app.notifications.show("warning", note`Unreadable character in ${name}`, `Line ${invalid.line}. Save as UTF-8.`);
+      if (invalid) app.notifications.show("warning", "Unreadable character", note`${name}, line ${invalid.line}\nSave it as UTF-8.`);
     }
 
     function clearConflict() {
@@ -303,7 +301,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       });
       started.on("reloaded", ({ file }) => {
         render();
-        app.notifications.show("info", note`${file} reloaded`, "Changed outside the app.");
+        app.notifications.show("info", "File reloaded", note`${file} changed outside the app.`);
       });
       started.on("checkError", ({ error }) => {
         app.notifications.show("error", "File check failed", "Retrying automatically.", {
@@ -321,7 +319,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     function folderStateOf(folder) {
       let file = folderStates.get(folder);
       if (!file) {
-        file = app.folderState.file(folder, () => app.notifications.show("warning", note`${app.folderState.fileName} recreated`, "The file was unreadable."));
+        file = app.folderState.file(folder, () => app.notifications.show("warning", "File recreated", note`${app.folderState.fileName} was unreadable.`));
         folderStates.set(folder, file);
       }
       return file;
@@ -343,7 +341,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         // The start card shows this summary without opening the folder again; it is only a cache.
         if (updated && written) return app.storage.rememberInfo(folder, app.folderState.summary(written, device.id)).catch(() => {});
       }).catch(error => {
-        app.notifications.show("error", note`${app.folderState.fileName} not updated`, "The calendar is not affected.", { details: error instanceof Error ? error.message : String(error), code: "MDC-203" });
+        app.notifications.show("error", "File not updated", note`${app.folderState.fileName}\nThe calendar is not affected.`, { details: error instanceof Error ? error.message : String(error), code: "MDC-203" });
       });
     }
 
@@ -365,7 +363,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       app.start.hide();
       clearConflict();
       render();
-      app.notifications.show("info", note`${opened.name} opened`, "");
+      app.notifications.show("info", "Folder opened", note`${opened.name}`);
     }
 
     /**
@@ -506,7 +504,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       try {
         await fileSession.save(force);
       } catch (error) {
-        app.notifications.show("error", "Save failed", note`Changes kept. Retry with ${shortcut("Ctrl+S")}.`, {
+        app.notifications.show("error", "Save failed", "Your changes are kept.", {
           details: error instanceof Error ? error.message : String(error),
           code: "MDC-201"
         });
@@ -530,11 +528,18 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     /** Copied entries; pasting inserts open copies (docs/ui/Interaction.md#copy-and-paste). @type {MDCEntry[]} */
     let clipboard = [];
 
-    /** @param {MDCNotificationBody} title @param {MDCNotificationBody} [detail] A line before the undo hint. */
-    function confirmDeleted(title, detail) {
-      const undo = note`Undo with ${shortcut("Ctrl+Z")}.`;
-      app.notifications.show("info", title, detail ? [...(typeof detail === "string" ? [detail] : detail), { lineBreak: true }, ...undo] : undo);
+    /**
+     * Confirms an action: the title names it, the body says what exactly, one entry per line (docs/ui/Shell.md#notifications).
+     * At most `shownTitles` names are listed, the rest as “and N more”.
+     * @param {string} title @param {string[]} names @param {string} [detail] A further line, such as the date.
+     */
+    function confirm(title, names, detail) {
+      const lines = names.slice(0, shownTitles).map(name => note`${name}`);
+      if (names.length > shownTitles) lines.push(note`and ${names.length - shownTitles} more`);
+      if (detail) lines.push(note`${detail}`);
+      app.notifications.show("info", title, lines.flatMap((line, index) => index ? [{ lineBreak: /** @type {const} */ (true) }, ...line] : line));
     }
+    const shownTitles = 3;
 
     function inboxIndex() {
       return Math.max(0, /** @type {MDCBacklog} */ (backlog).groups.findIndex(group => group.name === app.backlogFormat.inbox));
@@ -616,7 +621,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         remove: () => {
           if (!calendar || !backlog) return;
           execute(app.backlog.remove(calendar, backlog, ref));
-          confirmDeleted(note`${entry.title} deleted`);
+          confirm("Entry deleted", [entry.title]);
         },
         deleteOccurrence: noAction, endSeries: noAction
       });
@@ -643,17 +648,17 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         remove: () => {
           if (!calendar) return;
           execute(app.calendar.deleteSeries(calendar, index));
-          confirmDeleted(note`${series.title} deleted`, "All occurrences.");
+          confirm("Series deleted", [series.title], "All occurrences");
         },
         deleteOccurrence: () => {
           if (!calendar) return;
           execute(app.calendar.deleteOccurrence(calendar, index, key));
-          confirmDeleted(note`${series.title} deleted`, `Only ${app.calendar.formatDate(key)}.`);
+          confirm("Occurrence deleted", [series.title], app.calendar.formatDate(key));
         },
         endSeries: () => {
           if (!calendar) return;
           execute(app.calendar.endSeries(calendar, index, key));
-          app.notifications.show("info", "Series ended", note`${series.title} ends ${app.calendar.formatDate(key)}.\nUndo with ${shortcut("Ctrl+Z")}.`);
+          confirm("Series ended", [series.title], `Last on ${app.calendar.formatDate(key)}`);
         }
       });
     }
@@ -676,7 +681,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         remove: () => {
           if (!calendar) return;
           execute(app.calendar.deleteMultiDay(calendar, index));
-          confirmDeleted(note`${item.title} deleted`);
+          confirm("Entry deleted", [item.title]);
         },
         deleteOccurrence: noAction, endSeries: noAction
       });
@@ -751,11 +756,12 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       if (done) void app.sounds.play();
     }
 
-    /** @param {MDCPick[]} picks */
-    function removeMany(picks) {
+    /** @param {MDCPick[]} picks @param {boolean} [cut] the entries were copied before (Ctrl+X) */
+    function removeMany(picks, cut = false) {
       if (!calendar || !backlog || !picks.length) return;
       const refs = refsOf(picks);
       const label = picks.length === 1 ? pickTitle(picks[0]) : `${picks.length} entries`;
+      const names = picks.map(pickTitle);
       const actions = [
         ...(refs.length ? [app.backlog.removeEntries(calendar, backlog, refs, label)] : []),
         ...app.calendar.changeOccurrences(calendar, occurrencesOf(picks), "delete")
@@ -763,12 +769,24 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       if (!actions.length) return;
       app.interactions.clearSelection();
       execute(actions.length === 1 ? actions[0] : app.calendar.combine(label, actions));
-      confirmDeleted(picks.length === 1 ? note`${label} deleted` : note`${picks.length} entries deleted`);
+      if (cut) confirm("Cut to clipboard", names);
+      else confirm(picks.length === 1 ? "Entry deleted" : `${picks.length} entries deleted`, names);
     }
 
     /** Copies the picked entries; an occurrence is copied as a plain entry with the fields of its series. @param {MDCPick[]} picks */
     function copy(picks) {
-      if (!calendar || !backlog || !picks.length) return;
+      if (!fillClipboard(picks)) return;
+      confirm("Copied to clipboard", clipboard.map(entry => entry.title));
+    }
+
+    /** Copies the picked entries and deletes them as one undoable action; an occurrence is deleted as that occurrence only. @param {MDCPick[]} picks */
+    function cut(picks) {
+      if (fillClipboard(picks)) removeMany(picks, true);
+    }
+
+    /** Puts the picked entries into the clipboard; returns whether anything was copied. @param {MDCPick[]} picks */
+    function fillClipboard(picks) {
+      if (!calendar || !backlog || !picks.length) return false;
       const currentCalendar = calendar;
       const currentBacklog = backlog;
       clipboard = picks.flatMap(pick => {
@@ -778,15 +796,14 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
           ? [{ done: false, start: series.startTime, end: series.endTime, title: series.title, tag: series.tag, location: series.location, note: [...series.note], extra: [] }]
           : [];
       });
-      if (!clipboard.length) return;
-      app.notifications.show("info", clipboard.length === 1 ? note`${clipboard[0].title} copied` : note`${clipboard.length} entries copied`, note`Paste with ${shortcut("Ctrl+V")}.`);
+      return clipboard.length > 0;
     }
 
     /** Inserts open copies of the clipboard at the end of a day. @param {string} key */
     function paste(key) {
       if (!calendar || !backlog || view === "contacts") return;
       if (!clipboard.length) {
-        app.notifications.show("info", "Nothing to paste", note`Copy with ${shortcut("Ctrl+C")} first.`);
+        app.notifications.show("info", "Nothing to paste", "The clipboard is empty.");
         return;
       }
       execute(app.backlog.pasteEntries(calendar, backlog, clipboard, key || visibleDay()));
@@ -836,9 +853,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       execute(result.action);
       if (events.length === 1) showDay(events[0].start);
       const imported = result.entries + result.series + result.multiDay;
-      const lines = [result.duplicates + skipped ? note`${result.duplicates + skipped} skipped.` : [],
-        result.simplified ? note`${result.simplified} series as single events.` : [], note`Undo with ${shortcut("Ctrl+Z")}.`].filter(line => line.length);
-      app.notifications.show("info", `${imported} ${imported === 1 ? "event" : "events"} imported`,
+      const lines = [note`${imported} ${imported === 1 ? "event" : "events"} from ${name}`, result.duplicates + skipped ? note`${result.duplicates + skipped} skipped` : [],
+        result.simplified ? note`${result.simplified} series as single events` : []].filter(line => line.length);
+      app.notifications.show("info", "Events imported",
         lines.flatMap((line, index) => index ? [{ lineBreak: /** @type {const} */ (true) }, ...line] : line));
     }
 
@@ -857,7 +874,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         if (!contacts || !contacts.contacts[index]) return;
         const name = app.contacts.name(contacts.contacts[index]);
         execute(app.contacts.remove(contacts, index));
-        confirmDeleted(name ? note`${name} deleted` : "Contact deleted");
+        confirm("Contact deleted", [name || "Unnamed contact"]);
       },
       importText(text, name) {
         if (!contacts) return;
@@ -868,7 +885,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
           return;
         }
         execute(result.action);
-        app.notifications.show("info", "Contacts imported", note`${result.added} new, ${result.merged} merged.\nUndo with ${shortcut("Ctrl+Z")}.`);
+        app.notifications.show("info", "Contacts imported", note`${result.added} new, ${result.merged} merged from ${name}`);
       },
       exportOne(index) {
         const contact = contacts?.contacts[index];
@@ -880,7 +897,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       },
       copy(text) {
         void navigator.clipboard.writeText(text).then(
-          () => app.notifications.show("info", "Address copied", ""),
+          () => app.notifications.show("info", "Copied to clipboard", note`${text}`),
           () => app.notifications.show("warning", "Copy failed", "Clipboard blocked."));
       },
       reject(title, body) {
@@ -973,25 +990,19 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       },
       isContactsView: () => view === "contacts",
       notice(title, body) { app.notifications.show("info", title, body); },
-      contextMenu(picks, x, y, key) {
-        if (!calendar || !backlog) return;
-        /** @type {MDCMenuItem[]} */
-        const items = [];
-        if (picks.length) {
-          const open = picks.some(pick => !pickDone(pick));
-          items.push({ label: open ? "Done" : "Not done", icon: "check", run: () => toggleMany(picks) });
-          items.push({ label: picks.length > 1 ? `Copy ${picks.length} entries` : "Copy", icon: "copy", run: () => copy(picks) });
-          items.push({ label: picks.length > 1 ? `Delete ${picks.length} entries` : "Delete", icon: "trash", danger: true, run: () => removeMany(picks) });
-        } else {
-          items.push({ label: "New entry", icon: "plus", run: () => newEntry(key) });
-          if (clipboard.length) items.push({ label: clipboard.length > 1 ? `Paste ${clipboard.length} entries` : "Paste", icon: "clipboard", run: () => paste(key) });
-        }
-        app.menus.showContext(items, x, y);
-      },
       toggleMany: picks => toggleMany(picks),
       removeMany: picks => removeMany(picks),
       copy: picks => copy(picks),
+      cut: picks => cut(picks),
       paste: key => paste(key),
+      hasClipboard: () => clipboard.length > 0,
+      dayPicks(key) {
+        if (!calendar || view === "contacts") return [];
+        return [
+          ...app.recurrence.occurrences(calendar, key).map(({ index }) => ({ series: index, key })),
+          ...app.calendar.entries(calendar, key).map((_, index) => ({ ref: { key, index }, key }))
+        ];
+      },
       moveMany(refs, dragged, target) {
         if (!calendar || !backlog) return;
         const ordered = refs.some(ref => sameRef(ref, dragged)) ? refs : [...refs, dragged];

@@ -138,6 +138,6 @@ Shared systems come from MD_Libs (`../MD_Libs`, `@zang3th/md-libs`), the tested 
 | Completion sound | `platform/audio` | Plays the Arpeggio, which `app.js` defines. |
 | Drag and drop | `ui/sortable` | SortableJS defaults and positions within day lists. |
 | Keyboard shortcuts | `ui/keymap` | Bindings in `ui/interactions.js`; save works in text fields, everything else only without an open dialog. |
-| Floating elements | `ui/popover` | The context menu at the pointer; tooltips; closing the context menu, help, holiday overview and search on an outside pointer and on Escape. |
+| Floating elements | `ui/popover` | The **+** menu below its button; tooltips; closing the **+** menu, help, holiday overview and search on an outside pointer and on Escape. |
 | Build and harness | `harness/build`, `harness/testing`, `harness/checks`, `config/` | `tools/build.js`, unit-test bundles, the architecture checker, the icon test, `eslint.config.js`, the line count of `tools/project-stats.js` and the compiler options both jsconfig files extend. |
 

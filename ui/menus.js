@@ -43,17 +43,18 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   /**
    * The main shortcuts by task, laid out like the quick reference of MD_Manager: action left, keys right as key caps.
-   * "+" joins the keys of one combination.
+   * "+" joins the keys of one combination, "|" separates alternative combinations.
    * The full list is in docs/ui/Interaction.md.
    */
   const columns = [
-    [["Navigation", [["Week", "W"], ["Month", "M"], ["Contacts", "C"], ["Today", "T"], ["Backlog", "B"], ["Search", "F"]]]],
-    [["Entries", [["New", "N"], ["Done", "Space"], ["Copy", "Ctrl+C"], ["Paste", "Ctrl+V"], ["Delete", "Del"]]]],
-    [["Edit", [["Save", "Ctrl+S"], ["Undo", "Ctrl+Z"], ["Redo", "Ctrl+Y"]]]]
+    [["Navigation", [["Week", "W"], ["Month", "M"], ["Contacts", "C"], ["Today", "T"], ["Backlog", "B"], ["Search", "F"]]],
+      ["View", [["Select area", "Left Click+Drag"], ["Select day", "Ctrl+A"], ["Clear / Close", "Esc"]]]],
+    [["Edit", [["Add new", "A"], ["Done", "Space"], ["Copy", "Ctrl+C"], ["Cut", "Ctrl+X"], ["Paste", "Ctrl+V"], ["Delete", "Del"]]],
+      ["State", [["Save", "Ctrl+S"], ["Undo", "Ctrl+Z"], ["Redo", "Ctrl+Y|Ctrl+Shift+Z"]]]]
   ];
   /** @param {string} keys */
-  const caps = keys => keys.split("+").map(key => `<kbd>${key}</kbd>`).join("<span>+</span>");
-  // Groups sit in three columns side by side, so that the panel never scrolls.
+  const caps = keys => keys.split("|").map(combination => combination.split("+").map(key => `<kbd>${key}</kbd>`).join("<span>+</span>")).join("<span>/</span>");
+  // Groups sit in two columns side by side, so that the panel never scrolls.
   helpContent.innerHTML = columns.map(groups => `<div class="help__column">` + groups.map(([group, rows]) => `<h3 class="hp__title">${group}</h3><dl class="keys">` +
     /** @type {string[][]} */ (rows).map(([action, keys]) => `<div class="keys__row"><dt>${action}</dt><dd>${caps(keys)}</dd></div>`).join("") + `</dl>`).join("") + `</div>`).join("");
 
@@ -150,7 +151,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   });
 
   app.menus = {
-    showContext, hideContext, showHelp, showNewMenu, showOptions,
+    hideContext, showHelp, showNewMenu, showOptions,
     isModalOpen: () => !context.hidden
   };
 })(window.MDCalendar);

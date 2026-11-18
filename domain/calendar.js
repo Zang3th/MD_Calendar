@@ -92,15 +92,29 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     };
   }
 
+  /**
+   * Where an entry with this start time goes in a day list (docs/Domain.md#day-list-order): directly before the first
+   * entry that starts later, otherwise directly after the last timed entry; without a time at the end.
+   * @param {readonly MDCEntry[]} list @param {string} time
+   */
+  function timeSlot(list, time) {
+    if (!time) return list.length;
+    const later = list.findIndex(entry => entry.start !== "" && entry.start > time);
+    if (later >= 0) return later;
+    let last = -1;
+    list.forEach((entry, index) => { if (entry.start) last = index; });
+    return last + 1;
+  }
+
   /** @param {MDCCalendar} calendar @param {string} key @param {MDCEntryFields & Partial<Pick<MDCEntry, "tag" | "extra">>} fields */
   function createEntry(calendar, key, fields) {
     /** @type {MDCEntry} */
     const entry = { done: false, tag: "", extra: [], ...fields };
-    return replaceAction(calendar, entry.title, null, { ref: { key, index: entries(calendar, key).length }, entry });
+    return replaceAction(calendar, entry.title, null, { ref: { key, index: timeSlot(entries(calendar, key), entry.start) }, entry });
   }
 
   /**
-   * Changes the fields of an entry. A new date moves it to the end of that day.
+   * Changes the fields of an entry. A new date or start time puts it into its time slot of that day.
    * @param {MDCCalendar} calendar @param {MDCEntryRef} ref @param {string} key @param {MDCEntryFields} fields
    * @returns {MDCDayAction | null}
    */
@@ -112,7 +126,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       return JSON.stringify(entry[field]) === JSON.stringify(updated[field]);
     });
     if (unchanged) return null;
-    const index = key === ref.key ? ref.index : entries(calendar, key).length;
+    const sameDay = key === ref.key;
+    const index = sameDay && updated.start === entry.start ? ref.index
+      : timeSlot(entries(calendar, key).filter((_, position) => !sameDay || position !== ref.index), updated.start);
     return replaceAction(calendar, updated.title, { ref, entry }, { ref: { key, index }, entry: updated });
   }
 
@@ -369,7 +385,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     if (!newEntries.size && !newSeries.length && !newMultiDay.length) return result;
     const keys = Array.from(newEntries.keys());
     const before = keys.map(key => [...entries(calendar, key)]);
-    const after = keys.map((key, index) => [...before[index], ...(newEntries.get(key) || [])]);
+    // Imported entries go into their time slots like new ones (docs/Domain.md#day-list-order).
+    const after = keys.map((key, index) => (newEntries.get(key) || []).reduce((list, entry) => {
+      list.splice(timeSlot(list, entry.start), 0, entry);
+      return list;
+    }, [...before[index]]));
     const seriesBefore = [...calendar.series];
     const multiBefore = [...calendar.multiDay];
     /** @param {MDCEntry[][]} days @param {Array<MDCSeries | MDCRawBlock>} series @param {Array<MDCMultiDay | MDCRawBlock>} multi */
@@ -418,7 +438,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   app.calendar = {
     parseDate, formatDate: dates.format, formatDay, parseTime, todayKey: dates.today, addDays: dates.addDays, addMonths: dates.monthStart,
     weekStart: dates.weekStart, weekDays, isoWeek: dates.isoWeek,
-    entries, dayList, createEntry, updateEntry, deleteEntry, toggleDone, moveEntry, isOverdue,
+    entries, dayList, timeSlot, createEntry, updateEntry, deleteEntry, toggleDone, moveEntry, isOverdue,
     combine, createSeries, updateSeries, deleteSeries, toggleOccurrence, deleteOccurrence, endSeries,
     createMultiDay, updateMultiDay, deleteMultiDay, segments, taggedPeriods, changeOccurrences, importEvents
   };

@@ -4,13 +4,20 @@ const thursday = '.day[data-day="2026-11-12"]';
 const friday = '.day[data-day="2026-11-13"]';
 const calendarText = "# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] A\n- [ ] B\n- [ ] C\n";
 
-test("the context menu copies an entry and pastes an open copy onto another day", async ({ page, calendar }) => {
+test("a right-click copies the entry or, on a selected one, the selection; a right-click on a day pastes it", async ({ page, calendar }) => {
   await calendar.openApp({ "Calendar.md": calendarText });
+  await page.locator(`${thursday} .ev`, { hasText: "A" }).locator(".ev__title").click({ modifiers: ["Control"] });
+  await page.locator(`${thursday} .ev`, { hasText: "B" }).locator(".ev__title").click({ modifiers: ["Control"] });
   await page.locator(`${thursday} .ev`, { hasText: "B" }).click({ button: "right" });
-  await page.getByRole("menuitem", { name: "Copy" }).click();
+  // A right-click on free space of a day pastes there and opens no menu.
   await page.locator(friday).click({ button: "right", position: { x: 60, y: 300 } });
-  await page.getByRole("menuitem", { name: "Paste" }).click();
-  await expect(page.locator(`${friday} .ev__title`)).toHaveText(["B"]);
+  await expect(page.locator("#contextMenu")).toBeHidden();
+  await expect(page.locator(`${friday} .ev__title`)).toHaveText(["A", "B"]);
+  await page.keyboard.press("Control+z");
+  // Undo cleared the selection; now a right-click copies the entry alone.
+  await page.locator(`${thursday} .ev`, { hasText: "C" }).click({ button: "right" });
+  await page.locator(friday).click({ button: "right", position: { x: 60, y: 300 } });
+  await expect(page.locator(`${friday} .ev__title`)).toHaveText(["C"]);
   await page.keyboard.press("Control+z");
   await expect(page.locator(`${friday} .ev`)).toHaveCount(0);
 });
@@ -28,19 +35,76 @@ test("Ctrl+click selects entries; Space checks them off and Delete removes them 
   await expect(page.locator(`${thursday} .ev__title`)).toHaveText(["A", "B", "C"]);
 });
 
+test("Ctrl+X cuts the selection; Ctrl+V pastes it onto the day under the pointer", async ({ page, calendar }) => {
+  await calendar.openApp({ "Calendar.md": calendarText });
+  await page.locator(`${thursday} .ev`, { hasText: "B" }).locator(".ev__title").click({ modifiers: ["Control"] });
+  await page.keyboard.press("Control+x");
+  await expect(page.locator(`${thursday} .ev__title`)).toHaveText(["A", "C"]);
+  await page.locator(friday).hover({ position: { x: 60, y: 300 } });
+  await page.keyboard.press("Control+v");
+  await expect(page.locator(`${friday} .ev__title`)).toHaveText(["B"]);
+  await page.keyboard.press("Control+z");
+  await page.keyboard.press("Control+z");
+  await expect(page.locator(`${thursday} .ev__title`)).toHaveText(["A", "B", "C"]);
+  await expect(page.locator(`${friday} .ev`)).toHaveCount(0);
+});
+
+test("without a selection, Delete and Ctrl+C act on the entry under the pointer", async ({ page, calendar }) => {
+  await calendar.openApp({ "Calendar.md": calendarText });
+  await page.locator(`${thursday} .ev`, { hasText: "B" }).hover();
+  await page.keyboard.press("Delete");
+  await expect(page.locator(`${thursday} .ev__title`)).toHaveText(["A", "C"]);
+  // The entry now under the pointer is found without a pointer move.
+  await page.keyboard.press("Control+c");
+  await page.locator(friday).hover({ position: { x: 60, y: 300 } });
+  await page.keyboard.press("Control+v");
+  await expect(page.locator(`${friday} .ev__title`)).toHaveText(["C"]);
+});
+
+test("Ctrl+A selects the entries of the day under the pointer; A opens a new entry there", async ({ page, calendar }) => {
+  await calendar.openApp({ "Calendar.md": calendarText + "\n### 13.11.2026\n- [ ] D\n" });
+  await page.locator(thursday).hover({ position: { x: 60, y: 300 } });
+  await page.keyboard.press("Control+a");
+  await expect(page.locator(`${thursday} .ev.is-selected`)).toHaveCount(3);
+  await expect(page.locator(`${friday} .ev.is-selected`)).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await page.locator(friday).hover({ position: { x: 60, y: 300 } });
+  await page.keyboard.press("a");
+  await expect(page.locator("#dialogDate")).toHaveValue("13.11.2026");
+});
+
 test("the search jumps to a hit in another month", async ({ page, calendar }) => {
-  await calendar.openApp({ "Calendar.md": "# Calendar\n\n## March 2027\n\n### 15.03.2027\n- [ ] Dentist Müller\n" });
+  await calendar.openApp({ "Calendar.md": "# Calendar\n\n## March 2027\n\n### 15.03.2027\n- [ ] Dentist Müller\n\n### 16.03.2027\n- [ ] Call Müller\n" });
   await page.keyboard.press("f");
   await page.keyboard.type("muller");
-  await expect(page.locator(".sp__hit")).toHaveText(/Dentist Müller/);
+  await expect(page.locator(".sp__hit")).toHaveText([/Call Müller/, /Dentist Müller/]);
+  // Tab and Shift+Tab choose a hit and keep the focus in the field.
+  await page.keyboard.press("Tab");
+  await expect(page.locator('[data-hit="1"]')).toHaveAttribute("aria-selected", "true");
+  await page.keyboard.press("Shift+Tab");
+  await expect(page.locator('[data-hit="0"]')).toHaveAttribute("aria-selected", "true");
+  await page.keyboard.press("Tab");
+  await expect(page.locator("#searchInput")).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page.locator('.day[data-day="2027-03-15"] .ev__title')).toHaveText(["Dentist Müller"]);
   await expect(page.locator("#titleText")).toHaveText("March 2027");
 });
 
-test("double-clicking a day opens a new entry for that day", async ({ page, calendar }) => {
-  await calendar.openApp();
-  await page.locator(friday).dblclick({ position: { x: 60, y: 300 } });
+test("clicking a day's body opens a new entry for that day; with a selection the click only clears it", async ({ page, calendar }) => {
+  await calendar.openApp({ "Calendar.md": calendarText });
+  await page.locator(`${thursday} .ev`, { hasText: "A" }).locator(".ev__title").click({ modifiers: ["Control"] });
+  await page.locator(friday).click({ position: { x: 60, y: 300 } });
+  await expect(page.locator(".ev.is-selected")).toHaveCount(0);
+  await expect(page.locator("#dialogDate")).toBeHidden();
+  await page.locator(`${friday} .day__head`).click();
+  await expect(page.locator("#dialogDate")).toBeHidden();
+  await page.keyboard.press("?");
+  await expect(page.locator("#helpPanel")).toBeVisible();
+  // Monday: the help panel lies over the right side of the week.
+  await page.locator('.day[data-day="2026-11-09"]').click({ position: { x: 60, y: 300 } });
+  await expect(page.locator("#helpPanel")).toBeHidden();
+  await expect(page.locator("#dialogDate")).toBeHidden();
+  await page.locator(friday).click({ position: { x: 60, y: 300 } });
   await expect(page.locator("#dialogDate")).toHaveValue("13.11.2026");
   await expect(page.locator("#dialogDateHint")).toHaveText("Friday, 13 November 2026");
 });
@@ -62,5 +126,5 @@ test("“+” opens a choice; its ICS item imports into the open calendar", asyn
     buffer: Buffer.from("BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:x\r\nDTSTART;VALUE=DATE:20261113\r\nDTEND;VALUE=DATE:20261114\r\nSUMMARY:Invitation\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n")
   });
   await expect(page.locator(`${friday} .ev__title`)).toHaveText(["Invitation"]);
-  await expect(page.locator(".notification", { hasText: "1 event imported" })).toBeVisible();
+  await expect(page.locator(".notification", { hasText: "Events imported" })).toContainText("1 event from invitation.ics");
 });

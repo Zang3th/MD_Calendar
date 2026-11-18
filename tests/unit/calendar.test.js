@@ -64,7 +64,7 @@ test("day list operations apply, undo and redo exactly", () => {
     { "2026-11-12": ["B", "A"], "2026-11-13": ["C", "D"] });
 
   const moved = domain.updateEntry(calendar, { key: "2026-11-12", index: 0 }, "2026-11-13", { ...fields, title: "B2" });
-  assert.deepEqual(roundTrip(calendar, moved), { "2026-11-12": ["A"], "2026-11-13": ["C", "D", "B2"] });
+  assert.deepEqual(roundTrip(calendar, moved), { "2026-11-12": ["A"], "2026-11-13": ["B2", "C", "D"] });
   assert.deepEqual(plain(moved.days), ["2026-11-12", "2026-11-13"]);
 
   const toggle = domain.toggleDone(calendar, { key: "2026-11-12", index: 0 });
@@ -72,6 +72,25 @@ test("day list operations apply, undo and redo exactly", () => {
   assert.equal(domain.entries(calendar, "2026-11-12")[0].done, true);
   toggle.undo();
   assert.equal(domain.entries(calendar, "2026-11-12")[0].done, false);
+});
+
+test("a timed entry goes into its time slot when created, imported, or when its day or time changes", () => {
+  const calendar = calendarWith({ "2026-11-12": ["Todo", "B", "C", "Later todo"] });
+  const day = calendar.days.get("2026-11-12").entries;
+  day[1].start = "08:00";
+  day[2].start = "10:00";
+  const fields = { title: "", start: "", end: "", location: "", note: [] };
+  domain.createEntry(calendar, "2026-11-12", { ...fields, title: "Nine", start: "09:00" }).redo();
+  domain.createEntry(calendar, "2026-11-12", { ...fields, title: "Eleven", start: "11:00" }).redo();
+  domain.createEntry(calendar, "2026-11-12", { ...fields, title: "Untimed" }).redo();
+  assert.deepEqual(titles(calendar)["2026-11-12"], ["Todo", "B", "Nine", "C", "Eleven", "Later todo", "Untimed"]);
+  // A new time moves the entry into its new slot; another edit keeps its place.
+  domain.updateEntry(calendar, { key: "2026-11-12", index: 2 }, "2026-11-12", { ...fields, title: "Nine", start: "07:00" }).redo();
+  domain.updateEntry(calendar, { key: "2026-11-12", index: 6 }, "2026-11-12", { ...fields, title: "Untimed", note: ["n"] }).redo();
+  assert.deepEqual(titles(calendar)["2026-11-12"], ["Todo", "Nine", "B", "C", "Eleven", "Later todo", "Untimed"]);
+  const imported = domain.importEvents(calendar, [{ title: "Noon", start: "2026-11-12", end: "2026-11-12", startTime: "12:00", endTime: "", location: "", note: [] }], "2026-11-01");
+  /** @type {any} */ (imported.action).redo();
+  assert.deepEqual(titles(calendar)["2026-11-12"], ["Todo", "Nine", "B", "C", "Eleven", "Noon", "Later todo", "Untimed"]);
 });
 
 test("an edit keeps tag and preserved lines, and an unchanged edit is no action", () => {

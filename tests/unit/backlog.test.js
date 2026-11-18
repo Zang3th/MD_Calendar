@@ -55,6 +55,27 @@ test("moves between backlog groups and days are single undoable actions", () => 
   assert.deepEqual(roundTrip(state, between), { days: [["2026-11-12", ["Later B"]]], groups: [["Day A"], ["Inbox A", "Later A"]] });
 });
 
+test("a timed entry dragged in from elsewhere goes into its time slot; within its day it lands where dropped", () => {
+  const state = fixture();
+  const { calendar, backlog } = state;
+  /** @param {string} title @param {string} start */
+  const timed = (title, start) => ({ ...entry(title), start });
+  calendar.days.set("2026-11-12", { key: "2026-11-12", extra: [], entries: [entry("Todo"), timed("Eight", "08:00"), timed("Ten", "10:00")] });
+  calendar.days.set("2026-11-13", { key: "2026-11-13", extra: [], entries: [timed("Nine", "09:00"), entry("Loose"), timed("Eleven", "11:00")] });
+  /** @param {string} key */
+  const titles = key => /** @type {any} */ (calendar.days.get(key)).entries.map((/** @type {any} */ item) => item.title);
+
+  // Dropped at the top, but 09:00 belongs between 08:00 and 10:00.
+  roundTrip(state, app.backlog.move(calendar, backlog, { key: "2026-11-13", index: 0 }, { key: "2026-11-12", index: 0 }));
+  assert.deepEqual(titles("2026-11-12"), ["Todo", "Eight", "Nine", "Ten"]);
+  // Within the day the drop position wins.
+  roundTrip(state, app.backlog.move(calendar, backlog, { key: "2026-11-12", index: 2 }, { key: "2026-11-12", index: 0 }));
+  assert.deepEqual(titles("2026-11-12"), ["Nine", "Todo", "Eight", "Ten"]);
+  // A selection: the untimed entry lands where dropped, the timed one in its slot.
+  roundTrip(state, app.backlog.moveEntries(calendar, backlog, [{ key: "2026-11-13", index: 0 }, { key: "2026-11-13", index: 1 }], { key: "2026-11-12", index: 0 }));
+  assert.deepEqual(titles("2026-11-12"), ["Loose", "Nine", "Todo", "Eight", "Ten", "Eleven"]);
+});
+
 test("ungrouped backlog entries move to and from days and groups like a group", () => {
   const state = fixture();
   const { calendar, backlog } = state;

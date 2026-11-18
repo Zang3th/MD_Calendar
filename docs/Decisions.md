@@ -157,7 +157,7 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 
 ## D29 · No add button per day; no hover-only controls
 
-**Decision:** Days have no add button. A new entry is created with **+**, `N` (on the day under the pointer), a double-click on a day or the context menu of a day. Controls never appear only on hover. → [Interaction](ui/Interaction.md#creating-entries), [AGENTS.md](../AGENTS.md#user-experience)
+**Decision:** Days have no add button. A new entry is created with **+**, `A` (on the day under the pointer) or a click on the body of a day. Controls never appear only on hover. → [Interaction](ui/Interaction.md#creating-entries), [AGENTS.md](../AGENTS.md#user-experience)
 **Reasons:** the user wants the day cards without buttons; **+** and the dialog's date picker reach every day on touch too.
 **Rejected:** an always visible add button per day; showing it only on hover (touch has no hover).
 
@@ -195,14 +195,14 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 **Decision:** Entries and multi-day entries with the tag named “Vacation” are listed as own vacations in the holiday overview, between holidays and school vacations. → [Views](ui/Views.md#holiday-overview)
 **Rejected:** recognizing vacations by the tag icon; listing multi-day entries only.
 
-## D37 · Selection, internal clipboard and context menu
+## D37 · Selection, internal clipboard and right-click
 
-**Decision:** Entries are selected with a lasso on free space or `Ctrl`+click. A selection is checked off, copied, deleted and dragged together. Copies go to an app-internal clipboard and are pasted onto a day by its context menu or `Ctrl+V` on the day under the pointer; copies are open. Right-click opens a context menu. → [Interaction](ui/Interaction.md#selection-copy-and-paste)
+**Decision:** Entries are selected with a lasso on free space or `Ctrl`+click. A selection is checked off, copied, deleted and dragged together. Copies go to an app-internal clipboard and are pasted with `Ctrl+V` onto the day under the pointer or by a right-click on free space of a day; copies are open. A right-click on an entry copies it, or the whole selection when it belongs to it; there is no context menu, and elsewhere right-click does nothing. → [Interaction](ui/Interaction.md#selection-copy-and-paste)
 **Rejected:** duplicating directly on the same day; dragging only single entries while a selection exists; the system clipboard (entries are not plain text).
 
 ## D38 · Further shortcuts
 
-**Decision:** `F` opens the search bar at the bottom edge (there is no search button), `C` contacts, `T` today, `?` help panel, `Space`, `Del`, `Ctrl+A`, `Ctrl+C`, `Ctrl+V` for the selection, `N` on the day under the pointer, and the mouse wheel switches one week or month per gesture. → [Interaction](ui/Interaction.md#keyboard-shortcuts)
+**Decision:** `F` opens the search bar at the bottom edge (there is no search button), `C` contacts, `T` today, `?` help panel, `Space`, `Del`, `Ctrl+C`, `Ctrl+X`, `Ctrl+V` for the selection (`Space`, `Del`, `Ctrl+C`, `Ctrl+X` without a selection for the entry under the pointer), `A` on the day under the pointer, `Ctrl+A` selects the day under the pointer, and the mouse wheel switches one week or month per gesture. → [Interaction](ui/Interaction.md#keyboard-shortcuts)
 **Rejected:** `Ctrl+K` and `/` for the search.
 
 ## D39 · Imported history is done
@@ -238,11 +238,11 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 **Reasons:** keyboard input (shortcuts, typing) made the browser show focus rings on fields and buttons at random; a highlight for a navigation the app does not offer only distracts.
 **Rejected:** a styled focus ring, which would promise keyboard navigation the app does not provide.
 
-## D45 · Occurrences sit in their time slot
+## D45 · Timed entries arrive in their time slot
 
-**Decision:** Occurrences of recurring entries are placed among the normal entries of a day by their start time; normal entries keep their stored, freely sortable order and are never reordered by time. → [Domain](Domain.md#day-list-order)
-**Reasons:** a series at 19:00 above a 09:00 entry misread the day; placing only the fixed occurrences keeps the user's own order intact.
-**Rejected:** occurrences always on top (the former rule); sorting all entries by time, which would take the free order away.
+**Decision:** Occurrences of recurring entries always sit in their time slot among the normal entries of a day. A normal entry with a time goes into its time slot when it lands on a day (created, pasted, imported, moved to another day in the dialog or by dragging) and when its start time changes; afterwards it stays freely sortable. → [Domain](Domain.md#day-list-order)
+**Reasons:** a series at 19:00 above a 09:00 entry misread the day, and so did a new timed entry at the end of the day; placing entries only when they arrive keeps the user's own order intact.
+**Rejected:** occurrences always on top; new entries always at the end; sorting all entries by time, which would take the free order away.
 
 ## D46 · “+N” enlarges the month cell in place
 

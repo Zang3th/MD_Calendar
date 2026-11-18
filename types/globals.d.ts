@@ -14,6 +14,7 @@ interface MDCalendarNamespace {
     isoWeek(key: string): number;
     entries(calendar: MDCCalendar, key: string): readonly MDCEntry[];
     dayList(calendar: MDCCalendar, key: string): MDCEntry[];
+    timeSlot(list: readonly MDCEntry[], time: string): number;
     createEntry(calendar: MDCCalendar, key: string, fields: MDCEntryFields & Partial<Pick<MDCEntry, "tag" | "extra">>): MDCDayAction;
     updateEntry(calendar: MDCCalendar, ref: MDCEntryRef, key: string, fields: MDCEntryFields): MDCDayAction | null;
     deleteEntry(calendar: MDCCalendar, ref: MDCEntryRef): MDCDayAction;
@@ -149,7 +150,6 @@ interface MDCalendarNamespace {
   };
   pickers: { hide(): void; isOpen(): boolean };
   menus: {
-    showContext(items: MDCMenuItem[], x: number, y: number): void;
     hideContext(): void;
     showHelp(open?: boolean): void;
     showNewMenu(items: MDCMenuItem[]): void;
@@ -290,11 +290,13 @@ type MDCInteractionHandlers = {
   showOccasions(key: string, kind: MDCBadgeKind, left: number, right: number, top: number): void;
   isContactsView(): boolean;
   notice(title: string, body: MDCNotificationBody): void;
-  contextMenu(picks: MDCPick[], x: number, y: number, key: string): void;
   toggleMany(picks: MDCPick[]): void;
   removeMany(picks: MDCPick[]): void;
   copy(picks: MDCPick[]): void;
+  cut(picks: MDCPick[]): void;
   paste(key: string): void;
+  hasClipboard(): boolean;
+  dayPicks(key: string): MDCPick[];
   moveMany(refs: MDCEntryRef[], dragged: MDCEntryRef, target: MDCEntryRef): void;
   moveMultiDay(index: number, start: string, end: string): void;
   newEntry(key?: string): void;

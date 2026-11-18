@@ -73,9 +73,12 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     fill();
   });
   input.addEventListener("keydown", event => {
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+    // Arrow keys and Tab/Shift+Tab choose a hit; Tab never leaves the field (docs/ui/Shell.md#search).
+    if (event.key === "ArrowDown" || event.key === "ArrowUp" || event.key === "Tab") {
+      event.preventDefault();
       if (!results.length) return;
-      active = (active + (event.key === "ArrowDown" ? 1 : results.length - 1)) % results.length;
+      const forward = event.key === "Tab" ? !event.shiftKey : event.key === "ArrowDown";
+      active = (active + (forward ? 1 : results.length - 1)) % results.length;
       for (const hit of list.querySelectorAll("[data-hit]")) hit.setAttribute("aria-selected", String(Number(/** @type {HTMLElement} */ (hit).dataset.hit) === active));
       input.setAttribute("aria-activedescendant", `searchHit${active}`);
       list.querySelector(`[data-hit="${active}"]`)?.scrollIntoView({ block: "nearest" });

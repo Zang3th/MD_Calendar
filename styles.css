@@ -372,7 +372,11 @@ body.is-sorting .backlog__title { outline: 1px dashed var(--edge); outline-offse
 .ev.is-overdue .ev__check { --edge-color: var(--danger); }
 .day.is-past .ev:not(.is-overdue) { opacity: var(--o-past); }
 .day.is-past .ev:not(.is-overdue):hover { opacity: var(--o-hover); }
-.ev--ghost { opacity: var(--o-disabled) !important; }
+.ev--ghost, .ev--along { opacity: var(--o-disabled) !important; }
+/* Drag image of a selection: a bare copy of the day around copies of the moving tiles, outside the window. */
+.drag-preview { position: fixed !important; top: -10000px !important; left: 0 !important; height: auto !important; max-height: none !important; margin: 0 !important; overflow: visible !important; background: none !important; border: 0 !important; box-shadow: none !important; }
+.drag-preview > * { overflow: visible !important; }
+.drag-preview::before, .drag-preview::after { display: none !important; }
 .ev--drag { transform: none; }
 .ev__repeat { flex: none; align-self: center; color: var(--muted); }
 .ev__repeat .ui-icon { width: 16px; height: 16px; }
@@ -656,7 +660,10 @@ button.occ__row:hover, button.occ__row:focus-visible { background: color-mix(in 
 .badge--occasion .badge__more { background: color-mix(in srgb, var(--tone) var(--glow), transparent); }
 
 /* ---------- Selection and lasso ---------- */
-.ev.is-selected { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) var(--strong), transparent), 0 0 0 3px color-mix(in srgb, var(--accent) var(--glow), transparent); }
+/* Selected tiles: an accent edge and an accent fill over the tile's own surface, both inside the tile, so that
+   neighbouring tiles never touch. */
+.ev.is-selected { border-color: color-mix(in srgb, var(--accent) var(--strong), transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) var(--strong), transparent); }
+.ev.is-selected::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: color-mix(in srgb, var(--accent) var(--active), transparent); pointer-events: none; }
 .lasso { position: fixed; z-index: 40; top: 0; left: 0; pointer-events: none; border-radius: 6px; border: 1px solid color-mix(in srgb, var(--accent) var(--strong), transparent); background: color-mix(in srgb, var(--accent) var(--hover), transparent); }
 .wk, .month { user-select: none; }
 
@@ -691,8 +698,8 @@ button.occ__row:hover, button.occ__row:focus-visible { background: color-mix(in 
 /* ---------- Help: same panel as the holiday overview ---------- */
 #helpButton[aria-expanded="true"] { color: var(--text); background: var(--glass-2); }
 .hp__head--center { justify-content: center; min-height: 34px; }
-#helpPanel { width: min(780px, calc(100vw - 28px)); max-height: none; }
-#helpContent { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 18px; overflow: visible; }
+#helpPanel { width: min(600px, calc(100vw - 28px)); max-height: none; }
+#helpContent { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; overflow: visible; }
 @media (max-width: 760px) { #helpContent { grid-template-columns: minmax(0, 1fr); } #helpPanel { max-height: calc(100vh - 100px); } #helpContent { overflow: auto; } }
 .keys { margin: 0; display: grid; gap: 2px; }
 .keys__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 28px; padding: 2px 6px; border-radius: 9px; }

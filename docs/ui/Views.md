@@ -44,7 +44,7 @@ Past holidays and vacations are dimmed.
 ## Week, landscape
 
 - Seven day cards side by side, Monday to Sunday.
-- Each card: day header, then the day list from top to bottom. There is no add button; a double-click on free space of the card creates an entry (see [Interaction](Interaction.md#creating-entries)).
+- Each card: day header, then the day list from top to bottom. There is no add button; a click on the body of the card creates an entry (see [Interaction](Interaction.md#creating-entries)).
 - Multi-day entries are horizontal bars across the covered days, between day header and list. Only the days a bar covers make room for it; the lists of the other days keep their place. Overlapping bars stack in lanes, ordered by start date, then the longer bar first, then the order in the file. Bars continuing beyond the week have square ends on that side. A bar shows title and date range. A bar with a tag shows the tag icon before its title; a bar without a tag uses the accent gradient. Clicking a bar opens the entry dialog. Dragging a bar moves it, dragging one of its ends changes its start or end (see [Interaction](Interaction.md#drag-and-drop)).
 
 ## Week, portrait
@@ -89,5 +89,5 @@ A full contact editor with a list on the left and the selected contact on the ri
   - “Note”: full width.
 - Inline fields have no frame; a surface appears on hover and an accent outline on focus. Remove buttons are always visible.
 - “Dates”: an invalid birthday or anniversary date is rejected with a notification and the field returns to its value.
-- “Create new contact” in the **+** menu and `N` create a new contact and focus its first name.
+- “Create new contact” in the **+** menu and `A` create a new contact and focus its first name.
 - Portrait: narrower list, single-column detail, birthday card as a row below the header.

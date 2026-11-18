@@ -165,8 +165,8 @@ Scale: 2, 4, 6, 8, 10, 12, 14, 16, 22 px. Every padding, margin and gap uses a v
 | Contacts | 14px between list and detail; list padding 12px; detail padding 22px |
 | Chips and badges | chips 6px 12px; badges 2px 8px (month 2px 6px, portrait week 4px 8px), at least 20px high, so that icon-only badges match badges with text; their 12px icon sits centered; “+X” 0 6px; 6px between chips |
 | Tooltip | padding 6px 10px |
-| “+” menu | like the context menu, 8px below **+**, left-aligned to it; a file type as code chip (11.5px monospace, 700, `--accent` on `--hover` accent with a `--ring` accent border, radius 5px, padding 1px 5px) |
-| Options menu | like the context menu; the switch 30×18px with a 12px knob, `--accent` when on |
+| “+” menu | as in “Menus”, 8px below **+**, left-aligned to it; a file type as code chip (11.5px monospace, 700, `--accent` on `--hover` accent with a `--ring` accent border, radius 5px, padding 1px 5px) |
+| Options menu | as in “Menus”; the switch 30×18px with a 12px knob, `--accent` when on |
 | Notifications | width 270px, narrower only when the window is, padding 12px 14px, 8px between cards; dot 8px, 10px to the title (13.5px, 700, line height 20px); a title that wraps keeps dot, error code and close button on its first line; body 9px below, after a 1px `--edge` line and 8px, indented 18px, 12.5px in `--muted`; highlighted names italic, 700, `--accent`; controls and shortcut keys as one key-cap style (11.5px, 700, padding 0 3px, radius 4px, 1px `--edge` outline with 2px bottom, no fill); buttons 10px below, right-aligned |
 
 ## Shape

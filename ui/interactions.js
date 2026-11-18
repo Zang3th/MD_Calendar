@@ -49,7 +49,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   function tiles() {
-    return /** @type {HTMLElement[]} */ (Array.from(document.querySelectorAll(".day__list .ev, .bl__list .ev")));
+    return /** @type {HTMLElement[]} */ (Array.from(document.querySelectorAll(":is(.day__list, .bl__list) .ev:not(.drag-preview *)")));
   }
 
   /** Marks the selected tiles again after a render. */
@@ -74,6 +74,22 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const cell = /** @type {HTMLElement | null} */ (element.closest(".day[data-day], .mcell[data-day]"));
     return cell?.dataset.day || "";
   }
+
+  /** The day whose body (below its header, outside tiles and bars) contains `element`. @param {Element} element */
+  function bodyDay(element) {
+    return element.closest(".day__head, .mcell__head, .ev, .bar, button, a, input") ? "" : dayOf(element);
+  }
+
+  /** Set when the current click began with a selection or an open menu or panel; that click only clears or closes it. */
+  let clickClears = false;
+  const floating = ["contextMenu", "optionsMenu", "helpPanel", "holidaysPanel", "occasionsPanel", "searchPanel"].map(id => /** @type {HTMLElement} */ (document.getElementById(id)));
+  // Capture phase: runs before the menus and panels close on this pointerdown.
+  /** Where the last press began, so that a drag preview keeps the grabbed point under the pointer. */
+  let press = { x: 0, y: 0 };
+  document.addEventListener("pointerdown", event => {
+    clickClears = selection.size > 0 || floating.some(element => !element.hidden);
+    press = { x: event.clientX, y: event.clientY };
+  }, true);
 
   /** @type {Record<string, (current: MDCInteractionHandlers) => void>} */
   const buttons = {
@@ -116,9 +132,17 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       return;
     }
     // A click elsewhere in the month shrinks the enlarged cell back (docs/ui/Views.md#month).
-    if (event.target.closest(".month") && !event.target.closest(".mcell.is-expanded")) app.month.collapse();
+    const shrinks = Boolean(event.target.closest(".month") && !event.target.closest(".mcell.is-expanded") && document.querySelector(".mcell.is-expanded"));
+    if (shrinks) app.month.collapse();
     const button = event.target.closest("button");
-    if (!button || button.disabled) return;
+    if (!button) {
+      // A click on the body of a day creates an entry there, unless it only clears the selection, closes a menu or
+      // panel or shrinks the enlarged cell (docs/ui/Interaction.md#pointer).
+      const key = shrinks || clickClears || event.ctrlKey || event.metaKey ? "" : bodyDay(event.target);
+      if (key) current.newEntry(key);
+      return;
+    }
+    if (button.disabled) return;
     if (button.dataset.recent) {
       current.openRecent(button.dataset.recent);
       return;
@@ -153,28 +177,43 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     }
   });
 
-  // Double-clicking free space of a day creates an entry on that day (docs/ui/Interaction.md#creating).
-  document.addEventListener("dblclick", event => {
-    if (!handlers || !(event.target instanceof Element) || event.target.closest(".ev, .bar, button, a, input")) return;
-    const key = dayOf(event.target);
-    if (key) handlers.newEntry(key);
-  });
-
+  // A right-click copies the entry under it, or the whole selection when the entry belongs to it; on free space of a day it pastes
+  // when something is copied. Elsewhere it does nothing and the browser menu stays closed, except in text fields
+  // (docs/ui/Interaction.md#pointer).
   document.addEventListener("contextmenu", event => {
-    const current = handlers;
-    if (!current || !(event.target instanceof Element) || keymap.isEditable(event.target)) return;
-    const tile = /** @type {HTMLElement | null} */ (event.target.closest(".day__list .ev, .bl__list .ev"));
-    const key = dayOf(event.target);
-    if (!tile && !key) return;
+    if (!(event.target instanceof Element) || keymap.isEditable(event.target)) return;
     event.preventDefault();
-    if (tile) current.contextMenu(targets(tile), event.clientX, event.clientY, "");
-    else current.contextMenu([], event.clientX, event.clientY, key);
+    const current = handlers;
+    if (!current || app.dialog.isOpen()) return;
+    const tile = /** @type {HTMLElement | null} */ (event.target.closest(".day__list .ev, .bl__list .ev"));
+    if (tile) {
+      current.copy(targets(tile));
+      return;
+    }
+    const key = event.target.closest(".ev, .bar, button, a") ? "" : dayOf(event.target);
+    if (key && current.hasClipboard()) current.paste(key);
   });
 
+  /** Last pointer position in the window, for the entry under the pointer. @type {{x: number, y: number} | null} */
+  let pointer = null;
   document.addEventListener("pointermove", event => {
+    pointer = { x: event.clientX, y: event.clientY };
     if (event.target instanceof Element) hoveredDay = dayOf(event.target) || hoveredDay;
   }, { passive: true });
   main.addEventListener("pointerleave", () => { hoveredDay = ""; });
+  document.documentElement.addEventListener("pointerleave", () => { pointer = null; });
+
+  /**
+   * The picks a keyboard action applies to: the selection, otherwise the entry under the pointer
+   * (docs/ui/Interaction.md#keyboard-shortcuts). The tile is looked up at the key press, so that it is right
+   * after a re-render or a change of week without a pointer move.
+   */
+  function keyTargets() {
+    if (selection.size) return targets(null);
+    const element = pointer && document.elementFromPoint(pointer.x, pointer.y);
+    const tile = /** @type {HTMLElement | null} */ (element?.closest(".day__list .ev, .bl__list .ev") ?? null);
+    return tile ? [pickOf(tile)] : [];
+  }
 
   // Keyboard shortcuts (docs/ui/Interaction.md#keyboard-shortcuts) with MD_Libs ui/keymap.
   const shortcuts = keymap.create({
@@ -188,26 +227,35 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   shortcuts.bind("mod+shift?+s", () => current().save(), { inEditable: true });
   shortcuts.bind(["mod+shift?+y", "mod+shift+z"], () => current().redo(), { when: free });
   shortcuts.bind("mod+z", () => current().undo(), { when: free });
-  shortcuts.bind("mod+shift?+c", () => current().copy(targets(null)), { when: () => free() && selection.size > 0 });
+  shortcuts.bind("mod+shift?+c", () => current().copy(keyTargets()), { when: () => free() && keyTargets().length > 0 });
+  shortcuts.bind("mod+shift?+x", () => {
+    const picks = keyTargets();
+    clearSelection();
+    current().cut(picks);
+  }, { when: () => inCalendar() && keyTargets().length > 0 });
   shortcuts.bind("mod+shift?+v", () => current().paste(hoveredDay), { when: free });
+  // Ctrl+A selects every entry of the day under the pointer, also those hidden behind “+N” in the month.
   shortcuts.bind("mod+shift?+a", () => {
-    for (const tile of tiles()) if (tile.closest(".main")) selection.add(idOf(pickOf(tile)));
+    for (const pick of current().dayPicks(hoveredDay)) selection.add(idOf(pick));
     refreshSelection();
-  }, { when: inCalendar });
+  }, { when: () => inCalendar() && Boolean(hoveredDay) });
   /** @type {Array<[string, () => void, (() => boolean)?]>} */
   const plainKeys = [
     ["t", () => current().today()],
-    ["n", () => current().newEntry(current().isContactsView() ? undefined : hoveredDay || undefined)],
+    ["a", () => current().newEntry(current().isContactsView() ? undefined : hoveredDay || undefined)],
     ["w", () => current().showView("week")],
     ["m", () => current().showView("month")],
     ["c", () => current().showView("contacts")],
     ["b", () => current().toggleBacklog()],
     ["f", () => current().toggleSearch()],
     ["?", () => current().showHelp()],
-    ["space", () => { if (selection.size) current().toggleMany(targets(null)); }, inCalendar],
+    ["space", () => {
+      const picks = keyTargets();
+      if (picks.length) current().toggleMany(picks);
+    }, inCalendar],
     ["delete", () => {
-      if (!selection.size) return;
-      const picks = targets(null);
+      const picks = keyTargets();
+      if (!picks.length) return;
       clearSelection();
       current().removeMany(picks);
     }, inCalendar],
@@ -225,6 +273,55 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return sortable.position(item, sibling => sibling.classList.contains("ev") && !sibling.classList.contains("ev--series") && !skip.has(/** @type {HTMLElement} */ (sibling)));
   }
 
+  /** The other selected tiles that move along with a dragged selected tile; occurrences stay. @param {HTMLElement} item */
+  function movingAlong(item) {
+    if (!selection.has(idOf(pickOf(item)))) return [];
+    return tiles().filter(tile => tile !== item && selection.has(idOf(pickOf(tile))) && !tile.classList.contains("ev--series"));
+  }
+
+  /** Most tiles a drag preview shows; the rest is summed up as “+N”. */
+  const previewTiles = 5;
+
+  /**
+   * Drag image of a selection: copies of all moving tiles in file order, stacked like a day list (docs/ui/Interaction.md#selection-copy-and-paste).
+   * The copies sit in a bare copy of the dragged tile's day, so that they keep the look of their view.
+   * @param {DataTransfer} transfer @param {HTMLElement} item @param {HTMLElement[]} others
+   */
+  function setPreview(transfer, item, others) {
+    const list = /** @type {HTMLElement} */ (item.parentElement);
+    const cell = /** @type {HTMLElement} */ (list.parentElement);
+    const moving = [item, ...others].sort((left, right) => left.compareDocumentPosition(right) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1);
+    // Selected entries hidden behind “+N” in the month have no tile but move as well.
+    const total = Array.from(selection).filter(id => !id.startsWith("s:")).length;
+    const shown = Math.min(moving.length, previewTiles);
+    // Only the base class of the day: today, past and enlarged states belong to the day, not to the moving entries.
+    const frame = document.createElement(cell.tagName);
+    frame.className = `${cell.classList[0]} drag-preview`;
+    frame.style.width = `${cell.offsetWidth}px`;
+    const copyList = /** @type {HTMLElement} */ (list.cloneNode(false));
+    let grabbed = /** @type {HTMLElement | null} */ (null);
+    for (const tile of moving.slice(0, shown)) {
+      const copy = /** @type {HTMLElement} */ (tile.cloneNode(true));
+      copy.classList.remove("ev--along");
+      if (tile === item) grabbed = copy;
+      copyList.append(copy);
+    }
+    if (total > shown) {
+      const more = document.createElement("span");
+      more.className = "more";
+      more.textContent = `+${total - shown}`;
+      copyList.append(more);
+    }
+    frame.append(copyList);
+    document.body.append(frame);
+    // The grabbed point of the tile stays under the pointer; a tile beyond the shown ones is held at the first copy.
+    const anchor = (grabbed || /** @type {HTMLElement} */ (copyList.firstElementChild)).getBoundingClientRect();
+    const origin = frame.getBoundingClientRect();
+    const bounds = item.getBoundingClientRect();
+    transfer.setDragImage(frame, Math.round(anchor.left - origin.left + press.x - bounds.left), Math.round(anchor.top - origin.top + press.y - bounds.top));
+    window.setTimeout(() => frame.remove(), 0);
+  }
+
   /** Makes the day lists sortable within and between days; occurrences stay in place. @param {HTMLElement[]} lists */
   function bindLists(lists) {
     sortables.forEach(sortable => sortable.destroy());
@@ -237,10 +334,22 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       ghostClass: "ev--ghost",
       dragClass: "ev--drag",
       // While an entry is dragged, the backlog title shows where ungrouped entries can be dropped.
-      onStart() { document.body.classList.add("is-sorting"); },
+      /** @param {DataTransfer} transfer @param {HTMLElement} item */
+      setData(transfer, item) {
+        transfer.setData("Text", item.textContent || "");
+        const others = movingAlong(item);
+        if (others.length) setPreview(transfer, item, others);
+      },
+      /** @param {{item: HTMLElement}} event */
+      onStart(event) {
+        document.body.classList.add("is-sorting");
+        // The other moving tiles fade like the dragged one's placeholder until the drop (docs/ui/Interaction.md#selection-copy-and-paste).
+        for (const tile of movingAlong(event.item)) tile.classList.add("ev--along");
+      },
       /** @param {{from: HTMLElement, to: HTMLElement, item: HTMLElement, oldIndex: number}} event */
       onEnd(event) {
         document.body.classList.remove("is-sorting");
+        for (const tile of document.querySelectorAll(".ev--along")) tile.classList.remove("ev--along");
         const from = place(event.from, Number(event.item.dataset.index));
         const id = idOf({ ref: from, key: from.key });
         const others = selection.has(id) ? tiles().filter(tile => tile !== event.item && selection.has(idOf(pickOf(tile))) && !tile.classList.contains("ev--series")) : [];
