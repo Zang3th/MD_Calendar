@@ -43,17 +43,15 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       const item = format.pattern.exec(line);
       // Entries before the first group are ungrouped.
       if (item && item[2].trim() && (group || hasHeader)) {
-        entry = { done: item[1] !== " ", ...format.text(item[2]), location: "", note: [], extra: [] };
+        // The backlog has no times: a time at the start of the line stays part of the title, so the line is kept as written.
+        const text = format.text(item[2]);
+        const title = text.start ? `${text.start}${text.end ? ` - ${text.end}` : ""} ${text.title}` : text.title;
+        entry = { done: item[1] !== " ", ...text, start: "", end: "", title, location: "", note: [], extra: [] };
         (group ? group.entries : backlog.ungrouped).push(entry);
         extraTarget = entry.extra;
         return;
       }
-      const subItem = format.subItemPattern.exec(line);
-      if (subItem && entry && !entry.extra.length) {
-        if (subItem[1].startsWith(format.locationPrefix) && !entry.location && !entry.note.length) entry.location = subItem[1].slice(format.locationPrefix.length);
-        else entry.note.push(subItem[1]);
-        return;
-      }
+      if (entry && format.subLine(entry, line)) return;
       warnings.push({ lineNumber: index + 1, kind: group ? "unknown-line" : "outside-day", text: line });
       extraTarget.push(line);
     });

@@ -76,8 +76,8 @@ An entry, a recurring entry and a multi-day entry can be turned into each other 
 
 ## Backlog
 
-- The backlog holds entries without a date: same fields as an entry except date and position.
-- It holds **ungrouped** entries and ordered **groups**. Ungrouped entries belong to the backlog itself and come before all groups; they are the untagged entries and the target for quick capture from outside the app. Every group is a tag: the tag decides the group. An entry with a tag that arrives from outside the backlog (dragged from a day, pasted, “To backlog”, created) goes into the group of its tag, created at the end when missing, at the dropped position only when that lies in this group. Inside the backlog, moving an entry into another group gives it that group’s tag, moving it to the ungrouped entries removes its tag, and reordering within a group never changes a tag; an untagged entry dropped into a group takes the group’s tag. Groups are not created by hand: tags come from `Config.md` and the entries.
+- The backlog holds entries without a date: same fields as an entry except date, time and position. An entry that arrives in the backlog (dragged, pasted, moved or created there in the entry dialog) loses its time; scheduling it again sets no time.
+- It holds **ungrouped** entries and ordered **groups**. Ungrouped entries belong to the backlog itself and come before all groups; they are the untagged entries and the target for quick capture from outside the app. Every group is a tag: the tag decides the group. An entry with a tag that arrives from outside the backlog (dragged from a day, pasted, given “Backlog” as its date, created) goes into the group of its tag, created at the end when missing, at the dropped position only when that lies in this group. Inside the backlog, moving an entry into another group gives it that group’s tag, moving it to the ungrouped entries removes its tag, and reordering within a group never changes a tag; an untagged entry dropped into a group takes the group’s tag. Groups are not created by hand: tags come from `Config.md` and the entries.
 - Scheduling a backlog entry **moves** it into a day. An entry can move from a day back into the ungrouped entries or any backlog group.
 - Entries can be reordered and moved between the ungrouped entries and the groups. Groups can be reordered; the ungrouped entries always come first.
 
@@ -93,16 +93,12 @@ An entry, a recurring entry and a multi-day entry can be turned into each other 
 | Field | Rule |
 |---|---|
 | First name, last name | The display name is first name plus last name. A contact without both shows “No name”. |
-| Nickname | Optional. |
 | Birthday | Optional; the year is optional. |
 | Phone numbers | Any number, each with a label (for example Mobile, Home, Work). |
 | Email addresses | Any number, each with a label. |
 | Addresses | Any number, each with a label. |
-| Company, position | Optional. |
-| Groups | Any number of the defined contact groups. |
 | Anniversaries | Any number, each with a label and a date. |
 | Note | Optional free text. |
-| Favorite | Pinned to the top of the contact list. |
 
 - Contacts have no photos; the list and the detail show initials avatars.
 - Phone numbers, email addresses and addresses carry one of the labels Mobile (phone only), Home, Work and Other; a label from a hand-edited file is kept.
@@ -112,7 +108,7 @@ An entry, a recurring entry and a multi-day entry can be turned into each other 
 - They are derived from contacts and are never stored as calendar data.
 - A birthday shows the age the contact turns, if the birth year is known. An anniversary shows the number of years.
 - A birthday or anniversary on 29 February shows on 28 February in years without 29 February.
-- They are shown with the first and last name of the contact, never the nickname.
+- They are shown with the first and last name of the contact.
 - They cannot be checked off.
 
 ## Holidays and school vacations
@@ -160,4 +156,4 @@ An entry, a recurring entry and a multi-day entry can be turned into each other 
 
 - A contact matches an existing one when the name, a phone number or an email address is the same. A match is merged: values the existing contact lacks are added, nothing is overwritten. All other contacts are added.
 - The import is one undoable action; a notification reports how many contacts were added and merged.
-- Export writes vCard 3.0. Labels map to `TYPE` values (Mobile `CELL`, Home `HOME`, Work `WORK`); anniversaries are written as `X-ABDATE` with `X-ABLabel`. Groups and the favorite mark are not exported.
+- Export writes vCard 3.0. Labels map to `TYPE` values (Mobile `CELL`, Home `HOME`, Work `WORK`); anniversaries are written as `X-ABDATE` with `X-ABLabel`.

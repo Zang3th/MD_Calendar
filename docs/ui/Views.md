@@ -82,25 +82,23 @@ A full contact editor with a list on the left and the selected contact on the ri
 
 ### List
 
-- Search field across name, company, email and phone; filters while typing.
-- Filter chips: “All”, “Favorites”, one chip per contact group.
-- Sort: “A–Z” or “Birthday” (next birthday first).
-- Sorted by name: favorites pinned at the top, then sections by initial letter. Sorted by birthday: “Next 30 days”, “Later”, “No birthday”.
-- Row: initials avatar with a color gradient derived from the name, display name, and either an upcoming birthday (“today · turns 32”, “in 7 days”) in `--warm` or company, groups or first phone number. Favorites show a star.
+- Search field across name, email and phone; filters while typing.
+- “Next up” below the search field, above the sort and in every sort: the next three birthdays and anniversaries from today on, soonest first (on the same day birthdays before anniversaries, then by name). Each is a tile tinted like an entry, `--warm` for birthdays and `--heart` for anniversaries, filled on the day itself, with the short weekday and day (“Sat 21”), the name and the details (“today · 30”, “32”, “Wedding · 9”). A click selects the contact. It stays in place while the list scrolls, is hidden while a search is active and when no contact has a date.
+- Sort: “A–Z” or “Birthday”.
+- Sorted by name: sections by initial letter. Sorted by birthday: chronological by day and month from January, one section per month, then “No birthday”. Choosing “Birthday” scrolls the list to the next birthday (with its month heading when it is the first of its month); choosing “A–Z” scrolls to the top. Edits and searches keep the scroll position.
+- Row: initials avatar with a color gradient derived from the name, display name, and a second line. Sorted by name it shows the first phone number and never a birthday. Sorted by birthday it shows the birthday with its year when known, without an icon (“25 November 1989 · turns 37”, “25 November”), in `--warm` for every contact with a birthday.
 - “Import” opens a vCard file; the result is reported in a notification. “Export” saves all contacts as one vCard file.
 - Footer: number of contacts and the file name.
 
 ### Detail
 
-- Header: large avatar; first name, last name, nickname, company and position as inline fields.
-- Actions: “Call” (`tel:`), “Email” (`mailto:`), “Favorite”, “vCard” (export), “Delete”.
-- Birthday card on the right: countdown (“Today!”, “tomorrow”, “in N days”), date and age; highlighted in `--warm` when the birthday is today or within 14 days.
+- Header: large avatar; the name as one inline field. On commit its first word becomes the first name and the rest the last name; an unchanged name keeps its split.
+- Actions below the name, side by side: “vCard” (export) and “Delete”.
 - Section cards in two columns:
   - “Phone”, “Email”, “Addresses”: one row per value with a label button (click cycles through the labels), the value, a direct link (call, mail) or a copy button (address), and a remove button; “Add …” adds a row.
-  - “Dates”: birthday (`DD.MM.YYYY` or `DD.MM.`) with the upcoming age, anniversaries with an editable label and a date.
-  - “Groups”: toggle chips per group and an input to create a new group with Enter.
-  - “Note”: full width.
+  - “Dates”: birthday (`DD.MM.YYYY` or `DD.MM.`) with the upcoming age (“turns 34”) in `--warm` right after the date in the same line, anniversaries with an editable label and a date, without icons. Every row has a remove button; the birthday’s is disabled while there is none.
+  - “Note”: full width, a plain field without a resize handle, as in the entry dialog.
 - Inline fields have no frame; a surface appears on hover and an accent outline on focus. Remove buttons are always visible.
 - “Dates”: an invalid birthday or anniversary date is rejected with a notification and the field returns to its value.
-- “Create new contact” in the **+** menu and `A` create a new contact and focus its first name.
-- Portrait: narrower list, single-column detail, birthday card as a row below the header.
+- “Create new contact” in the **+** menu and `A` create a new contact and focus its name.
+- Portrait: narrower list, single-column detail.

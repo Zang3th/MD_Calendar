@@ -559,7 +559,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     seriesDrag.shown = true;
     suppressClick = true;
     window.setTimeout(() => { suppressClick = false; }, 0);
-    handlers?.notice("Recurring entries can’t be moved", "Edit the series instead.");
+    handlers?.notice("Occurrence not moved", "Edit the series instead.");
   });
   document.addEventListener("pointerup", () => { seriesDrag = null; });
 

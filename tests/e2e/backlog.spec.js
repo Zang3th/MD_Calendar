@@ -128,7 +128,7 @@ test("a tagged entry goes to its tag's group, keys paste at the pointer and a cl
   // A click on free space below a group opens the dialog for a new entry there, with the group's tag preset.
   const work = /** @type {{x: number, y: number, width: number, height: number}} */ (await page.locator('.bl__list[data-group="1"]').boundingBox());
   await page.mouse.click(work.x + 30, work.y + work.height + 6);
-  await expect(page.locator("#dialogTag")).toHaveValue("Work");
+  await expect(page.locator("#dialogTag")).toHaveText("Work");
   await page.keyboard.type("Slides");
   await page.keyboard.press("Enter");
   await expect(page.locator('.bl__list[data-group="1"] .ev__title')).toHaveText(["Report", "Slides"]);

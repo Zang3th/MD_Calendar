@@ -141,7 +141,7 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 
 ## D26 · Multi-day entries in the entry dialog
 
-**Decision:** The entry dialog creates multi-day entries: a small icon next to the date switches to a from–to range. → [Shell](ui/Shell.md#entry-dialog)
+**Decision:** The entry dialog creates multi-day entries: a range of days picked in the calendar of the date popover. → [Shell](ui/Shell.md#entry-dialog)
 **Rejected:** a separate dialog for multi-day entries.
 
 ## D27 · Start card instead of an empty app
@@ -171,10 +171,10 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 
 **Decision:** Dragging a bar moves it with its duration; dragging an end changes start or end. → [Interaction](ui/Interaction.md#drag-and-drop)
 
-## D32 · Tag icon on tiles, bars and in the tag dropdown; holiday overview in the header
+## D32 · Tag icon on tiles, bars and in the tag popover; holiday overview in the header
 
-**Decision:** The tag icon appears on entry tiles, multi-day bars and in the tag dropdown of the entry dialog, where the tags are sorted alphabetically and “No tag” is the default. The holiday overview is a floating panel opened by an icon button in the header with the lists holidays, own vacations and school vacations. → [Views](ui/Views.md), [Shell](ui/Shell.md#entry-dialog)
-**Rejected:** tag chips in the dialog (too wide with many tags); a year calendar of twelve small months; a fourth view in the view switcher.
+**Decision:** The tag icon appears on entry tiles, multi-day bars and in the tag popover of the entry dialog, where the tags are sorted alphabetically and “No tag” is the default. The holiday overview is a floating panel opened by an icon button in the header with the lists holidays, own vacations and school vacations. → [Views](ui/Views.md), [Shell](ui/Shell.md#entry-dialog)
+**Rejected:** tag chips in the dialog itself (too wide with many tags; they live in the tag popover); a year calendar of twelve small months; a fourth view in the view switcher.
 
 ## D33 · Birthdays on 29 February show on 28 February
 
@@ -188,7 +188,7 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 
 ## D35 · No contact photos; badges with first and last name
 
-**Decision:** Contacts have initials avatars only. Birthday and anniversary badges show first and last name, never the nickname. → [Domain](Domain.md#contact)
+**Decision:** Contacts have initials avatars only. Birthday and anniversary badges show first and last name. → [Domain](Domain.md#contact)
 
 ## D36 · Vacations are entries with the tag “Vacation”
 
@@ -291,6 +291,24 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 **Decision:** A change and its reversal leave no undo steps, and repeated edits of one contact field are one step. The history compares a fingerprint of the written files after every action and drops the steps back to an equal earlier state; contact field edits carry a coalesce key. Both live in MD_Libs `core/history` as options. → [Architecture](Architecture.md#undo-history)
 **Reasons:** clicking done and undone or cycling a phone label grew the undo history and the unsaved count without any change; fixing each operation on its own would miss the next one, while comparing states catches every such cycle.
 **Rejected:** per-operation checks (toggle twice, move back); counting changed lines instead of steps (no undo steps would be removed).
+
+## D54 · A lean entry dialog
+
+**Decision:** The entry dialog shows the title and one strip of tokens (date, time, repeat, tag, location, note) ending in Apply. Unset tokens are icons; each token opens a popover of one common width with ready choices, for the time four scroll wheels (start and end, hour and minute). `Tab` walks the tokens and keeps each popover's value; `Enter` applies from everywhere. Several days are a range picked in the date's calendar, the backlog is a choice of the date, tags appear only in their popover, past locations are offered, and the note has room for five lines. There is no heading, no close button and no key icon on Apply. → [Shell](ui/Shell.md#entry-dialog)
+**Reasons:** most entries need only a title and the preselected date; everything else was always visible and cost space and attention. Ready choices and a typed field make the common cases one click or one line of typing.
+**Rejected:** labeled fields for everything (the previous dialog); natural-language parsing of the title (a second way to the same result, for now); a calendar always open in the dialog; all tags visible at once; a 24-hour clock dial for the time (below the visual standard, and a 24-hour dial does not match how people think of the time of day), a day timeline, hour chips, a duration ring and rolling digits (the other mockups).
+
+## D55 · Lean contacts
+
+**Decision:** Contacts have no groups, no favorites, no nickname, company or position. The list has no filter chips; the detail shows the name as one field and only “vCard” and “Delete” below it. The birthday order is chronological through the year and scrolls to the next birthday. Files of earlier versions are read and the dropped blocks disappear on the next save. → [Domain](Domain.md#contact), [DataFormat](DataFormat.md#contacts), [Views](ui/Views.md#contacts)
+**Reasons:** the contact book is streamlined to what it is mainly for, names, ways to reach someone and the dates behind birthdays and anniversaries; the extra fields, filters and actions cost space and attention.
+**Rejected:** keeping the data in the file while hiding it in the UI.
+
+## D56 · Next up in the contact list
+
+**Decision:** The contact list shows the next three birthdays and anniversaries as tiles above the sort, in every sort, and hides them while searching. → [Views](ui/Views.md#list)
+**Reasons:** the contact book is mainly the source of these dates; what comes next is visible at once without switching to the birthday order.
+**Rejected:** a year strip over the list and detail (more room for little information); next-up chips (less readable than tiles in the style of entries); a strip across list and detail.
 
 ## Research notes
 

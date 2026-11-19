@@ -30,8 +30,9 @@ Keyboard navigation of controls is not supported, so keyboard focus is never sho
 | `Ctrl+S` | Save |
 | `Ctrl+Z` | Undo |
 | `Ctrl+Y`, `Ctrl+Shift+Z` | Redo |
-| `Esc` | Close the picker, dialog, menu, panel or focus card; otherwise clear the selection and shrink an enlarged month cell |
-| `Enter` | Confirm the dialog; in an inline field, finish editing |
+| `Esc` | Close the popover of the entry dialog, the dialog, a menu, panel or focus card; otherwise clear the selection and shrink an enlarged month cell |
+| `Tab` | In the entry dialog: open the next token's popover and keep what the current one holds |
+| `Enter` | Apply the entry dialog, also from one of its popovers (`Shift+Enter`: new line of the note); in an inline field, finish editing |
 
 The arrows, `Space`, `Del`, `Ctrl+A` and `Ctrl+X` do nothing in the contacts view. While the [focus card](Views.md#focus-mode) is open, `W`, `M`, `C`, `B`, `F` and `T` do nothing; `A`, `Ctrl+V` and a right-click on its free space use the focused day, and the actions on entries work on its entries. The help (see [Shell](Shell.md#help)) lists all shortcuts and pointer gestures.
 
@@ -57,7 +58,7 @@ A click on free space clears the selection; when a selection existed, a menu or 
 ## Creating entries
 
 - “Create new entry” in the **+** menu, `A` and a click on the body of a day open the entry dialog for a new entry (preselected date in [Shell](Shell.md#entry-dialog)).
-- New backlog entries are created with “To backlog” in the dialog.
+- New backlog entries are created with a click on free space of the backlog panel, with `A` over it, or by choosing “Backlog” as the date in the dialog.
 
 ## Selection, copy and paste
 

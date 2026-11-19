@@ -37,14 +37,13 @@
 
 - [x] ~Docs + README aktualisieren~
 
-#Pin
 ## Dummy-Daten
 
 #Version
 - 0.7.0
 
 #Date
-- 16.11.2026 - TBD
+- 16.11.2026 - 19.11.2026
 
 ### Allgemeines
 
@@ -59,14 +58,14 @@
 - [x] ~Controls reparieren~
 - [x] ~Single-Left-Click: New ToDo~
 
-### Kontake
+### Kontakte
 
 - [x] ~Jeder Tag-Wechsel bspw. bei Telefonnummer erzeugt einen Save-State?~
-- [ ] Grundsätzlich überarbeiten
+- [x] ~Grundsätzlich überarbeiten~
 
 ### Neu-Dialog
 
-- [ ] Grundsätzlich überarbeiten
+- [x] ~Grundsätzlich überarbeiten~
 
 ### Startseite
 
@@ -112,17 +111,17 @@
 
 ### Release
 
-- [ ] Dummy-Daten verschieben
-- [ ] Screenshots erneuern
-- [ ] Docs + README aktualisieren
+- [x] ~Screenshots erneuern~
+- [x] ~Docs + README aktualisieren~
 
+#Pin
 ## Umstieg und Nutzung
 
 #Version
 - 0.8.0
 
 #Date
-- TBD
+- 23.11.2026 - TBD
 
 #Info
 Ab hier ersetzt MD_Calendar den Google-Kalender als Daily-Driver.
@@ -130,7 +129,7 @@ Ab hier ersetzt MD_Calendar den Google-Kalender als Daily-Driver.
 ### Umstieg
 
 - [x] ~Ordner ins NAS-Backup aufnehmen~
-- [ ] Stichtag festlegen
+- [ ] Stichtag festlegen => 23.11.2026
 - [ ] Kalenderdaten exportieren
 - [ ] Kalender: Januar, Februar und März discarden
 - [ ] Kalender: Einträge neutralisieren, einordnen und taggen
@@ -140,12 +139,16 @@ Ab hier ersetzt MD_Calendar den Google-Kalender als Daily-Driver.
 
 - [ ] Feature ausarbeiten
 
+### Kontakte
+
 ### Bugs und Verbesserungen
 
 - [ ] Farben für die Tags finalisieren
+- [ ] Highlight-Animation verbessern
 
 ### Release
 
+- [ ] Dummy-Daten verschieben
 - [ ] Docs + README aktualisieren
 
 ## Mobile

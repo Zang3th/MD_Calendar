@@ -1,7 +1,7 @@
 
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
-// Contacts view: list with search, filters and sort on the left, inline editor on the right (docs/ui/Views.md#contacts).
+// Contacts view: list with search and sort on the left, inline editor on the right (docs/ui/Views.md#contacts).
 (function (app) {
   const board = /** @type {HTMLElement} */ (document.getElementById("contacts"));
   /** Labels of the data format, shown as they are; a click on a label cycles through them. */
@@ -12,10 +12,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   /** @type {{contacts: MDCContacts, selected: number, today: string} | null} */
   let shown = null;
   let query = "";
-  /** "all", "fav" or a group name */
-  let filter = "all";
   /** @type {"name" | "birthday"} */
   let sort = "name";
+  /** Index of the contact with the next birthday in the birthday order, -1 when none. */
+  let nextContact = -1;
   let built = false;
 
   const escape = (/** @type {string} */ value) => app.tiles.escape(value);
@@ -28,12 +28,12 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   /** @param {MDCContact} contact */
   function initials(contact) {
-    return ((contact.firstName[0] || "") + (contact.lastName[0] || "")).toUpperCase() || (contact.nickname[0] || "?").toUpperCase();
+    return ((contact.firstName[0] || "") + (contact.lastName[0] || "")).toUpperCase() || "?";
   }
 
   /** @param {MDCContact} contact */
   function shownName(contact) {
-    return app.contacts.name(contact) || contact.nickname || "No name";
+    return app.contacts.name(contact) || "No name";
   }
 
   /** @param {MDCContact} contact @param {"sm" | "lg"} size */
@@ -41,62 +41,67 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return `<span class="cx-av cx-av--${size}" style="--h:${hue(shownName(contact))}" aria-hidden="true">${escape(initials(contact))}</span>`;
   }
 
-  /** @param {number} days */
-  function when(days) {
-    return days === 0 ? "today" : days === 1 ? "tomorrow" : `in ${days} days`;
-  }
-
-  /** @param {MDCContact} contact */
-  function matchesFilter(contact) {
-    if (filter === "fav") return contact.favorite;
-    if (filter !== "all") return contact.groups.includes(filter);
-    return true;
-  }
 
   /** @param {MDCContact} contact @param {number} index @param {string} today */
   function row(contact, index, today) {
-    const next = app.contacts.nextBirthday(contact, today);
-    const soon = next && (sort === "birthday" || next.days <= 14);
-    const sub = soon && next
-      ? `<span class="cx-row__soon">${icon("gift")}${when(next.days)}${next.age !== null ? ` · turns ${next.age}` : ""}</span>`
-      : escape(contact.company || contact.groups.join(", ") || contact.phones[0]?.value || "");
+    // Sorted by birthday the second line is the birthday, sorted by name the first phone number.
+    const next = sort === "birthday" ? app.contacts.nextBirthday(contact, today) : null;
+    const birthday = contact.birthday.startsWith("--") ? app.calendar.formatDay(`2000${contact.birthday.slice(1)}`, "D MMMM") : contact.birthday && app.calendar.formatDay(contact.birthday, "D MMMM YYYY");
+    const sub = next
+      ? `<span class="cx-row__soon">${birthday}${next.age !== null ? ` · turns ${next.age}` : ""}</span>`
+      : escape(contact.phones[0]?.value || "");
     return `<button class="cx-row${shown && index === shown.selected ? " is-sel" : ""}" type="button" data-contact="${index}">` +
-      `${avatar(contact, "sm")}<span class="cx-row__main"><b>${escape(shownName(contact))}</b><small>${sub}</small></span>` +
-      `${contact.favorite ? `<span class="cx-row__fav" aria-label="Favorite">${icon("star")}</span>` : ""}</button>`;
+      `${avatar(contact, "sm")}<span class="cx-row__main"><b>${escape(shownName(contact))}</b><small>${sub}</small></span></button>`;
+  }
+
+  /** The next three birthdays and anniversaries above the list, in every sort (docs/ui/Views.md#list). @param {MDCContacts} contacts @param {string} today */
+  function nextUp(contacts, today) {
+    const items = app.contacts.upcoming(contacts, today, 3);
+    if (!items.length) return "";
+    return `<div class="cx-sec-h">Next up</div>` + items.map(item => {
+      const label = item.kind === "anniversary" ? item.label || "Anniversary" : "";
+      const detail = [item.days === 0 ? "today" : "", label, item.years === null ? "" : String(item.years)].filter(Boolean).join(" · ");
+      return `<button class="cx-next__tile${item.kind === "anniversary" ? " cx-next__tile--anniversary" : ""}${item.days === 0 ? " is-today" : ""}" type="button" data-contact="${item.index}">` +
+        `<b class="cx-next__day">${app.calendar.formatDay(item.date, "dd D")}</b><span class="cx-next__name">${escape(shownName(contacts.contacts[item.index]))}</span>` +
+        `<small class="cx-next__detail">${escape(detail)}</small></button>`;
+    }).join("");
   }
 
   /** @param {MDCContacts} contacts @param {string} today */
   function rows(contacts, today) {
+    nextContact = -1;
     const list = contacts.contacts.map((contact, index) => ({ contact, index }))
-      .filter(item => matchesFilter(item.contact) && app.contacts.matches(item.contact, query));
+      .filter(item => app.contacts.matches(item.contact, query));
     if (!list.length) return `<div class="cx-empty">${contacts.contacts.length ? `No results${query ? ` for “${escape(query)}”` : ""}` : "No contacts yet."}</div>`;
     const section = (/** @type {string} */ title, /** @type {typeof list} */ items) =>
       items.length ? `<div class="cx-sec-h">${escape(title)}</div>${items.map(item => row(item.contact, item.index, today)).join("")}` : "";
     if (sort === "birthday") {
+      // Chronological from January; the contact whose birthday comes next is the scroll target.
       const withBirthday = list.filter(item => item.contact.birthday)
-        .map(item => ({ ...item, days: app.contacts.nextBirthday(item.contact, today)?.days ?? 0 }))
-        .sort((left, right) => left.days - right.days);
-      return section("Next 30 days", withBirthday.filter(item => item.days <= 30)) + section("Later", withBirthday.filter(item => item.days > 30)) +
+        .sort((left, right) => left.contact.birthday.slice(-5).localeCompare(right.contact.birthday.slice(-5)) ||
+          app.contacts.sortName(left.contact).localeCompare(app.contacts.sortName(right.contact), "en"));
+      let soonest = Infinity;
+      for (const item of withBirthday) {
+        const days = app.contacts.nextBirthday(item.contact, today)?.days ?? Infinity;
+        if (days < soonest) [soonest, nextContact] = [days, item.index];
+      }
+      /** @type {Map<string, typeof list>} */
+      const months = new Map();
+      for (const item of withBirthday) {
+        const month = item.contact.birthday.slice(-5, -3);
+        months.set(month, [...(months.get(month) || []), item]);
+      }
+      return Array.from(months, ([month, items]) => section(app.calendar.formatDay(`2000-${month}-01`, "MMMM"), items)).join("") +
         section("No birthday", list.filter(item => !item.contact.birthday));
     }
     const byName = [...list].sort((left, right) => app.contacts.sortName(left.contact).localeCompare(app.contacts.sortName(right.contact), "en"));
-    const pinned = filter === "fav" ? [] : byName.filter(item => item.contact.favorite);
     /** @type {Map<string, typeof list>} */
     const letters = new Map();
     for (const item of byName) {
-      if (pinned.includes(item)) continue;
       const letter = (app.contacts.sortName(item.contact)[0] || "#").toUpperCase();
       letters.set(letter, [...(letters.get(letter) || []), item]);
     }
-    return section("Favorites", pinned) + Array.from(letters, ([letter, items]) => section(letter, items)).join("");
-  }
-
-  /** @param {MDCContacts} contacts */
-  function filters(contacts) {
-    const chips = [["all", "All"], ["fav", "Favorites"], ...contacts.groups.map(group => [group, group])];
-    if (!chips.some(([value]) => value === filter)) filter = "all";
-    return chips.map(([value, label]) => `<button class="cx-chip" type="button" data-filter="${escape(value)}" aria-pressed="${value === filter}">` +
-      `${value === "fav" ? icon("star") : ""}${escape(label)}</button>`).join("");
+    return Array.from(letters, ([letter, items]) => section(letter, items)).join("");
   }
 
   /** @param {keyof typeof labelCycles} kind @param {MDCContact} contact */
@@ -118,48 +123,35 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const contact = contacts.contacts[selected];
     if (!contact) return `<section class="cx-detail cx-detail--empty"><p>${contacts.contacts.length ? "No contact selected." : "Create the first contact with + or import a vCard."}</p></section>`;
     const next = app.contacts.nextBirthday(contact, today);
-    const phone = contact.phones.find(item => item.value);
-    const mail = contact.emails.find(item => item.value);
-    const card = next
-      ? `<div class="cx-bcard${next.days === 0 ? " is-today" : next.days <= 14 ? " is-soon" : ""}"><span class="cx-bcard__icon">${icon("gift")}</span>` +
-        `<b>${next.days === 0 ? "Today!" : when(next.days)}</b><span>${app.calendar.formatDay(next.date, "D MMMM")}${next.age !== null ? ` · turns ${next.age}` : ""}</span></div>`
-      : `<div class="cx-bcard cx-bcard--none"><span class="cx-bcard__icon">${icon("gift")}</span><span>No birthday</span></div>`;
     const field = (/** @type {string} */ key, /** @type {string} */ value, /** @type {string} */ placeholder, /** @type {string} */ classes) =>
       `<input class="cx-in ${classes}" data-key="${key}" value="${escape(value)}" placeholder="${placeholder}" aria-label="${placeholder}" autocomplete="off">`;
     return `<section class="cx-detail" aria-label="${escape(shownName(contact))}">` +
       `<header class="cx-hero">${avatar(contact, "lg")}<div class="cx-hero__text">` +
-      `<div class="cx-names">${field("firstName", contact.firstName, "First name", "cx-in--name")}${field("lastName", contact.lastName, "Last name", "cx-in--name")}</div>` +
-      `<div class="cx-subline">${field("nickname", contact.nickname, "Nickname", "cx-in--sub")}<span class="cx-subline__icon">${icon("building")}</span>` +
-      `${field("company", contact.company, "Company", "cx-in--sub")}${field("position", contact.position, "Position", "cx-in--sub")}</div>` +
+      `${field("name", app.contacts.name(contact), "Name", "cx-in--name")}` +
       `<div class="cx-actions">` +
-      (phone ? `<a class="cx-act" href="tel:${escape(phone.value.replace(/[^\d+]/g, ""))}">${icon("phone")}Call</a>` : "") +
-      (mail ? `<a class="cx-act" href="mailto:${escape(mail.value)}">${icon("mail")}Email</a>` : "") +
-      `<button class="cx-act${contact.favorite ? " is-fav" : ""}" type="button" data-action="favorite" aria-pressed="${contact.favorite}">${icon("star")}Favorite</button>` +
-      `<button class="cx-act" type="button" data-action="export">${icon("download")}vCard</button><span class="cx-grow"></span>` +
-      `<button class="cx-act cx-act--danger" type="button" data-action="delete">${icon("trash")}Delete</button></div></div>${card}</header>` +
+      `<button class="cx-act" type="button" data-action="export">${icon("download")}vCard</button>` +
+      `<button class="cx-act cx-act--danger" type="button" data-action="delete">${icon("trash")}Delete</button></div></div></header>` +
       `<div class="cx-grid">` +
       `<section class="cx-sec"><h3>${icon("phone")}Phone</h3>${labelledRows("phones", contact)}</section>` +
       `<section class="cx-sec"><h3>${icon("mail")}Email</h3>${labelledRows("emails", contact)}</section>` +
       `<section class="cx-sec"><h3>${icon("pin")}Addresses</h3>${labelledRows("addresses", contact)}</section>` +
       `<section class="cx-sec"><h3>${icon("gift")}Dates</h3><div class="cx-field"><span class="cx-label cx-label--fixed">Birthday</span>` +
-      `${field("birthday", contact.birthday ? app.contactsFormat.formatBirthday(contact.birthday) : "", "DD.MM.YYYY or DD.MM.", "")}` +
-      `<span class="cx-hint">${next?.age !== null && next ? `turns ${next.age}` : ""}</span><span></span></div>` +
+      `<span class="cx-date">${field("birthday", contact.birthday ? app.contactsFormat.formatBirthday(contact.birthday) : "", "DD.MM.YYYY or DD.MM.", "")}` +
+      `${next && next.age !== null ? `<span class="cx-turns">turns ${next.age}</span>` : ""}</span><span></span>` +
+      `<button class="cx-x" type="button" data-remove="birthday" aria-label="Remove birthday"${contact.birthday ? "" : " disabled"}>${icon("close")}</button></div>` +
       contact.anniversaries.map((item, index) => `<div class="cx-field">` +
         `<input class="cx-label cx-label--input" data-key="anniversaryLabel:${index}" value="${escape(item.label)}" placeholder="Anniversary" aria-label="Anniversary label" autocomplete="off">` +
-        `${field(`anniversaryDate:${index}`, app.calendar.formatDate(item.date), "DD.MM.YYYY", "")}<span class="cx-hint">${icon("heart")}</span>` +
+        `${field(`anniversaryDate:${index}`, app.calendar.formatDate(item.date), "DD.MM.YYYY", "")}<span></span>` +
         `<button class="cx-x" type="button" data-remove="anniversaries:${index}" aria-label="Remove anniversary">${icon("close")}</button></div>`).join("") +
       `<button class="cx-add" type="button" data-add="anniversaries">${icon("plus")}Add anniversary</button></section>` +
-      `<section class="cx-sec"><h3>${icon("contacts")}Groups</h3><div class="cx-groups">` +
-      contacts.groups.map(group => `<button class="cx-chip" type="button" data-group="${escape(group)}" aria-pressed="${contact.groups.includes(group)}">${escape(group)}</button>`).join("") +
-      `<input class="cx-newgroup" data-key="newGroup" placeholder="+ New group" aria-label="New group" autocomplete="off"></div></section>` +
       `<section class="cx-sec cx-sec--wide"><h3>${icon("note")}Note</h3><textarea class="cx-in cx-in--note" data-key="note" placeholder="Notes …" aria-label="Note">${escape(contact.note.join("\n"))}</textarea></section>` +
       `</div></section>`;
   }
 
   function build() {
     board.innerHTML = `<aside class="cx-list" aria-label="Contact list">` +
-      `<label class="cx-search">${icon("search")}<input id="contactsQuery" placeholder="Name, company, email, phone …" aria-label="Search contacts" autocomplete="off"></label>` +
-      `<div class="cx-filters" id="contactsFilters" role="group" aria-label="Filter"></div>` +
+      `<label class="cx-search">${icon("search")}<input id="contactsQuery" placeholder="Name, email, phone …" aria-label="Search contacts" autocomplete="off"></label>` +
+      `<div class="cx-next" id="contactsNext" role="group" aria-label="Next up" hidden></div>` +
       `<div class="cx-bar"><div class="cx-sort" role="group" aria-label="Sort"><button type="button" data-sort="name" aria-pressed="true">A–Z</button>` +
       `<button type="button" data-sort="birthday" aria-pressed="false">${icon("gift")}Birthday</button></div>` +
       `<span class="cx-tools"><label class="cx-import">${icon("upload")}Import<input type="file" id="contactsImport" accept=".vcf,text/vcard" hidden></label>` +
@@ -172,20 +164,23 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   function render(contacts, selected, today) {
     if (!built) build();
     const active = document.activeElement instanceof HTMLElement && board.contains(document.activeElement) ? document.activeElement : null;
-    const key = active?.dataset.key;
+    // Fields are found again by their key, buttons such as “vCard” by their action, so that Tab keeps working.
+    const anchor = active?.dataset.key ? `[data-key="${CSS.escape(active.dataset.key)}"]` : active?.dataset.action ? `[data-action="${CSS.escape(active.dataset.action)}"]` : "";
     const selection = active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement ? [active.selectionStart, active.selectionEnd] : null;
     const scroll = /** @type {HTMLElement | null} */ (board.querySelector(".cx-detail"))?.scrollTop || 0;
     const sameContact = shown?.selected === selected && shown.contacts === contacts;
     shown = { contacts, selected, today };
-    /** @type {HTMLElement} */ (board.querySelector("#contactsFilters")).innerHTML = filters(contacts);
     for (const button of board.querySelectorAll("[data-sort]")) button.setAttribute("aria-pressed", String(/** @type {HTMLElement} */ (button).dataset.sort === sort));
+    const next = /** @type {HTMLElement} */ (board.querySelector("#contactsNext"));
+    next.innerHTML = nextUp(contacts, today);
+    next.hidden = Boolean(query) || !next.childElementCount;
     /** @type {HTMLElement} */ (board.querySelector("#contactsRows")).innerHTML = rows(contacts, today);
     /** @type {HTMLElement} */ (board.querySelector("#contactsCount")).textContent = `${contacts.contacts.length} contact${contacts.contacts.length === 1 ? "" : "s"} · Contacts.md`;
     /** @type {HTMLElement} */ (board.querySelector("#contactsDetail")).innerHTML = detail(contacts, selected, today);
     const detailElement = /** @type {HTMLElement | null} */ (board.querySelector(".cx-detail"));
     if (detailElement && sameContact) detailElement.scrollTop = scroll;
-    if (key && sameContact) {
-      const target = /** @type {HTMLInputElement | null} */ (board.querySelector(`[data-key="${CSS.escape(key)}"]`));
+    if (anchor && sameContact) {
+      const target = /** @type {HTMLInputElement | null} */ (board.querySelector(anchor));
       if (target) {
         target.focus({ preventScroll: true });
         if (selection) try { target.setSelectionRange(selection[0], selection[1]); } catch { /* Not a text field. */ }
@@ -194,7 +189,17 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     board.hidden = false;
   }
 
-  /** Focuses a field of the detail, for example the first name of a new contact. @param {string} key */
+  /** Scrolls the birthday order to the next birthday, its month heading included when it opens the month. */
+  function scrollToNext() {
+    const container = /** @type {HTMLElement} */ (board.querySelector("#contactsRows"));
+    const row = container.querySelector(`.cx-row[data-contact="${nextContact}"]`);
+    if (!row) return;
+    const target = row.previousElementSibling?.classList.contains("cx-sec-h") ? row.previousElementSibling : row;
+    const top = target.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop;
+    container.scrollTop = top;
+  }
+
+  /** Focuses a field of the detail, for example the name of a new contact. @param {string} key */
   function focusField(key) {
     const target = /** @type {HTMLInputElement | null} */ (board.querySelector(`[data-key="${CSS.escape(key)}"]`));
     target?.focus();
@@ -211,9 +216,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return contact ? /** @type {MDCContact} */ (JSON.parse(JSON.stringify(contact))) : null;
   }
 
-  /** @param {MDCContact} updated @param {string[]} [groups] @param {string} [field] the edited field, for one undo step per field */
-  function commit(updated, groups, field) {
-    if (shown && handlers) handlers.update(shown.selected, updated, groups, field);
+  /** @param {MDCContact} updated @param {string} [field] the edited field, for one undo step per field */
+  function commit(updated, field) {
+    if (shown && handlers) handlers.update(shown.selected, updated, field);
   }
 
   /** Applies a changed field; invalid dates are rejected and the field returns to its value. @param {string} key @param {string} value */
@@ -240,10 +245,16 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     } else if (name === "anniversaryLabel") contact.anniversaries[index].label = trimmed;
     else if (name === "note") contact.note = value.split(/\r?\n/).map(line => line.trimEnd());
     else if (name === "phones" || name === "emails" || name === "addresses") contact[name][index].value = trimmed;
-    else if (name === "firstName" || name === "lastName" || name === "nickname" || name === "company" || name === "position") contact[name] = trimmed;
+    else if (name === "name") {
+      // One field for the name: first word first name, rest last name (docs/ui/Views.md#detail).
+      const words = trimmed.split(/\s+/).filter(Boolean);
+      if (words.join(" ") === app.contacts.name(contact)) return;
+      contact.firstName = words[0] || "";
+      contact.lastName = words.slice(1).join(" ");
+    }
     else return;
     while (contact.note.length && !contact.note[contact.note.length - 1]) contact.note.pop();
-    commit(contact, undefined, key);
+    commit(contact, key);
   }
 
   board.addEventListener("click", event => {
@@ -252,12 +263,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     if (!element || !shown || !handlers) return;
     const data = element.dataset;
     if (data.contact !== undefined) handlers.select(Number(data.contact));
-    else if (data.filter !== undefined) {
-      filter = data.filter;
-      render(shown.contacts, shown.selected, shown.today);
-    } else if (data.sort) {
+    else if (data.sort) {
       sort = data.sort === "birthday" ? "birthday" : "name";
       render(shown.contacts, shown.selected, shown.today);
+      if (sort === "birthday") scrollToNext();
+      else /** @type {HTMLElement} */ (board.querySelector("#contactsRows")).scrollTop = 0;
     } else if (data.action === "exportAll") handlers.exportAll();
     else if (data.action === "delete") handlers.remove(shown.selected);
     else if (data.action === "export") handlers.exportOne(shown.selected);
@@ -265,14 +275,12 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     else {
       const contact = current();
       if (!contact) return;
-      if (data.action === "favorite") contact.favorite = !contact.favorite;
-      else if (data.group !== undefined) contact.groups = contact.groups.includes(data.group) ? contact.groups.filter(group => group !== data.group) : [...contact.groups, data.group];
-      else if (data.cycle) {
+      if (data.cycle) {
         const [kind, index] = data.cycle.split(":");
         const cycle = labelCycles[/** @type {keyof typeof labelCycles} */ (kind)];
         const item = contact[/** @type {keyof typeof labelCycles} */ (kind)][Number(index)];
         item.label = cycle[(cycle.indexOf(item.label) + 1) % cycle.length];
-        commit(contact, undefined, `label:${data.cycle}`);
+        commit(contact, `label:${data.cycle}`);
         return;
       } else if (data.add) {
         const kind = /** @type {keyof typeof labelCycles | "anniversaries"} */ (data.add);
@@ -283,7 +291,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         return;
       } else if (data.remove) {
         const [kind, index] = data.remove.split(":");
-        contact[/** @type {keyof typeof labelCycles | "anniversaries"} */ (kind)].splice(Number(index), 1);
+        if (kind === "birthday") contact.birthday = "";
+        else contact[/** @type {keyof typeof labelCycles | "anniversaries"} */ (kind)].splice(Number(index), 1);
       } else return;
       commit(contact);
     }
@@ -297,7 +306,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       if (file && handlers) void file.text().then(text => handlers?.importText(text, file.name));
       return;
     }
-    if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) || !target.dataset.key || target.dataset.key === "newGroup") return;
+    if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) || !target.dataset.key) return;
     const key = target.dataset.key;
     const value = target.value;
     // Commit after the focus has moved on, so that the re-render restores the next field (docs/ui/Interaction.md#editing).
@@ -307,17 +316,14 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   board.addEventListener("input", event => {
     if (!(event.target instanceof HTMLInputElement) || event.target.id !== "contactsQuery" || !shown) return;
     query = event.target.value;
+    const next = /** @type {HTMLElement} */ (board.querySelector("#contactsNext"));
+    next.hidden = Boolean(query) || !next.childElementCount;
     /** @type {HTMLElement} */ (board.querySelector("#contactsRows")).innerHTML = rows(shown.contacts, shown.today);
   });
 
   board.addEventListener("keydown", event => {
     const target = event.target;
     if (!(target instanceof HTMLInputElement) || event.key !== "Enter") return;
-    if (target.dataset.key === "newGroup") {
-      const group = target.value.trim();
-      if (group && shown && handlers) handlers.addGroup(shown.selected, group);
-      return;
-    }
     if (target.dataset.key) target.blur();
   });
 

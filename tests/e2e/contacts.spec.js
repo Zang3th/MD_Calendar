@@ -1,6 +1,6 @@
 const { test, expect } = require("./fixtures");
 
-const contacts = "# Contacts\n\n## Groups\n- Friends\n\n## Contacts\n\n### Max Example\n#FirstName\n- Max\n#LastName\n- Example\n#Birthday\n- 12.11.1990\n";
+const contacts = "# Contacts\n\n## Contacts\n\n### Max Example\n#FirstName\n- Max\n#LastName\n- Example\n#Birthday\n- 12.11.1990\n";
 
 test("contacts are edited inline with undo, focus moves on, and saving writes Contacts.md", async ({ page, calendar }) => {
   await calendar.openApp({ "Contacts.md": contacts });
@@ -10,15 +10,14 @@ test("contacts are edited inline with undo, focus moves on, and saving writes Co
   await badge.click();
   await page.locator("#occasionsPanel .occ__row", { hasText: "Max Example" }).click();
   await expect(page.locator("#contacts")).toBeVisible();
-  await expect(page.locator('[data-key="firstName"]')).toHaveValue("Max");
+  await expect(page.locator('[data-key="name"]')).toHaveValue("Max Example");
 
-  await page.locator('[data-key="nickname"]').fill("Maxi");
+  await page.locator('[data-key="name"]').fill("Maxi  Muster ");
   await page.keyboard.press("Tab");
-  await expect(page.locator('[data-key="company"]')).toBeFocused();
+  await expect(page.locator('[data-action="export"]')).toBeFocused();
   await expect(page.locator("#save .save__count")).toHaveText("1");
+  await expect(page.locator('[data-key="name"]')).toHaveValue("Maxi Muster");
 
-  await page.locator('[data-key="company"]').fill("ACME");
-  await page.keyboard.press("Enter");
   await page.locator('[data-add="phones"]').click();
   await expect(page.locator('[data-key="phones:0"]')).toBeFocused();
   await page.keyboard.type("+49 170 1");
@@ -34,8 +33,8 @@ test("contacts are edited inline with undo, focus moves on, and saving writes Co
   await page.keyboard.press("Control+y");
   await page.keyboard.press("Control+s");
   await expect(page.locator("#save")).not.toHaveClass(/is-dirty/);
-  expect(await calendar.readFile("Contacts.md")).toBe("# Contacts\n\n## Groups\n- Friends\n\n## Contacts\n\n### Max Example\n#FirstName\n- Max\n#LastName\n- Example\n" +
-    "#Nickname\n- Maxi\n#Birthday\n- 12.11.1990\n#Phone\n- Mobile: +49 170 1\n#Company\n- ACME\n");
+  expect(await calendar.readFile("Contacts.md")).toBe("# Contacts\n\n## Contacts\n\n### Maxi Muster\n#FirstName\n- Maxi\n#LastName\n- Muster\n" +
+    "#Birthday\n- 12.11.1990\n#Phone\n- Mobile: +49 170 1\n");
 });
 
 test("a vCard import merges a duplicate and adds a new contact as one undoable step", async ({ page, calendar }) => {
@@ -75,7 +74,7 @@ test("day badges: written out while they fit, otherwise one icon badge per kind;
   await expect(page.locator("#occasionsPanel .occ__title")).toHaveText("2 birthdays");
   await expect(page.locator("#occasionsPanel .occ__row")).toHaveText(["Lenaturns 32", "Maxturns 36"]);
   await page.locator("#occasionsPanel .occ__row", { hasText: "Max" }).click();
-  await expect(page.locator('[data-key="firstName"]')).toHaveValue("Max");
+  await expect(page.locator('[data-key="name"]')).toHaveValue("Max");
 
   // The month shows only icon badges.
   await page.keyboard.press("m");

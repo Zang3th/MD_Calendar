@@ -8,13 +8,13 @@ How the [domain](Domain.md) is stored. Markdown files in one folder hold all dat
 - A folder is a calendar folder when it holds `MD_Calendar.json`. Only such a folder opens; “New calendar” on the start card adds the file to a folder (see [Shell](ui/Shell.md#start-card)).
 - The app reads and writes only the files listed below. Other files in the folder are ignored.
 - File names are fixed.
-- The format is English: file names, headings, `#Key` lines, labels and fixed values (`yes`). Only the user's own content (titles, notes, names, tag and group names) is written as the user enters it.
+- The format is English: file names, headings, `#Key` lines, labels and fixed values (`yes`). Only the user's own content (titles, notes, names, tag names) is written as the user enters it.
 
 | File | Content | Written by the app |
 |---|---|---|
 | `Calendar.md` | The whole calendar: entries, multi-day entries, recurring entries. | yes |
 | `Backlog.md` | Backlog groups and their entries. | yes |
-| `Contacts.md` | Contacts and contact groups. | yes |
+| `Contacts.md` | Contacts. | yes |
 | `Holidays.md` | Public holidays and school vacations. | no |
 | `Config.md` | Tags with colors and icons. Optional; created and maintained by hand. | no |
 | `MD_Calendar.json` | Technical data of the folder, see [below](#md_calendarjson). Mandatory. | yes |
@@ -84,7 +84,7 @@ The conventions follow MD_Manager: headings structure the file, `#Key` lines sta
 - `# Calendar`, then one `## <Month> <YYYY>` per month with entries (English month names, chronological), then `## Multi-day` and `## Recurring`. Empty months and days are not written.
 - `### DD.MM.YYYY` starts a day (date format in [Domain](Domain.md#time)). The order of its items is the entry position.
 - An entry is `- [ ]` or `- [x]`, an optional time (`HH:MM` or `HH:MM - HH:MM`), the title and an optional `#Tag` at the end of the line.
-- Indented items below an entry: `Location: …` as the first item is the location, every other item is a note line.
+- Indented lines below an entry: `- Location: …` as the first one is the location; every other one is a note line, kept exactly as written after its indentation (up to two spaces or one tab). The note is free text: a line the user starts with “- ” is written as `  - …`, any other line as `  …`. Blank lines are not part of a note.
 - A trailing `#Word` on the entry line is the tag; a time is recognized only when it is valid (`00:00` to `23:59`).
 - Days are written under the month of their date, whatever heading they stood under; repeated headings of the same day are merged in file order. A day heading with an invalid date (`31.02.2026`) is not a day.
 - An unknown or malformed line is kept right after the element it followed (file heading, day heading or entry) and moves with it.
@@ -96,17 +96,18 @@ The conventions follow MD_Manager: headings structure the file, `#Key` lines sta
 
 ### Backlog
 
+- Entry lines are those of `Calendar.md`, except that the backlog has no times: a time at the start of the line is part of the title and is written back as it stands.
 - Entries directly below `# Backlog`, before the first `##` heading, are ungrouped. Without ungrouped entries the file has no such lines.
 - Each `##` heading is a group in display order; its name is a tag (see [Domain](Domain.md#backlog)). Empty groups are kept. A `## Inbox` group from earlier versions is read as ungrouped entries; its unknown lines move after the file heading.
 - Entries use the same syntax as day entries. Unknown lines are reported and kept after the element they followed, as in the calendar file.
 
 ### Contacts
 
-- `## Groups` lists the contact groups in display order. `## Contacts` holds one `###` heading per contact.
+- `## Contacts` holds one `###` heading per contact.
 - The heading is the display name. It is derived from `#FirstName` and `#LastName` and rewritten on save. A contact without `#FirstName` and `#LastName` takes its name from the heading (first word: first name, rest: last name); a contact without any name is written as `### Unnamed`.
-- Blocks: `#FirstName`, `#LastName`, `#Nickname`, `#Birthday`, `#Phone`, `#Email`, `#Address`, `#Company`, `#Position`, `#Groups`, `#Anniversary`, `#Favorite` (`yes`), `#Note`. Absent blocks are not written.
+- Blocks: `#FirstName`, `#LastName`, `#Birthday`, `#Phone`, `#Email`, `#Address`, `#Anniversary`, `#Note`. Absent blocks are not written.
 - Phone numbers, email addresses and addresses are `Label: value` with the labels `Mobile`, `Home`, `Work` and `Other`; anniversaries are `Label: DD.MM.YYYY`. A birthday without a year is written as `DD.MM.`.
-- `## Groups` and `## Contacts` are always written. Unknown `#Key` blocks and lines that cannot be read are reported and kept at the end of their contact; unknown lines outside a contact are kept after the file heading.
+- `## Contacts` is always written. A `## Groups` section and the blocks `#Nickname`, `#Company`, `#Position`, `#Groups` and `#Favorite` from earlier versions are read without a warning and dropped on the next save. Unknown `#Key` blocks and lines that cannot be read are reported and kept at the end of their contact; unknown lines outside a contact are kept after the file heading.
 
 ### Holidays and school vacations
 

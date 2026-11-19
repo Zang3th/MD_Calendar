@@ -6,8 +6,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 (function (app) {
   const itemPattern = /^- (.*)$/;
   /** Block order of a contact; also the order in which blocks are written. */
-  const keys = ["FirstName", "LastName", "Nickname", "Birthday", "Phone", "Email", "Address", "Company", "Position", "Groups", "Anniversary", "Favorite", "Note"];
-  const single = ["FirstName", "LastName", "Nickname", "Birthday", "Company", "Position", "Favorite"];
+  const keys = ["FirstName", "LastName", "Birthday", "Phone", "Email", "Address", "Anniversary", "Note"];
+  const single = ["FirstName", "LastName", "Birthday"];
+  /** Blocks of earlier versions; they are read and dropped (docs/DataFormat.md#contacts). */
+  const dropped = ["Nickname", "Company", "Position", "Groups", "Favorite"];
   const labelled = { Phone: "phones", Email: "emails", Address: "addresses" };
 
   /** DD.MM.YYYY or DD.MM. into YYYY-MM-DD or --MM-DD; "" when invalid. @param {string} value */
@@ -32,8 +34,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   /** @returns {MDCContact} */
   function emptyContact() {
     return {
-      firstName: "", lastName: "", nickname: "", birthday: "", phones: [], emails: [], addresses: [],
-      company: "", position: "", groups: [], anniversaries: [], favorite: false, note: [], extra: []
+      firstName: "", lastName: "", birthday: "", phones: [], emails: [], addresses: [], anniversaries: [], note: [], extra: []
     };
   }
 
@@ -53,8 +54,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       contact.extra.push(line.text);
       warnings.push({ lineNumber: lines[line.index + 1].index + 1, kind: "unknown-line", text: line.text });
     };
-    for (const line of markdown.keyBlocks(lines.slice(1).map(entry => entry.line), { keys, prose: ["Note"] })) {
-      if (line.type === "key") continue;
+    for (const line of markdown.keyBlocks(lines.slice(1).map(entry => entry.line), { keys: [...keys, ...dropped], prose: ["Note"] })) {
+      if (line.type === "key" || (line.type === "item" && dropped.includes(line.key))) continue;
       if (line.type === "unknown") {
         keep(line);
         continue;
@@ -71,12 +72,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       }
       if (mode === "FirstName" && !contact.firstName) contact.firstName = value;
       else if (mode === "LastName" && !contact.lastName) contact.lastName = value;
-      else if (mode === "Nickname" && !contact.nickname) contact.nickname = value;
-      else if (mode === "Company" && !contact.company) contact.company = value;
-      else if (mode === "Position" && !contact.position) contact.position = value;
       else if (mode === "Birthday" && !contact.birthday && parseBirthday(value)) contact.birthday = parseBirthday(value);
-      else if (mode === "Favorite" && !contact.favorite && value === "yes") contact.favorite = true;
-      else if (mode === "Groups" && value) contact.groups.push(value);
       else if (mode in labelled && value) contact[/** @type {"phones" | "emails" | "addresses"} */ (labelled[/** @type {keyof typeof labelled} */ (mode)])].push(labelledValue(value));
       else if (mode === "Anniversary") {
         const anniversary = labelledValue(value);
@@ -102,11 +98,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   function parse(source) {
     const { lines, newline } = markdown.split(source);
     /** @type {MDCContacts} */
-    const contacts = { newline, head: [], groups: [], contacts: [], revision: 0 };
+    const contacts = { newline, head: [], contacts: [], revision: 0 };
     /** @type {MDCFormatWarning[]} */
     const warnings = [];
     let hasHeader = false;
-    /** @type {"groups" | "contacts" | null} */
+    /** @type {"groups" | "contacts" | null} `## Groups` of earlier versions is dropped. */
     let section = null;
     /** @type {Array<{line: string, index: number}> | null} */
     let contact = null;
@@ -139,11 +135,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         return;
       }
       if (line.trim() === "") return;
-      const group = section === "groups" ? itemPattern.exec(line) : null;
-      if (group && group[1].trim() && !contacts.groups.includes(group[1].trim())) {
-        contacts.groups.push(group[1].trim());
-        return;
-      }
+      if (section === "groups" && itemPattern.test(line)) return;
       contacts.head.push(line);
       warnings.push({ lineNumber: index + 1, kind: "unknown-line", text: line });
     });
@@ -157,16 +149,14 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   function contactLines(contact) {
     /** @type {Record<string, string[]>} */
     const values = {
-      FirstName: [contact.firstName], LastName: [contact.lastName], Nickname: [contact.nickname],
+      FirstName: [contact.firstName], LastName: [contact.lastName],
       Birthday: [contact.birthday && formatBirthday(contact.birthday)],
       Phone: contact.phones.map(item => item.label ? `${item.label}: ${item.value}` : item.value),
       Email: contact.emails.map(item => item.label ? `${item.label}: ${item.value}` : item.value),
       Address: contact.addresses.map(item => item.label ? `${item.label}: ${item.value}` : item.value),
-      Company: [contact.company], Position: [contact.position], Groups: contact.groups,
-      Anniversary: contact.anniversaries.map(item => `${item.label}: ${app.calendar.formatDate(item.date)}`),
-      Favorite: [contact.favorite ? "yes" : ""]
+      Anniversary: contact.anniversaries.map(item => `${item.label}: ${app.calendar.formatDate(item.date)}`)
     };
-    const lines = [`### ${displayName(contact) || contact.nickname || "Unnamed"}`];
+    const lines = [`### ${displayName(contact) || "Unnamed"}`];
     for (const key of keys) {
       if (key === "Note") {
         if (contact.note.length) lines.push("#Note", ...contact.note);
@@ -180,7 +170,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   /** @param {MDCContacts} contacts */
   function serialize(contacts) {
-    const lines = ["# Contacts", ...contacts.head, "", "## Groups", ...contacts.groups.map(group => `- ${group}`), "", "## Contacts"];
+    const lines = ["# Contacts", ...contacts.head, "", "## Contacts"];
     for (const contact of contacts.contacts) lines.push("", ...contactLines(contact));
     return lines.join(contacts.newline) + contacts.newline;
   }

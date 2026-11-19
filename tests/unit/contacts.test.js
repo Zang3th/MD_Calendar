@@ -16,24 +16,30 @@ test("the contacts golden file round-trips with all fields", () => {
   const { contacts, warnings } = app.contactsFormat.parse(golden);
   assert.deepEqual(plain(warnings), []);
   assert.equal(app.contactsFormat.serialize(contacts), golden);
-  assert.deepEqual(plain(contacts.groups), ["Friends", "Work"]);
   assert.deepEqual(plain(contacts.contacts[0]), {
-    firstName: "Max", lastName: "Example", nickname: "Maxi", birthday: "1990-05-17",
+    firstName: "Max", lastName: "Example", birthday: "1990-05-17",
     phones: [{ label: "Mobile", value: "+49 170 0000000" }, { label: "Work", value: "+49 2151 000000" }],
     emails: [{ label: "Home", value: "max@example.com" }],
     addresses: [{ label: "Home", value: "Example Street 1, 47798 Krefeld, Germany" }],
-    company: "Example Inc.", position: "Developer", groups: ["Friends", "Work"],
-    anniversaries: [{ label: "Wedding", date: "2018-06-09" }], favorite: true,
+    anniversaries: [{ label: "Wedding", date: "2018-06-09" }],
     note: ["Met at university.", "Prefers phone calls."], extra: []
   });
   assert.equal(contacts.contacts[1].birthday, "--05-17");
 });
 
 test("unknown contact lines stay, the heading is rewritten from the name", () => {
-  const text = "# Contacts\n\n## Groups\n\n## Contacts\n\n### Old heading\n#FirstName\n- Lena\n#Shoe\n- 42\n";
+  const text = "# Contacts\n\n## Contacts\n\n### Old heading\n#FirstName\n- Lena\n#Shoe\n- 42\n";
   const { contacts, warnings } = app.contactsFormat.parse(text);
-  assert.deepEqual(plain(warnings).map((/** @type {any} */ warning) => warning.lineNumber), [10, 11]);
-  assert.equal(app.contactsFormat.serialize(contacts), "# Contacts\n\n## Groups\n\n## Contacts\n\n### Lena\n#FirstName\n- Lena\n#Shoe\n- 42\n");
+  assert.deepEqual(plain(warnings).map((/** @type {any} */ warning) => warning.lineNumber), [8, 9]);
+  assert.equal(app.contactsFormat.serialize(contacts), "# Contacts\n\n## Contacts\n\n### Lena\n#FirstName\n- Lena\n#Shoe\n- 42\n");
+});
+
+test("groups, favorites, nickname, company and position of earlier versions are dropped without warnings", () => {
+  const text = "# Contacts\n\n## Groups\n- Friends\n\n## Contacts\n\n### Max\n#FirstName\n- Max\n#Nickname\n- Maxi\n#Phone\n- Mobile: 1\n" +
+    "#Company\n- ACME\n#Position\n- Developer\n#Groups\n- Friends\n#Favorite\n- yes\n#Note\nHello\n";
+  const { contacts, warnings } = app.contactsFormat.parse(text);
+  assert.deepEqual(plain(warnings), []);
+  assert.equal(app.contactsFormat.serialize(contacts), "# Contacts\n\n## Contacts\n\n### Max\n#FirstName\n- Max\n#Phone\n- Mobile: 1\n#Note\nHello\n");
 });
 
 test("birthdays show with age; 29 February shows on 28 February in non-leap years", () => {
@@ -68,5 +74,18 @@ test("vCards are read and written; duplicates are merged without overwriting", (
 
   const exported = app.vcard.serialize([max]);
   assert.match(exported, /^BEGIN:VCARD\r\nVERSION:3\.0\r\nN:Example;Max;;;\r\nFN:Max Example\r\n/);
-  assert.deepEqual(plain(app.vcard.parse(exported)[0]), plain({ ...max, groups: [], favorite: false }));
+  assert.deepEqual(plain(app.vcard.parse(exported)[0]), plain(max));
+});
+
+test("next up lists the soonest birthdays and anniversaries from today, birthdays first on the same day", () => {
+  const { contacts } = app.contactsFormat.parse("# Contacts\n\n## Contacts\n\n" +
+    "### Ann\n#FirstName\n- Ann\n#Birthday\n- 19.11.1996\n\n" +
+    "### Bob\n#FirstName\n- Bob\n#Anniversary\n- Wedding: 19.11.2018\n\n" +
+    "### Cid\n#FirstName\n- Cid\n#Birthday\n- 18.11.\n#Anniversary\n- Met: 29.02.2020\n\n" +
+    "### Dan\n#FirstName\n- Dan\n#Anniversary\n- Start: 01.12.2027\n");
+  const next = plain(app.contacts.upcoming(contacts, "2026-11-19", 5)).map((/** @type {any} */ item) => [item.index, item.kind, item.date, item.years]);
+  assert.deepEqual(next, [
+    [0, "birthday", "2026-11-19", 30], [1, "anniversary", "2026-11-19", 8],
+    [2, "anniversary", "2027-02-28", 7], [2, "birthday", "2027-11-18", null], [3, "anniversary", "2027-12-01", 0]
+  ]);
 });

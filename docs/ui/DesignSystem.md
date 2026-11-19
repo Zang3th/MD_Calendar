@@ -21,7 +21,7 @@ The visual language of MD_Calendar. The values below are authoritative.
 | `--g2` | `rgba(110,200,225,.34)` | Background light 2 |
 | `--accent` | `#8fd8ee` | Primary accent: today, selection, focused text fields, current week number |
 | `--accent-2` | `#c9a2e0` | Secondary accent: holidays, gradients |
-| `--warm` | `#f3cf7e` | Birthdays, favorites |
+| `--warm` | `#f3cf7e` | Birthdays |
 | `--heart` | `#ff8a8a` | Anniversaries |
 | `--panel` | `#182235` | Opaque tint for floating panels and dialogs |
 | `--on-accent` | `#07121a` | Text on accent fills |
@@ -88,7 +88,7 @@ Every alpha value belongs to one group and uses one of its steps; there are no v
 |---|---|
 | White surfaces | `.05` cards (`--card`), `.08` glass and items (`--glass`, `--item`), `.11` hover (`--glass-2`); edges `.09` (`--card-edge`, `--item-edge`) and `.12` (`--edge`) |
 | Text | `.70` `--muted`, `.55` `--faint`, `.30` `--deco` |
-| Shadows (black) | `.35` header pill and main panel, `.5` popovers, menus, pickers, tooltips, notifications and the enlarged month cell, `.6` dialog |
+| Shadows (black) | `.35` header pill and main panel, `.5` popovers, menus, tooltips, notifications and the enlarged month cell, `.6` dialog |
 | Color tints (accent, accent-2, status colors, `--tone`; mixed with transparent) | `--hover` 12 % hover and subtle fills, `--active` 24 % selected, pressed and badge fills, `--glow` 30 % glows, halos and nested fills, `--ring` 45 % borders, focus and inset rings, `--strong` 70 % today outline, selection, lasso, drop target, pulse |
 | Lightened accent (mixed with white, for text) | `--light` 60 % |
 | Floating panels (`--panel` mixed with transparent) | 60 % backlog panel, 88 % dialog, popovers, search bar, notifications, occasion list |
@@ -102,7 +102,7 @@ Kept apart, because they are not alpha steps of a surface: the background lights
 One style for every scroll area:
 
 - The thumb is 6px wide in `--deco` (`--faint` on hover) on a transparent track, with round ends.
-- It sits 6px from the edge of the surface it scrolls in and stops 10px before the surface's ends, so it keeps about 6px to rounded corners as well. Both ends of the thumb are round. Lists inside a padded panel (backlog, holiday overview, time picker, contact list) reach into the panel padding for this.
+- It sits 6px from the edge of the surface it scrolls in and stops 10px before the surface's ends, so it keeps about 6px to rounded corners as well. Both ends of the thumb are round. Lists inside a padded panel (backlog, holiday overview, contact list) reach into the panel padding for this.
 - While a list scrolls, its content keeps 6px to the thumb, the same as the thumb keeps to the edge. Without a scrollbar the content keeps its normal padding.
 - The entry grid of the portrait week scrolls sideways without a visible scrollbar.
 
@@ -152,17 +152,17 @@ Scale: 2, 4, 6, 8, 10, 12, 14, 16, 22 px. Every padding, margin and gap uses a v
 | Area | Spacing |
 |---|---|
 | Page | 14px around the header pill, main panel and backlog panel; 14px between them |
-| Header pill | padding 8px 12px; 14px between the three groups; 10px between title and **+**, 4px after **+**, no gap between undo, redo and save; 4px between the right zone buttons; 6px between icon and label in the view switcher; save control 108px wide in every state, padding 0 10px, 6px between icon, label and counter |
+| Header pill | padding 8px 12px; 14px between the three groups; 10px between title and **+**, 4px after **+**, no gap between undo, redo and save; 4px between the right zone buttons; 6px between icon and label in the view switcher; save control 100px wide in every state, padding 0 8px, 5px between icon, label and counter |
 | Main panel | padding 12px, the sides of the header pill, so that cards start below the logo and end below Options; the week cancels the 5px card spacing and the month the 4px cell margin at the outer edges, the month's ISO week column stays left of the cells |
 | Week | 10px between day cards; day header padding 0 14px 0 16px, 4px between weekday and date, 4px between badges; day list padding 4px 10px 10px |
 | Entries in a day | 6px between entries; entry padding 8px 10px; 8px between check box and text |
 | Month | 8px between cells; cell padding 0 6px 6px; 4px between entries; entry padding 0 8px; “+N” 4px below the entries; ISO week number 8px from the top |
 | Backlog panel | padding 16px 14px; 16px between groups; 6px between entries; group head 28px high, padding 0 6px, 4px above the list, radius 9px, `--glass-2` on hover; counter 2px 8px, 8px after the group name; 16px chevron at the right |
 | Holiday overview | padding 12px; rows 6px |
-| Entry dialog | padding 22px; 16px between sections; 10px between fields; field padding 12px 14px; buttons 8px 16px, in the footer 8px 10px; date and time picker padding 8px |
+| Entry dialog | centered in the upper 60 % of the window (20 % above the center); padding 20px; 12px between title, tokens and footer; title field padding 10px 16px, radius 16px, 22px/800; tokens 32px high, padding 0 10px, radius 10px, 6px apart, an unset token 32px square; Apply 32px high, 12px after the tokens; popovers 360px wide, padding 10px, 10px gaps, radius 16px, 8px below the tokens, centered under the title; pills 30px high, fully rounded, 6px apart, sharing the width; time wheels 180px high in a recessed well (radius 12px), columns 1fr 1fr 18px 1fr 1fr, rows 36px at 18px/700 tabular, a middle band 36px high in `--accent` at `--hover` with a 30 % accent edge, the panel color fading over the top and bottom 30 %; note 5 lines of 24px, padding 10px 14px, not resizable; footer buttons 8px 12px |
 | Menus and search bar | menus padding 6px; items 8px 10px; 10px between icon and label. The search bar is two separate glass surfaces without an enclosing panel: the field (44px high, padding 0 14px, radius 16px) 28px above the window edge and, 8px above it, the hit list (padding 6px, radius 16px), each with one 1px `--edge` frame |
 | Start card | width 460px, padding 22px 24px 24px; heading (18px, 800) to list 16px, list to buttons 20px; buttons 40px high, gap 10px, “Open folder” primary, “New calendar” on `--glass-2`; rows padding 11px 12px, gap 6px; name 13.5px 700 with the detail line 2px below (11.5px, 600, `--faint`); day 12px 700 `--muted` above the time 11.5px 600 `--faint`, right-aligned |
-| Contacts | 14px between list and detail; list padding 12px; detail padding 22px |
+| Contacts | 14px between list and detail; list padding 12px; detail padding 22px; “Next up” tiles padding 6px 10px, 5px apart, radius 12px, 10px above a divider to the sort |
 | Chips and badges | chips 6px 12px; badges 2px 8px (month 2px 6px, portrait week 4px 8px), at least 20px high, so that icon-only badges match badges with text; their 12px icon sits centered; “+X” 0 6px; 6px between chips |
 | Tooltip | padding 6px 10px |
 | “+” menu | as in “Menus”, 8px below **+**, left-aligned to it; a file type as code chip (11.5px monospace, 700, `--accent` on `--hover` accent with a `--ring` accent border, radius 5px, padding 1px 5px) |
@@ -213,7 +213,7 @@ Line icons as inline SVG with a 2px stroke and round caps and joins. No emoji an
   - **12px**: dense places only, namely badges and, in the month, the repeat icon and tag icons.
 - The check mark of an entry is part of its check box, not a sized icon: it fills the whole box (17px, 12px in the month), so it stays centered and scales with the box. The box frame is therefore an inset 1.5px shadow, not a border.
 - An icon button is about twice as large as its icon (16px in 28–36px) and at least 24px in each direction.
-- Header exception: the nine buttons of the header pill (**+**, undo, redo, save and the five buttons on the right) are 36×36px with 18px icons, in landscape and portrait; the save control is 108px wide in every state, with its icon and label centered. The view switcher keeps 16px icons.
+- Header exception: the nine buttons of the header pill (**+**, undo, redo, save and the five buttons on the right) are 36×36px with 18px icons, in landscape and portrait; the save control is 100px wide in every state, with its icon and label centered. The view switcher keeps 16px icons.
 - Stroke and fill use `currentColor`; the button's state colors the icon.
 - Optical centering and pixel alignment are done with a `translate` group inside the symbol (for example `translate(.5 .5)` or `translate(-.625 0)`), never with CSS offsets.
 - Every symbol also exists as a standalone file `res/icons/<name>.svg` with identical geometry. A unit test checks that file and symbol match.
@@ -228,7 +228,7 @@ Every tag has an icon, referenced by its icon ID in `Config.md` (see [DataFormat
 - Tag icons are built exactly like the UI icons (see [Icons](#icons)): 32×32 canvas, shown at 14px (12px in the month), `currentColor`, inline `<symbol>` plus an identical standalone file.
 - They live in their own folder, `res/tag-icons/<icon-id>.svg`, and their symbols use the ID `tag-<icon-id>`, so they never collide with UI icons.
 - The icon ID is lowercase ASCII with hyphens, for example `home` or `shopping`.
-- On entry tiles the icon sits before the title, on multi-day bars before the bar title, and in the tag dropdown of the entry dialog on a small swatch in the tag color. On tinted tiles it uses the lightened tag hue.
+- On entry tiles the icon sits before the title, on multi-day bars before the bar title, and in the tag token and tag chips of the entry dialog in the lightened tag hue. On tinted tiles it uses the lightened tag hue.
 
 The set, chosen by the user from three designs per tag:
 
@@ -256,9 +256,11 @@ The set, chosen by the user from three designs per tag:
 - Short, interruptible, compositor-friendly transitions (transform, opacity).
 - The view switcher indicator slides between options; panels slide in.
 - A new week or month slides in briefly from the side it comes from (navigation, mouse wheel, jump to today or to a search hit).
-- Jumping to today or to a search hit scrolls smoothly and highlights the target once: after the slide, an accent ring (2px outline in `--accent` at `--strong`) closes in from 8px to 3px around the day, month cell or bar, holds and fades, 1.4s in all; around an entry, which sits in a scrolling list, it stays at 2px and only fades in and out. It never scales the target, so text and icons stay sharp; with reduced motion the ring only fades in and out.
+- Jumping to today or to a search hit, and creating an item in the entry dialog, scrolls smoothly and highlights the target once: after the slide, an accent ring (2px outline in `--accent` at `--strong`) closes in from 8px to 3px around the day, month cell or bar, holds and fades, 1.4s in all; around an entry, which sits in a scrolling list, it stays at 2px and only fades in and out. It never scales the target, so text and icons stay sharp; with reduced motion the ring only fades in and out.
 - After dragging the days, and when a snap or `T` moves them by less than a week, the days glide the remaining distance into place (240ms); a move by a week or more slides in like a new period.
+- The entry dialog fades in and rises 8px into place (200ms). It does not scale, and it keeps its own compositor layer while open, so that its icons do not snap to other pixels when the motion ends.
 - The focus card fades in its blurred background and rises in like the dialog; switching its day lets the content glide 16px in from that side.
+- The time wheels of the entry dialog turn like a drum: each row turns away by 22° per row from the middle (at most 80°), sinks back 6px per row and fades by 28 % per row (to at least 15 %); the middle row is lit. Wheels glide to a row with smooth scrolling and snap row by row. Only a row's face turns; the row itself stays flat, because a turned row would move its snap position.
 - While saving, the save control's arc turns once per 0.8s (a transform); with reduced motion it stands still.
 - The slide of a new period moves the view by 24px only; it does not fade it, because opacity on the view would break the glass blur of the bars inside.
 - Overdue entries are the one continuous animation: a red border beam travels along their outline at a constant speed (24 fading dash pieces of one rounded SVG outline, one lap in 4s). → [Views](Views.md#entry-tile)

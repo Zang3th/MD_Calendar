@@ -46,24 +46,54 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       .sort((left, right) => Number(Boolean(left.label)) - Number(Boolean(right.label)) || left.name.localeCompare(right.name, "en"));
   }
 
+  /**
+   * The next yearly date of `monthDay` (MM-DD) on or after `today`, not before the year `from`.
+   * 29 February falls on 28 February in years without it.
+   * @param {string} monthDay @param {string} today @param {number} from
+   */
+  function nextYearly(monthDay, today, from) {
+    /** @param {number} year */
+    const dateIn = year => `${year}-${monthDay === "02-29" && !isLeap(String(year)) ? "02-28" : monthDay}`;
+    let year = Math.max(Number(today.slice(0, 4)), from);
+    if (dateIn(year) < today) year += 1;
+    const date = dateIn(year);
+    return { year, date, days: Math.round((Date.parse(`${date}T12:00:00Z`) - Date.parse(`${today}T12:00:00Z`)) / 86400000) };
+  }
+
   /** Days until the next birthday from `today`, its date and the age then. @param {MDCContact} contact @param {string} today */
   function nextBirthday(contact, today) {
     if (!contact.birthday) return null;
-    const monthDay = contact.birthday.slice(-5);
-    /** @param {number} year */
-    const dateIn = year => `${year}-${monthDay === "02-29" && !isLeap(String(year)) ? "02-28" : monthDay}`;
-    let year = Number(today.slice(0, 4));
-    if (dateIn(year) < today) year += 1;
-    const date = dateIn(year);
-    const days = Math.round((Date.parse(`${date}T12:00:00Z`) - Date.parse(`${today}T12:00:00Z`)) / 86400000);
+    const { year, date, days } = nextYearly(contact.birthday.slice(-5), today, 0);
     return { days, date, age: contact.birthday.startsWith("--") ? null : year - Number(contact.birthday.slice(0, 4)) };
   }
 
-  /** Whether a contact matches the search text (name, nickname, company, email, phone). @param {MDCContact} contact @param {string} query */
+  /**
+   * The next `count` birthdays and anniversaries from `today` on (docs/ui/Views.md#list): soonest first, on the same day
+   * birthdays before anniversaries, then by name. `years` is the age or the number of years, null when unknown.
+   * @param {MDCContacts} contacts @param {string} today @param {number} count @returns {MDCUpcoming[]}
+   */
+  function upcoming(contacts, today, count) {
+    /** @type {MDCUpcoming[]} */
+    const list = [];
+    contacts.contacts.forEach((contact, index) => {
+      const next = nextBirthday(contact, today);
+      if (next) list.push({ index, kind: "birthday", label: "", date: next.date, days: next.days, years: next.age });
+      for (const anniversary of contact.anniversaries) {
+        const first = Number(anniversary.date.slice(0, 4));
+        const { year, date, days } = nextYearly(anniversary.date.slice(5), today, first);
+        list.push({ index, kind: "anniversary", label: anniversary.label, date, days, years: year - first });
+      }
+    });
+    const order = (/** @type {MDCUpcoming} */ item) => sortName(contacts.contacts[item.index]);
+    return list.sort((left, right) => left.days - right.days || Number(left.kind === "anniversary") - Number(right.kind === "anniversary") ||
+      order(left).localeCompare(order(right), "en")).slice(0, count);
+  }
+
+  /** Whether a contact matches the search text (name, email, phone). @param {MDCContact} contact @param {string} query */
   function matches(contact, query) {
     const words = query.toLowerCase().split(/\s+/).filter(Boolean);
     if (!words.length) return true;
-    const text = [name(contact), contact.nickname, contact.company, contact.position, ...contact.emails.map(item => item.value), ...contact.phones.map(item => item.value)].join(" ").toLowerCase();
+    const text = [name(contact), ...contact.emails.map(item => item.value), ...contact.phones.map(item => item.value)].join(" ").toLowerCase();
     const digits = text.replace(/[^\d+]/g, "");
     return words.every(word => text.includes(word) || (/^[\d+\s]+$/.test(word) && digits.includes(word.replace(/\s/g, ""))));
   }
@@ -84,26 +114,22 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
    * Replaces, inserts or removes one contact; `select` is the contact to show afterwards.
    * @param {MDCContacts} contacts @param {string} label
    * @param {{index: number, contact: MDCContact} | null} from @param {{index: number, contact: MDCContact} | null} to
-   * @param {string[]} [groupsAfter] the group list after the action
    * @returns {MDCContactAction}
    */
-  function action(contacts, label, from, to, groupsAfter) {
-    const groupsBefore = [...contacts.groups];
-    /** @param {{index: number, contact: MDCContact} | null} removed @param {{index: number, contact: MDCContact} | null} inserted @param {string[]} groups */
-    function apply(removed, inserted, groups) {
+  function action(contacts, label, from, to) {
+    /** @param {{index: number, contact: MDCContact} | null} removed @param {{index: number, contact: MDCContact} | null} inserted */
+    function apply(removed, inserted) {
       if (removed) contacts.contacts.splice(removed.index, 1);
       if (inserted) contacts.contacts.splice(inserted.index, 0, inserted.contact);
-      contacts.groups = [...groups];
       contacts.revision += 1;
     }
-    const after = groupsAfter || groupsBefore;
     return {
       label, days: [], contacts: true,
       size: (from ? sizeOf(from.contact) : 0) + (to ? sizeOf(to.contact) : 0),
       selectAfter: to ? to.index : Math.min(from?.index ?? 0, contacts.contacts.length - 2),
       selectBefore: from ? from.index : -1,
-      redo() { apply(from, to, after); },
-      undo() { apply(to, from, groupsBefore); }
+      redo() { apply(from, to); },
+      undo() { apply(to, from); }
     };
   }
 
@@ -121,26 +147,19 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   /**
    * Replaces a contact with a changed copy. Returns null when nothing changed.
-   * @param {MDCContacts} contacts @param {number} index @param {MDCContact} updated @param {string[]} [groupsAfter]
+   * @param {MDCContacts} contacts @param {number} index @param {MDCContact} updated
    * @returns {MDCContactAction | null}
    */
-  function update(contacts, index, updated, groupsAfter) {
+  function update(contacts, index, updated) {
     const current = contactAt(contacts, index);
-    if (JSON.stringify(current) === JSON.stringify(updated) && (!groupsAfter || JSON.stringify(groupsAfter) === JSON.stringify(contacts.groups))) return null;
-    return action(contacts, name(updated) || "Contact", { index, contact: current }, { index, contact: updated }, groupsAfter);
+    if (JSON.stringify(current) === JSON.stringify(updated)) return null;
+    return action(contacts, name(updated) || "Contact", { index, contact: current }, { index, contact: updated });
   }
 
   /** @param {MDCContacts} contacts @param {number} index */
   function remove(contacts, index) {
     const current = contactAt(contacts, index);
     return action(contacts, name(current) || "Contact", { index, contact: current }, null);
-  }
-
-  /** Adds a group to the group list and to the contact. @param {MDCContacts} contacts @param {number} index @param {string} group */
-  function addGroup(contacts, index, group) {
-    const current = contactAt(contacts, index);
-    const groups = contacts.groups.includes(group) ? contacts.groups : [...contacts.groups, group];
-    return update(contacts, index, { ...current, groups: current.groups.includes(group) ? current.groups : [...current.groups, group] }, groups);
   }
 
   // ---------- Import with merge (docs/Domain.md#imports-and-exports) ----------
@@ -168,10 +187,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       ...existing,
       firstName: existing.firstName || incoming.firstName,
       lastName: existing.lastName || incoming.lastName,
-      nickname: existing.nickname || incoming.nickname,
       birthday: existing.birthday || incoming.birthday,
-      company: existing.company || incoming.company,
-      position: existing.position || incoming.position,
       phones: union(existing.phones, incoming.phones, phoneKey),
       emails: union(existing.emails, incoming.emails, lower),
       addresses: union(existing.addresses, incoming.addresses, lower),
@@ -218,5 +234,5 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     };
   }
 
-  app.contacts = { name, occasionsOn, nextBirthday, matches, sortName, create, update, remove, addGroup, importContacts, isLeap };
+  app.contacts = { name, occasionsOn, nextBirthday, upcoming, matches, sortName, create, update, remove, importContacts, isLeap };
 })(window.MDCalendar);

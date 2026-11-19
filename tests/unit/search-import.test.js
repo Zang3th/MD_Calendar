@@ -52,7 +52,7 @@ test("ICS events become entries, multi-day entries and series; past ones are don
   assert.deepEqual([result.entries, result.series, result.multiDay, result.duplicates], [2, 1, 1, 1]);
   result.action.redo();
   assert.equal(app.calendarFormat.serialize(calendar),
-    "# Calendar\n\n## November 2026\n\n### 02.11.2026\n- [x] Holiday, off\n\n### 13.11.2026\n- [ ] Karate (moved)\n\n### 20.11.2026\n- [ ] 09:30 - 10:30 Meeting\n  - Location: Office\n  - Line 1\n  - Line 2\n\n" +
+    "# Calendar\n\n## November 2026\n\n### 02.11.2026\n- [x] Holiday, off\n\n### 13.11.2026\n- [ ] Karate (moved)\n\n### 20.11.2026\n- [ ] 09:30 - 10:30 Meeting\n  - Location: Office\n  Line 1\n  Line 2\n\n" +
     "## Multi-day\n\n### Vacation\n#Start\n- 14.12.2026\n#End\n- 18.12.2026\n\n" +
     "## Recurring\n\n### Karate\n#Start\n- 05.11.2026 18:00 - 19:00\n#Repeat\n- FREQ=WEEKLY;BYDAY=TH;UNTIL=20261119\n#Except\n- 12.11.2026\n");
   result.action.undo();

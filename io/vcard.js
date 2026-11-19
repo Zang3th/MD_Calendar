@@ -103,9 +103,6 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         contact.firstName = first.trim();
         contact.lastName = last.trim();
       } else if (property === "FN") formatted = unescape(value).trim();
-      else if (property === "NICKNAME") contact.nickname = unescape(value).split(",")[0].trim();
-      else if (property === "ORG") contact.company = components(value)[0].trim();
-      else if (property === "TITLE") contact.position = unescape(value).trim();
       else if (property === "BDAY") contact.birthday = vcardDate(value);
       else if (property === "ANNIVERSARY") {
         const date = vcardDate(value);
@@ -142,10 +139,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   /** @param {MDCContact} contact */
   function card(contact) {
     const name = app.contactsFormat.displayName(contact);
-    const lines = ["BEGIN:VCARD", "VERSION:3.0", `N:${escape(contact.lastName)};${escape(contact.firstName)};;;`, `FN:${escape(name || contact.nickname)}`];
-    if (contact.nickname) lines.push(`NICKNAME:${escape(contact.nickname)}`);
-    if (contact.company) lines.push(`ORG:${escape(contact.company)}`);
-    if (contact.position) lines.push(`TITLE:${escape(contact.position)}`);
+    const lines = ["BEGIN:VCARD", "VERSION:3.0", `N:${escape(contact.lastName)};${escape(contact.firstName)};;;`, `FN:${escape(name)}`];
     if (contact.birthday) lines.push(`BDAY:${contact.birthday.startsWith("--") ? `--${contact.birthday.slice(2, 4)}${contact.birthday.slice(5, 7)}` : contact.birthday}`);
     for (const item of contact.phones) {
       const tel = type(item.label, phoneTypes);

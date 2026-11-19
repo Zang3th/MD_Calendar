@@ -55,6 +55,20 @@ test("moves between backlog groups and days are single undoable actions", () => 
   assert.deepEqual(roundTrip(state, between), { days: [["2026-11-12", ["Later B"]]], groups: [["Day A"], ["Home A", "Later A"]] });
 });
 
+test("the backlog has no times: an entry moved or pasted there loses its time, and undo brings it back", () => {
+  const { calendar, backlog } = fixture();
+  const day = /** @type {any} */ (calendar.days.get("2026-11-12"));
+  day.entries[0] = { ...day.entries[0], start: "09:30", end: "10:00" };
+  const parked = app.backlog.move(calendar, backlog, { key: "2026-11-12", index: 0 }, { key: "", group: 0, index: 0 });
+  parked.redo();
+  assert.deepEqual([backlog.groups[0].entries[0].title, backlog.groups[0].entries[0].start, backlog.groups[0].entries[0].end], ["Day A", "", ""]);
+  parked.undo();
+  assert.deepEqual([day.entries[0].start, day.entries[0].end], ["09:30", "10:00"]);
+  const pasted = app.backlog.pasteEntries(calendar, backlog, [{ ...entry("Copy"), start: "12:00" }], { key: "", group: 1, index: 0 });
+  pasted.redo();
+  assert.equal(backlog.groups[1].entries[0].start, "");
+});
+
 test("a timed entry dragged in from elsewhere goes into its time slot; within its day it lands where dropped", () => {
   const state = fixture();
   const { calendar, backlog } = state;

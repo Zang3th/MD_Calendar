@@ -23,7 +23,7 @@ test("the backlog golden file round-trips and keeps groups in order", () => {
   ]);
   assert.deepEqual(plain(backlog.ungrouped.map((/** @type {any} */ entry) => entry.title)), ["Cancel the phone contract", "Sort the photos"]);
   assert.deepEqual(plain(backlog.groups[0].entries[0]), {
-    done: false, start: "", end: "", title: "Change the tires", tag: "Car", location: "Garage", note: ["Call the garage first"], extra: []
+    done: false, start: "", end: "", title: "Change the tires", tag: "Car", location: "Garage", note: ["- Call the garage first"], extra: []
   });
 });
 
@@ -36,11 +36,13 @@ test("a former Inbox group is read as ungrouped entries, and unknown lines stay"
 });
 
 test("entries before the first backlog group are ungrouped and are written back there", () => {
-  const source = "# Backlog\n\n- [ ] Loose A\n- [x] Loose B\n  - Note\n\n## Home\n- [ ] At home #Home\n";
+  const source = "# Backlog\n\n- [ ] Loose A\n- [x] Loose B\n  - Note\n\n## Home\n- [ ] At home #Home\n- [ ] 09:30 - 10:00 Call the plumber #Home\n";
   const { backlog, warnings } = app.backlogFormat.parse(source);
   assert.deepEqual(plain(warnings), []);
-  assert.deepEqual(plain(backlog.ungrouped.map((/** @type {any} */ entry) => [entry.title, entry.done, entry.note])), [["Loose A", false, []], ["Loose B", true, ["Note"]]]);
+  assert.deepEqual(plain(backlog.ungrouped.map((/** @type {any} */ entry) => [entry.title, entry.done, entry.note])), [["Loose A", false, []], ["Loose B", true, ["- Note"]]]);
   assert.deepEqual(plain(backlog.groups.map((/** @type {any} */ group) => group.name)), ["Home"]);
+  // The backlog has no times: a time at the start of a line stays part of the title, and the line is written as it was.
+  assert.deepEqual(plain([backlog.groups[0].entries[1].title, backlog.groups[0].entries[1].start]), ["09:30 - 10:00 Call the plumber", ""]);
   assert.equal(app.backlogFormat.serialize(backlog), source);
 });
 

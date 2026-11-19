@@ -16,13 +16,6 @@
 <body>
   <p class="build-missing" role="alert">MD_Calendar is not built yet. Run <code>npm ci</code> and <code>npm run build</code> in the MD_Calendar folder.</p>
   <svg class="icon-sprite" aria-hidden="true">
-    <symbol id="icon-building" viewBox="0 0 32 32" fill="none">
-    <path d="M8 27V7Q8 5 10 5H22Q24 5 24 7V27M5 27H27M13 10H14M18 10H19M13 15H14M18 15H19M14 27V21H18V27"
-          stroke="currentColor"
-          stroke-width="3"
-          stroke-linecap="round"
-          stroke-linejoin="round"/>
-    </symbol>
     <symbol id="icon-calendar" viewBox="0 0 32 32" fill="none">
     <path d="M9 7H23Q27 7 27 11V23Q27 27 23 27H9Q5 27 5 23V11Q5 7 9 7Z
              M5 13H27M11 4V9M21 4V9"
@@ -334,8 +327,8 @@
           stroke-width="3"
           stroke-linecap="round"/>
     </symbol>
-    <symbol id="icon-star" viewBox="0 0 32 32" fill="none">
-    <path d="M16 4.5L19.4 11.4L27 12.5L21.5 17.8L22.8 25.4L16 21.8L9.2 25.4L10.5 17.8L5 12.5L12.6 11.4Z"
+    <symbol id="icon-tag" viewBox="0 0 32 32" fill="none">
+    <path d="M5 7V15L17 27L27 17L15 5H7Q5 5 5 7ZM10.5 9.5A1 1 0 1 1 10.5 11.5A1 1 0 1 1 10.5 9.5Z"
           stroke="currentColor"
           stroke-width="3"
           stroke-linecap="round"
@@ -584,43 +577,15 @@
     <header class="hp__head hp__head--center"><span class="hp__year">Shortcuts</span></header>
     <div class="hp__content" id="helpContent"></div>
   </section>
-  <dialog class="dlg" id="dialog" aria-labelledby="dialogKind">
+  <dialog class="dlg" id="dialog" aria-label="Entry">
     <form class="dlg__form" method="dialog" novalidate>
-      <header class="dlg__head">
-        <span class="dlg__kind" id="dialogKind"></span>
-        <button class="dlg__x" type="button" data-close aria-label="Close (Esc)"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-close"></use></svg></button>
-      </header>
-      <input class="dlg__title" id="dialogTitle" placeholder="Title" aria-label="Title" autocomplete="off">
-      <div class="dlg__grid">
-        <div class="dlg__field" id="dialogDateField">
-          <span class="dlg__label"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-calendar"></use></svg><span id="dialogDateLabel">Date</span>
-            <button class="dlg__toggle" id="dialogMulti" type="button" aria-pressed="false" aria-label="Multi-day"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-range"></use></svg></button></span>
-          <span class="dlg__range"><input class="dlg__input" id="dialogDate" placeholder="DD.MM.YYYY" aria-label="Date" autocomplete="off" inputmode="numeric" data-picker="date"><span class="dlg__until" aria-hidden="true">–</span><input class="dlg__input dlg__until" id="dialogEndDate" placeholder="DD.MM.YYYY" aria-label="End date" autocomplete="off" inputmode="numeric" data-picker="date"></span>
-          <span class="dlg__hint" id="dialogDateHint"></span>
-        </div>
-        <div class="dlg__field" id="dialogTimeField"><span class="dlg__label"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-clock"></use></svg>Time</span><span class="dlg__time"><input class="dlg__input" id="dialogStart" placeholder="Start" aria-label="Start (HH:MM)" autocomplete="off" inputmode="numeric" data-picker="time"><span aria-hidden="true">–</span><input class="dlg__input" id="dialogEnd" placeholder="End" aria-label="End (HH:MM)" autocomplete="off" inputmode="numeric" data-picker="time"></span></div>
-        <div class="dlg__field dlg__field--wide" id="dialogRepeatField">
-          <span class="dlg__label"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-repeat"></use></svg>Repeat</span>
-          <span class="dlg__repeat">
-            <select class="dlg__select" id="dialogRepeat" aria-label="Repeat"></select>
-            <label class="dlg__interval" id="dialogIntervalField">every <input class="dlg__input" id="dialogInterval" aria-label="Interval" autocomplete="off" inputmode="numeric"> <span id="dialogIntervalUnit"></span></label>
-          </span>
-          <span class="dlg__weekdays" id="dialogWeekdays" role="group" aria-label="Weekdays"></span>
-          <span class="dlg__hint" id="dialogUntil"></span>
-        </div>
-        <label class="dlg__field"><span class="dlg__label">Tag</span><select class="dlg__select" id="dialogTag" aria-label="Tag"><button type="button"><selectedcontent></selectedcontent></button></select></label>
-        <label class="dlg__field"><span class="dlg__label"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-pin"></use></svg>Location</span><input class="dlg__input" id="dialogLocation" placeholder="No location" autocomplete="off"></label>
+      <input class="dlg__title" id="dialogTitle" placeholder="What is it?" aria-label="Title" autocomplete="off">
+      <div class="dlg__bar">
+        <div class="dlg__toks" id="dialogTokens" role="toolbar" aria-label="Details"></div>
+        <button class="btn btn--primary" id="dialogApply" type="submit">Apply</button>
       </div>
-      <textarea class="dlg__note" id="dialogNote" placeholder="Note" aria-label="Note" rows="3"></textarea>
-      <footer class="dlg__foot">
-        <button class="btn btn--ghost" id="dialogBacklog" type="button"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-inbox"></use></svg>To backlog</button>
-        <button class="btn btn--danger" id="dialogDelete" type="button">Delete</button>
-        <button class="btn btn--danger" id="dialogDeleteOccurrence" type="button">Delete occurrence</button>
-        <button class="btn btn--ghost" id="dialogEndSeries" type="button">End series here</button>
-        <span class="dlg__spacer"></span>
-        <button class="btn btn--primary" id="dialogApply" type="submit">Apply <kbd>↵</kbd></button>
-      </footer>
-      <div class="picker" id="picker" hidden></div>
+      <div class="dlg__pop" id="dialogPop" tabindex="-1" hidden></div>
+      <footer class="dlg__actions" id="dialogActions" hidden></footer>
     </form>
   </dialog>
   <div class="watermark" id="watermark" hidden>© 2026 MD_Calendar <span id="watermarkVersion"></span> · Tim Krüger (Zang3th) · <a href="https://github.com/Zang3th" target="_blank" rel="noopener noreferrer">GitHub</a></div>

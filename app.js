@@ -29,7 +29,6 @@ import "./ui/render-contacts.js";
 import "./ui/backlog-panel.js";
 import "./ui/holidays-panel.js";
 import "./ui/occasions-panel.js";
-import "./ui/pickers.js";
 import "./ui/dialog.js";
 import "./ui/menus.js";
 import "./ui/search-panel.js";
@@ -621,6 +620,12 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     }
     const shownTitles = 3;
 
+    /**
+     * The title of a confirmation for entries: “Entry copied” for one, “3 entries copied” for several.
+     * @param {number} count @param {string} done the past participle, such as “copied”
+     */
+    const entriesTitle = (count, done) => count === 1 ? `Entry ${done}` : `${count} entries ${done}`;
+
     /** Creates the item a dialog result describes. @param {MDCDialogResult} result @param {{extra: string[]} | null} kept */
     function createFrom(result, kept) {
       const target = /** @type {MDCCalendar} */ (calendar);
@@ -647,9 +652,65 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       if (result.date && !shows(result.date) && (!result.end || !shows(result.end))) showDay(result.date);
     }
 
-    /** @param {Omit<MDCDialogRequest, "tags">} request @param {MDCDialogHandlers} handlers */
+    /**
+     * Where a dialog result will be created, read before it is: a day entry goes into its time slot, a series or
+     * multi-day entry to the end of its list, a backlog entry to the end of its tag's group (docs/Domain.md#backlog).
+     * @param {MDCDialogResult} result @returns {() => Element | null} finds its tile once created and rendered
+     */
+    function createdTile(result) {
+      const target = /** @type {MDCCalendar} */ (calendar);
+      if (result.kind === "series") {
+        const index = target.series.length;
+        return () => renderer().cell(result.date)?.querySelector(`.ev[data-series="${index}"]`) || document.querySelector(`.ev[data-series="${index}"]`);
+      }
+      if (result.kind === "multiDay") {
+        const index = target.multiDay.length;
+        return () => document.querySelector(`.bar[data-multi="${index}"]`);
+      }
+      if (!result.date) {
+        return () => {
+          const store = /** @type {MDCBacklog} */ (backlog);
+          const group = result.tag ? store.groups.findIndex(candidate => candidate.name === result.tag) : app.backlog.ungrouped;
+          const list = group === app.backlog.ungrouped ? store.ungrouped : store.groups[group]?.entries || [];
+          return document.querySelector(`.bl__list[data-group="${group}"] .ev[data-index="${list.length - 1}"]`);
+        };
+      }
+      const index = app.calendar.timeSlot(app.calendar.entries(target, result.date), result.startTime);
+      return () => renderer().cell(result.date)?.querySelector(`.ev[data-index="${index}"]`) || null;
+    }
+
+    /**
+     * Creates what the dialog describes, confirms it, shows it and highlights it once, like a search hit. The confirmation
+     * names where it went: its day, its days or the backlog. @param {MDCDialogResult} result
+     */
+    function createAndShow(result) {
+      const find = createdTile(result);
+      execute(createFrom(result, null));
+      const where = !result.date ? "Backlog" : result.end ? `${app.calendar.formatDate(result.date)} – ${app.calendar.formatDate(result.end)}` : app.calendar.formatDate(result.date);
+      confirm(result.kind === "series" ? "Series created" : "Entry created", [result.title], where);
+      showResult(result);
+      const tile = find();
+      if (tile instanceof HTMLElement) app.tiles.highlight(tile);
+    }
+
+    /** Locations used before, most recent first, for the location popover; computed once per data version. */
+    let recentLocations = { version: -1, /** @type {string[]} */ list: /** @type {string[]} */ ([]) };
+
+    function locations() {
+      if (recentLocations.version === dataVersion || !calendar || !backlog) return recentLocations.list;
+      /** @type {Array<[string, string]>} */
+      const used = [];
+      for (const day of calendar.days.values()) for (const entry of day.entries) if (entry.location) used.push([day.key, entry.location]);
+      for (const item of [...calendar.multiDay, ...calendar.series]) if (!("raw" in item) && item.location) used.push([item.start, item.location]);
+      for (const entry of [...backlog.ungrouped, ...backlog.groups.flatMap(group => group.entries)]) if (entry.location) used.push(["", entry.location]);
+      used.sort((left, right) => right[0].localeCompare(left[0]));
+      recentLocations = { version: dataVersion, list: [...new Set(used.map(([, place]) => place.trim()).filter(Boolean))] };
+      return recentLocations.list;
+    }
+
+    /** @param {Omit<MDCDialogRequest, "tags" | "locations">} request @param {MDCDialogHandlers} handlers */
     function openDialog(request, handlers) {
-      app.dialog.open({ ...request, tags: config.tags }, handlers);
+      app.dialog.open({ ...request, tags: config.tags, locations: locations() }, handlers);
     }
 
     const noAction = () => {};
@@ -662,11 +723,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         return;
       }
       openDialog({ kind: "entry", isNew: true, inBacklog: false, title: "", location: "", note: [], tag: "", date: key || visibleDay(), end: "", startTime: "", endTime: "", rule: null, occurrence: "" }, {
-        apply: result => {
-          execute(createFrom(result, null));
-          showResult(result);
-        },
-        toBacklog: result => { execute(createFrom({ ...result, kind: "entry", date: "" }, null)); },
+        apply: createAndShow,
         remove: noAction, deleteOccurrence: noAction, endSeries: noAction
       });
     }
@@ -676,11 +733,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       if (!calendar || !backlog) return;
       const tag = backlog.groups[group]?.name || "";
       openDialog({ kind: "entry", isNew: true, inBacklog: true, title: "", location: "", note: [], tag, date: "", end: "", startTime: "", endTime: "", rule: null, occurrence: "" }, {
-        apply: result => {
-          execute(createFrom(result, null));
-          showResult(result);
-        },
-        toBacklog: noAction, remove: noAction, deleteOccurrence: noAction, endSeries: noAction
+        apply: createAndShow,
+        remove: noAction, deleteOccurrence: noAction, endSeries: noAction
       });
     }
 
@@ -700,13 +754,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
             showResult(result);
             return;
           }
-          const target = result.date ? { key: result.date } : { key: "", group: ref.group };
+          // Without a date the entry goes to (or stays in) the backlog, where its tag decides the group (docs/Domain.md#backlog).
+          const target = result.date ? { key: result.date } : { key: "", group: inBacklog ? ref.group : app.backlog.ungrouped };
           execute(app.backlog.update(calendar, backlog, ref, target, entryFields(result)));
           if (inBacklog) showResult(result);
-        },
-        toBacklog: result => {
-          // The tag decides the group (docs/Domain.md#backlog).
-          if (calendar && backlog) execute(app.backlog.update(calendar, backlog, ref, { key: "", group: app.backlog.ungrouped }, entryFields(result)));
         },
         remove: () => {
           if (!calendar || !backlog) return;
@@ -734,7 +785,6 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
             })
             : app.calendar.combine(result.title, [app.calendar.deleteSeries(calendar, index), createFrom(result, series)]));
         },
-        toBacklog: noAction,
         remove: () => {
           if (!calendar) return;
           execute(app.calendar.deleteSeries(calendar, index));
@@ -767,7 +817,6 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
             ? app.calendar.updateMultiDay(calendar, index, { ...item, title: result.title, location: result.location, note: result.note, tag: result.tag, start: result.date, end: result.end })
             : app.calendar.combine(result.title, [app.calendar.deleteMultiDay(calendar, index), createFrom(result, item)]));
         },
-        toBacklog: noAction,
         remove: () => {
           if (!calendar) return;
           execute(app.calendar.deleteMultiDay(calendar, index));
@@ -785,7 +834,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     function newContact() {
       if (!contacts) return;
       execute(app.contacts.create(contacts, app.contactsFormat.emptyContact()));
-      app.contactsView.focusField("firstName");
+      app.notifications.show("info", "Contact created", "");
+      app.contactsView.focusField("name");
     }
 
     /** @param {number} index */
@@ -859,14 +909,13 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       if (!actions.length) return;
       app.interactions.clearSelection();
       execute(actions.length === 1 ? actions[0] : app.calendar.combine(label, actions));
-      if (cut) confirm("Cut to clipboard", names);
-      else confirm(picks.length === 1 ? "Entry deleted" : `${picks.length} entries deleted`, names);
+      confirm(entriesTitle(picks.length, cut ? "cut" : "deleted"), names);
     }
 
     /** Copies the picked entries; an occurrence is copied as a plain entry with the fields of its series. @param {MDCPick[]} picks */
     function copy(picks) {
       if (!fillClipboard(picks)) return;
-      confirm("Copied to clipboard", clipboard.map(entry => entry.title));
+      confirm(entriesTitle(clipboard.length, "copied"), clipboard.map(entry => entry.title));
     }
 
     /** Copies the picked entries and deletes them as one undoable action; an occurrence is deleted as that occurrence only. @param {MDCPick[]} picks */
@@ -900,6 +949,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         return;
       }
       execute(app.backlog.pasteEntries(calendar, backlog, clipboard, target || { key: visibleDay(), index: 0 }));
+      confirm(entriesTitle(clipboard.length, "pasted"), clipboard.map(entry => entry.title));
     }
 
     /** Jumps to a search hit and highlights it. @param {MDCSearchItem} item */
@@ -962,13 +1012,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         selectedContact = index;
         renderContacts();
       },
-      update(index, updated, groups, field) {
-        const action = contacts ? app.contacts.update(contacts, index, updated, groups) : null;
+      update(index, updated, field) {
+        const action = contacts ? app.contacts.update(contacts, index, updated) : null;
         // Repeated edits of one field of one contact are one undo step (docs/Architecture.md#undo-history).
         if (action) execute(field ? { ...action, coalesce: `contact:${index}:${field}` } : action);
-      },
-      addGroup(index, group) {
-        if (contacts) execute(app.contacts.addGroup(contacts, index, group));
       },
       remove(index) {
         if (!contacts || !contacts.contacts[index]) return;

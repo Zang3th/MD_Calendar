@@ -70,7 +70,7 @@ test("Ctrl+A selects the entries of the day under the pointer; A opens a new ent
   await page.keyboard.press("Escape");
   await page.locator(friday).hover({ position: { x: 60, y: 300 } });
   await page.keyboard.press("a");
-  await expect(page.locator("#dialogDate")).toHaveValue("13.11.2026");
+  await expect(page.locator("#dialogDate")).toHaveAttribute("data-date", "2026-11-13");
 });
 
 test("the search jumps to a hit in another month", async ({ page, calendar }) => {
@@ -105,8 +105,8 @@ test("clicking a day's body opens a new entry for that day; with a selection the
   await expect(page.locator("#helpPanel")).toBeHidden();
   await expect(page.locator("#dialogDate")).toBeHidden();
   await page.locator(friday).click({ position: { x: 60, y: 300 } });
-  await expect(page.locator("#dialogDate")).toHaveValue("13.11.2026");
-  await expect(page.locator("#dialogDateHint")).toHaveText("Friday, 13 November 2026");
+  await expect(page.locator("#dialogDate")).toHaveAttribute("data-date", "2026-11-13");
+  await expect(page.locator("#dialogDate")).toHaveText("Tomorrow");
 });
 
 test("“+” opens a choice; its ICS item imports into the open calendar", async ({ page, calendar }) => {

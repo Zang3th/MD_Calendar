@@ -40,12 +40,12 @@ interface MDCalendarNamespace {
     name(contact: MDCContact): string;
     occasionsOn(contacts: MDCContacts, key: string): Array<MDCOccasion & { age: number | null }>;
     nextBirthday(contact: MDCContact, today: string): { days: number; date: string; age: number | null } | null;
+    upcoming(contacts: MDCContacts, today: string, count: number): MDCUpcoming[];
     matches(contact: MDCContact, query: string): boolean;
     sortName(contact: MDCContact): string;
     create(contacts: MDCContacts, contact: MDCContact): MDCContactAction;
-    update(contacts: MDCContacts, index: number, updated: MDCContact, groupsAfter?: string[]): MDCContactAction | null;
+    update(contacts: MDCContacts, index: number, updated: MDCContact): MDCContactAction | null;
     remove(contacts: MDCContacts, index: number): MDCContactAction;
-    addGroup(contacts: MDCContacts, index: number, group: string): MDCContactAction | null;
     importContacts(contacts: MDCContacts, incoming: MDCContact[]): { action: MDCContactAction | null; added: number; merged: number };
     isLeap(year: string): boolean;
   };
@@ -84,9 +84,8 @@ interface MDCalendarNamespace {
     serialize(calendar: MDCCalendar): string;
     entry: {
       pattern: RegExp;
-      subItemPattern: RegExp;
-      locationPrefix: string;
       text(text: string): Pick<MDCEntry, "start" | "end" | "title" | "tag">;
+      subLine(entry: MDCEntry, line: string): boolean;
       lines(entry: MDCEntry): string[];
     };
   };
@@ -151,7 +150,6 @@ interface MDCalendarNamespace {
     download(name: string, text: string, type: string): void;
     isShown(): boolean;
   };
-  pickers: { hide(): void; isOpen(): boolean };
   menus: {
     hideContext(): void;
     showHelp(open?: boolean): void;
@@ -261,6 +259,8 @@ type MDCDialogRequest = {
   tag: string;
   /** Tags of Config.md, offered as chips. */
   tags: MDCTag[];
+  /** Locations used before, most recent first, offered in the location popover. */
+  locations: string[];
   title: string;
   location: string;
   note: string[];
@@ -273,10 +273,9 @@ type MDCDialogRequest = {
   occurrence: string;
 };
 /** `date` is "" for an entry that stays in or goes into the backlog. */
-type MDCDialogResult = Omit<MDCDialogRequest, "isNew" | "occurrence" | "inBacklog" | "tags">;
+type MDCDialogResult = Omit<MDCDialogRequest, "isNew" | "occurrence" | "inBacklog" | "tags" | "locations">;
 type MDCDialogHandlers = {
   apply(result: MDCDialogResult): void;
-  toBacklog(result: MDCDialogResult): void;
   remove(): void;
   deleteOccurrence(): void;
   endSeries(): void;
@@ -288,8 +287,7 @@ type MDCMenuItem = { label: string; icon: string; danger?: boolean; run(): void 
 type MDCContactsHandlers = {
   select(index: number): void;
   /** `field` names the edited field, so that repeated edits of it are one undo step. */
-  update(index: number, updated: MDCContact, groups?: string[], field?: string): void;
-  addGroup(index: number, group: string): void;
+  update(index: number, updated: MDCContact, field?: string): void;
   remove(index: number): void;
   importText(text: string, name: string): void;
   exportOne(index: number): void;
@@ -472,18 +470,13 @@ type MDCLabelled = { label: string; value: string };
 type MDCContact = {
   firstName: string;
   lastName: string;
-  nickname: string;
   /** YYYY-MM-DD, --MM-DD without a year, or "" */
   birthday: string;
   phones: MDCLabelled[];
   emails: MDCLabelled[];
   addresses: MDCLabelled[];
-  company: string;
-  position: string;
-  groups: string[];
   /** Date as an ISO key */
   anniversaries: Array<{ label: string; date: string }>;
-  favorite: boolean;
   note: string[];
   /** Unknown lines preserved at the end of the contact */
   extra: string[];
@@ -492,7 +485,6 @@ type MDCContacts = {
   newline: string;
   /** Unknown lines and headings preserved after the file heading */
   head: string[];
-  groups: string[];
   contacts: MDCContact[];
   /** Changes with every change; keys the birthday cache. */
   revision: number;
@@ -507,6 +499,8 @@ type MDCOccasionList = {
   items: Array<{ name: string; detail: string; badge: string; open: (() => void) | null }>;
 };
 type MDCOccasion = { index: number; name: string; label: string; year: string };
+/** A coming birthday or anniversary of a contact; `years` is the age or the number of years, null when unknown. */
+type MDCUpcoming = { index: number; kind: "birthday" | "anniversary"; label: string; date: string; days: number; years: number | null };
 type MDCContactAction = MDCUndoAction & { days: string[]; contacts: true; selectAfter: number; selectBefore: number };
 
 // Search (see docs/Domain.md#search).

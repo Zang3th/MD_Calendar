@@ -8,7 +8,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   const multiDayHeading = "## Multi-day";
   const seriesHeading = "## Recurring";
   const entryPattern = /^- \[([ xX])\] (.*)$/;
-  const subItemPattern = /^\s+- (.*)$/;
+  /** An indented line below an entry: up to two spaces or one tab of indentation are cut off, the rest is kept as written. */
+  const subLinePattern = /^(?: {1,2}|\t)(.*\S.*)$/;
   const timePattern = /^([01]\d|2[0-3]):([0-5]\d)(?: - ([01]\d|2[0-3]):([0-5]\d))? (.+)$/;
   const seriesStartPattern = /^(\d{2}\.\d{2}\.\d{4})(?: ([01]\d|2[0-3]):([0-5]\d)(?: - ([01]\d|2[0-3]):([0-5]\d))?)?$/;
   const locationPrefix = "Location: ";
@@ -209,12 +210,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         extraTarget = entry.extra;
         return;
       }
-      const subItem = subItemPattern.exec(line);
-      if (subItem && entry && !entry.extra.length) {
-        if (subItem[1].startsWith(locationPrefix) && !entry.location && !entry.note.length) entry.location = subItem[1].slice(locationPrefix.length);
-        else entry.note.push(subItem[1]);
-        return;
-      }
+      if (entry && subLine(entry, line)) return;
       preserve(index, day ? "unknown-line" : "outside-day", line);
     });
     closeSection();
@@ -224,13 +220,26 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return { calendar, warnings };
   }
 
+  /**
+   * Takes an indented line below an entry: “- Location: …” as the first one is the location, every other one is a note
+   * line exactly as written. Returns false for a line that is not indented or follows an unknown line.
+   * @param {MDCEntry} entry @param {string} line
+   */
+  function subLine(entry, line) {
+    const match = subLinePattern.exec(line);
+    if (!match || entry.extra.length) return false;
+    if (match[1].startsWith(`- ${locationPrefix}`) && !entry.location && !entry.note.length) entry.location = match[1].slice(locationPrefix.length + 2);
+    else entry.note.push(match[1]);
+    return true;
+  }
+
   /** @param {MDCEntry} entry */
   function entryLines(entry) {
     const time = entry.start ? `${entry.start}${entry.end ? ` - ${entry.end}` : ""} ` : "";
     const tag = entry.tag ? ` #${entry.tag}` : "";
     const lines = [`- [${entry.done ? "x" : " "}] ${time}${entry.title}${tag}`];
     if (entry.location) lines.push(`  - ${locationPrefix}${entry.location}`);
-    for (const note of entry.note) lines.push(`  - ${note}`);
+    for (const note of entry.note) lines.push(`  ${note}`);
     return lines.concat(entry.extra);
   }
 
@@ -294,7 +303,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   // Entry lines are shared with Backlog.md (see docs/DataFormat.md#backlog).
-  const entry = { pattern: entryPattern, subItemPattern, locationPrefix, text: entryText, lines: entryLines };
+  const entry = { pattern: entryPattern, text: entryText, subLine, lines: entryLines };
 
   app.calendarFormat = { parse, serialize, entry };
 })(window.MDCalendar);

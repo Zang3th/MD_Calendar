@@ -100,11 +100,12 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
    * its tag, created at the end when missing, at `at` only when that is in this group, otherwise at its end. Otherwise
    * the entry goes to `at` (or the end of the ungrouped entries) and takes the tag of that group, where the ungrouped
    * entries are untagged; moved within its own group it keeps its tag, so that reordering never changes data.
-   * @param {MDCBacklog} backlog @param {MDCEntry} entry @param {{group: number, index: number} | null} at
+   * @param {MDCBacklog} backlog @param {MDCEntry} incoming @param {{group: number, index: number} | null} at
    * @param {number | null} source the backlog group the entry comes from, or null from outside the backlog
    * @returns {{group: number, index: number}}
    */
-  function place(backlog, entry, at, source) {
+  function place(backlog, incoming, at, source) {
+    const entry = timeless(incoming);
     if (source === null && entry.tag) {
       let group = backlog.groups.findIndex(candidate => candidate.name === entry.tag);
       if (group < 0) group = backlog.groups.push({ name: entry.tag, entries: [], extra: [] }) - 1;
@@ -119,6 +120,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const index = at ? Math.min(at.index, entries.length) : entries.length;
     entries.splice(index, 0, entry.tag === tag || source === group ? entry : { ...entry, tag });
     return { group, index };
+  }
+
+  /** The backlog has no times (docs/Domain.md#backlog): an entry arriving there loses its time. @param {MDCEntry} entry */
+  function timeless(entry) {
+    return entry.start || entry.end ? { ...entry, start: "", end: "" } : entry;
   }
 
   /**
@@ -146,7 +152,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       if (isBacklog(ref) && updated.tag === entry.tag && JSON.stringify(updated) === JSON.stringify(entry)) return null;
       return backlogStep(calendar, backlog, updated.title, isBacklog(ref) ? [] : [ref.key], () => {
         list(calendar, backlog, ref).splice(ref.index, 1);
-        if (isBacklog(ref) && updated.tag === entry.tag) list(calendar, backlog, ref).splice(ref.index, 0, updated);
+        if (isBacklog(ref) && updated.tag === entry.tag) list(calendar, backlog, ref).splice(ref.index, 0, timeless(updated));
         else place(backlog, updated, null, null);
       }, isBacklog(ref) ? undefined : backlogFile, sizeOf(entry) + sizeOf(updated));
     }
