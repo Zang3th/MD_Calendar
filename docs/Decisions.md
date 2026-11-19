@@ -252,7 +252,7 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 
 ## D47 · Ungrouped backlog entries and movable groups
 
-**Decision:** Backlog entries may stand outside any group: in `Backlog.md` directly below `# Backlog`, in the panel above the groups. An entry dropped onto the panel title becomes ungrouped. Groups are reordered by dragging their head. → [Domain](Domain.md#backlog), [DataFormat](DataFormat.md#backlog), [Shell](ui/Shell.md#backlog-panel)
+**Decision:** Backlog entries may stand outside any group: in `Backlog.md` directly below `# Backlog`, in the panel above the groups. An untagged entry dropped onto the panel title becomes ungrouped. Groups are reordered by dragging their head. → [Domain](Domain.md#backlog), [DataFormat](DataFormat.md#backlog), [Shell](ui/Shell.md#backlog-panel)
 **Reasons:** not every backlog entry fits a group; the format needs no new syntax and old files stay valid. The title as drop area avoids a drop zone that appears on drag start and moves the panel under the pointer.
 **Rejected:** a reserved “Ungrouped” group heading; a drop area shown only while dragging.
 
@@ -261,6 +261,36 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 **Decision:** Besides their red outline, overdue entries show a border beam: a red light with a fading tail that keeps circling the outline, one lap in 4s; with reduced motion it is hidden. The light and its long tail are 24 dash pieces of one rounded SVG outline, each a step behind and fainter than the one before, all moved by the same stroke dash offset. → [Views](ui/Views.md#entry-tile)
 **Reasons:** overdue entries need attention, and a moving light draws the eye without making the tile louder. The fading tail reads as light; moving along the outline keeps the speed constant on every side, and the pieces let the long tail bend around the corners. Overdue tiles are few and small, so repainting their outline each frame is cheap.
 **Rejected:** a solid dash running along the outline (it looked like a snake game); a conic gradient rotating around the center (it crawls along the middle of the long sides and rushes over the short ones); animating the gradient angle through `@property` (same unevenness); one straight gradient moved with `offset-path` (a long tail runs straight off the outline at corners and short sides).
+
+## D49 · Focus mode for one day
+
+**Decision:** A double-click on a day header of the week view opens the day as a floating card in front of the blurred app, with full titles, locations and note lines; it reuses the entry tiles and all their actions; drag and drop only reorders entries within the card. The head carries the day's badges instead of buttons; the arrow keys, `Esc` and the background navigate and close. → [Views](ui/Views.md#focus-mode)
+**Reasons:** the narrow week columns cut titles and hide notes; a card over the kept context shows one day completely without leaving the week. Reusing the tiles keeps every action consistent.
+**Rejected:** a separate day view (loses the week behind it); expanding the column in place (too narrow in landscape, no room for notes).
+
+## D50 · Dragging the days of the week
+
+**Decision:** Holding the middle button on the week drags the days along their axis (sideways in landscape, up and down in portrait); on release they snap to whole days, so that any seven consecutive days can show. The wheel's first gesture, `T`, a view change and a jump outside return to whole weeks; the arrows keep the offset. → [Interaction](ui/Interaction.md#pointer), [Views](ui/Views.md#week-landscape)
+**Reasons:** a week boundary often splits what belongs together (a weekend, a trip); the middle button is free on the week and the wheel already means “whole weeks”.
+**Rejected:** dragging with the left button (taken by the lasso and drag and drop); keeping the offset on the wheel (two ways to page that disagree).
+
+## D51 · Saving state with a minimum duration
+
+**Decision:** While a save writes, the save control shows “Saving” with a spinner, at least 600ms. → [Shell](ui/Shell.md#save-control)
+**Reasons:** saving to a network share takes a noticeable, varying time; a steady state masks it, and the minimum keeps quick saves from flickering.
+**Rejected:** a progress bar (the write cycles give no progress); showing the state only above a delay (the control would jump between states).
+
+## D52 · Backlog groups are tags
+
+**Decision:** Every backlog group is a tag and the ungrouped entries are the untagged ones. The tag decides the group of an entry that arrives from outside the backlog; a move between groups gives the entry the new group's tag, a move to the ungrouped entries removes it. `Inbox` is no longer a required group: a `## Inbox` from earlier files is read as ungrouped entries, and quick capture appends there. Tags stay read-only: the app creates no tags and no groups by hand; a click on free space of the panel only adds an entry. → [Domain](Domain.md#backlog), [DataFormat](DataFormat.md#backlog), [Shell](ui/Shell.md#backlog-panel)
+**Reasons:** entries carry a tag anyway; groups that mirror the tags sort them without extra work, and a dropped entry can no longer end up in an unrelated group. Keeping `Config.md` hand-maintained keeps colors and icons in one deliberate place.
+**Rejected:** the drop position deciding the group regardless of the tag; creating tags from the backlog panel; keeping `Inbox` as a group without a tag.
+
+## D53 · The undo history keeps to real changes
+
+**Decision:** A change and its reversal leave no undo steps, and repeated edits of one contact field are one step. The history compares a fingerprint of the written files after every action and drops the steps back to an equal earlier state; contact field edits carry a coalesce key. Both live in MD_Libs `core/history` as options. → [Architecture](Architecture.md#undo-history)
+**Reasons:** clicking done and undone or cycling a phone label grew the undo history and the unsaved count without any change; fixing each operation on its own would miss the next one, while comparing states catches every such cycle.
+**Rejected:** per-operation checks (toggle twice, move back); counting changed lines instead of steps (no undo steps would be removed).
 
 ## Research notes
 

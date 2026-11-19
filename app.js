@@ -33,6 +33,7 @@ import "./ui/pickers.js";
 import "./ui/dialog.js";
 import "./ui/menus.js";
 import "./ui/search-panel.js";
+import "./ui/focus.js";
 import "./ui/interactions.js";
 
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
@@ -63,9 +64,14 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   const backlogFile = "Backlog.md";
   const contactsFile = "Contacts.md";
 
-  /** @returns {MDCHistory} */
-  function createHistory() {
-    return undoHistory.create();
+  /**
+   * The undo history keeps to real changes (docs/Architecture.md#undo-history): a change and its reversal leave no steps,
+   * and repeated edits of one field are one step. Its fingerprint is that of the writable files' texts.
+   * @param {() => string[]} texts
+   * @returns {MDCHistory}
+   */
+  function createHistory(texts) {
+    return undoHistory.create({ fingerprint: () => undoHistory.fingerprint(texts()) });
   }
 
   /** @param {string} title @param {MDCNotificationBody} body @param {string} details @param {string} code */
@@ -110,7 +116,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     let holidays = { holidays: [], vacations: [] };
     /** @type {MDCConfig} */
     let config = { tags: [] };
-    let history = createHistory();
+    /** Serialized texts of the writable files, for the history's fingerprint. */
+    const writableTexts = () => writableFiles.map(name => serialized(name));
+    let history = createHistory(writableTexts);
     const fileNames = /** @type {MDCFileName[]} */ (["Calendar.md", "Backlog.md", "Contacts.md", "Holidays.md", "Config.md"]);
     const writableFiles = /** @type {MDCFileName[]} */ (["Calendar.md", "Backlog.md", "Contacts.md"]);
     /** The file that received the latest move between Calendar.md and Backlog.md; it is written first. */
@@ -121,10 +129,17 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const portrait = matchMedia("(orientation: portrait)");
     let today = app.calendar.todayKey(new Date());
     let anchor = today;
+    /**
+     * First shown day when the days of the week view were dragged off Monday, otherwise "" (docs/ui/Views.md#week-landscape).
+     * The anchor then stays one of the shown days.
+     */
+    let freeStart = "";
     /** Default view per orientation (docs/ui/Views.md#default-view). @type {MDCView} */
     let view = portrait.matches ? "month" : "week";
     let backlogOpen = false;
     let midnightTimer = 0;
+    /** Shortest time the saving state shows, in milliseconds. */
+    const savingMinimum = 600;
 
     function hasConflict() {
       return Boolean(fileSession?.hasConflict);
@@ -140,6 +155,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         open: Boolean(calendar),
         view,
         anchor,
+        start: weekStart(),
         backlogOpen,
         unsaved: fileSession ? fileSession.unsaved : 0,
         history,
@@ -174,12 +190,51 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       } else {
         app.contactsView.hide();
         (view === "week" ? app.month : app.week).hide();
-        rebuiltView = renderer().render(calendar, anchor, today);
+        rebuiltView = renderView();
       }
       const rebuiltBacklog = app.backlogPanel.render(backlog, backlogOpen);
       if (rebuiltView || rebuiltBacklog) bindLists();
+      // The focus card belongs to the week view (docs/ui/Views.md#focus-mode).
+      if (view === "week") app.focus.refresh(calendar, today);
+      else app.focus.close();
       app.interactions.refreshSelection();
       updateHeader();
+    }
+
+    /** The first day the week view shows: Monday of the anchor's week, or the day the days were dragged to. */
+    function weekStart() {
+      return freeStart || app.calendar.weekStart(anchor);
+    }
+
+    /** Renders the week or month of the anchor; returns true when its day lists were rebuilt. */
+    function renderView() {
+      if (!calendar) return false;
+      return view === "week" ? app.week.render(calendar, weekStart(), today) : app.month.render(calendar, anchor, today);
+    }
+
+    /** Whether the current view shows the day `key`. @param {string} key */
+    function shows(key) {
+      if (view === "week" && freeStart) return key >= freeStart && key <= app.calendar.addDays(freeStart, 6);
+      return samePeriod(key, anchor);
+    }
+
+    /**
+     * Shows the seven days from `start` in the week view; a Monday returns to whole weeks. Days that stay partly in
+     * view glide into place, a farther change slides in like a new week.
+     * @param {string} start @param {number} [rest] pixels the days stand off their place after a drag
+     */
+    function showWeekFrom(start, rest) {
+      const from = weekStart();
+      const days = dates.dayNumber(start) - dates.dayNumber(from);
+      freeStart = app.calendar.weekStart(start) === start ? "" : start;
+      // The anchor stays one of the shown days: today when shown, else the previous anchor when shown, else the first day.
+      const last = app.calendar.addDays(start, 6);
+      const inside = (/** @type {string} */ key) => key >= start && key <= last;
+      anchor = inside(today) ? today : inside(anchor) ? anchor : start;
+      render();
+      if (rest !== undefined) app.week.settle(rest);
+      else if (Math.abs(days) < 7) app.week.settle(days * app.week.daySize());
+      else app.tiles.slide("week", days < 0 ? -1 : 1);
     }
 
     /** The period one page of the current calendar view shows. */
@@ -247,7 +302,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
           });
         }
       }
-      if (writableFiles.includes(name)) history = createHistory();
+      if (writableFiles.includes(name)) history = createHistory(writableTexts);
       if (text === null) return;
       reportWarnings(name, warnings);
       const invalid = markdown.invalidCharacter(text);
@@ -395,7 +450,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         return true;
       }
       const folder = name ? note`${name}` : ["The folder"];
-      if (result === "missing") app.notifications.show("warning", automatic ? "Last folder not found" : "Folder not found", [...folder, ...note` was moved or deleted.\nReopen it with ${feature("Open folder")}.`]);
+      if (result === "missing") app.notifications.show("warning", automatic ? "Last folder not found" : "Folder not found", [...folder, ...note` was moved or deleted.`]);
       else if (result === "uninitialized") app.notifications.show("warning", "Not a calendar folder", [...folder, ...note` has no ${"MD_Calendar.json"}.\nSet it up with ${feature("New calendar")}.`]);
       else if (!automatic) app.notifications.show("warning", "No access to the folder", "Allow access when asked.");
       return false;
@@ -405,7 +460,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     function reportOpenError(error, code, title = "Folder not opened") {
       if (error instanceof DOMException && error.name === "AbortError") return;
       const details = error instanceof Error ? error.message : String(error);
-      app.notifications.show("error", title, "Try again or choose another folder.", { details, code });
+      app.notifications.show("error", title, "", { details, code });
     }
 
     /** Updates what an action changed. @param {MDCUndoAction} action */
@@ -414,7 +469,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       if (action.contacts) {
         app.tiles.setContacts(contacts);
         if (view === "contacts") renderContacts();
-        else renderer().render(calendar, anchor, today);
+        else renderView();
         updateHeader();
         return;
       }
@@ -425,6 +480,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       if (view !== "contacts") renderer().renderDays(calendar, action.days || [], today);
       // A changed group order rebuilds the backlog lists, which then need their drag and drop again.
       if (action.backlog && app.backlogPanel.render(backlog, backlogOpen)) bindLists();
+      app.focus.refresh(calendar, today);
+      app.interactions.refreshSelection();
       updateHeader();
     }
 
@@ -438,8 +495,14 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         after = { view: /** @type {MDCView} */ ("contacts"), anchor, contact: selectAfter };
         selectedContact = selectAfter;
       }
-      dataVersion += 1;
-      history.execute({ ...action, beforeViewState: action.contacts ? { ...before, view: "contacts" } : before, afterViewState: after });
+      // Every change of the data, also through undo and redo, starts a new data version, so that the cached texts the
+      // history's fingerprint reads are never stale.
+      history.execute({
+        ...action,
+        redo() { dataVersion += 1; return action.redo(); },
+        undo() { dataVersion += 1; action.undo(); },
+        beforeViewState: action.contacts ? { ...before, view: "contacts" } : before, afterViewState: after
+      });
       if (action.target) firstFile = /** @type {MDCFileName} */ (action.target);
       if (action.contacts && view !== "contacts") {
         view = "contacts";
@@ -456,9 +519,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       if (entry.target) firstFile = /** @type {MDCFileName} */ (undone ? (entry.target === calendarFile ? backlogFile : calendarFile) : entry.target);
       const target = (undone ? entry.beforeViewState : entry.afterViewState) || { view, anchor };
       if (target.contact !== undefined && target.contact >= 0) selectedContact = target.contact;
-      if (target.view !== view || !samePeriod(target.anchor, anchor)) {
+      if (target.view !== view || !shows(target.anchor)) {
         view = target.view;
         anchor = target.anchor;
+        freeStart = "";
         render();
       } else showChange(entry);
     }
@@ -469,11 +533,12 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       const deleted = changed.filter(conflict => conflict.text === null);
       const files = changed.map(conflict => conflict.file).join(", ");
       const title = deleted.length === changed.length ? "Deleted externally" : deleted.length ? "Changed or deleted" : "Changed externally";
-      conflictNotice = app.notifications.show("warning", title, note`${files}\n${feature("Reload")} discards your changes.\n${feature("Overwrite")} keeps them.`, {
+      // The buttons say what they do; the body only names the files (docs/ui/Shell.md#notifications).
+      conflictNotice = app.notifications.show("warning", title, note`${files}`, {
         persistent: true,
         actions: [
-          { label: "Reload", run: reloadWritable, primary: false },
-          { label: "Overwrite", run: () => { void save(true); }, primary: true }
+          { label: "Overwrite", run: () => { void save(true); }, tone: "warning" },
+          { label: "Reload", run: reloadWritable, tone: "success" }
         ]
       });
       updateHeader();
@@ -501,19 +566,34 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     /** @param {boolean} [force] */
     async function save(force = false) {
       if (!fileSession || !calendar) return;
+      // The saving state stays at least a moment, so that a quick save does not flicker (docs/ui/Shell.md#save-control).
+      const shown = force || fileSession.unsaved > 0;
+      if (shown) app.header.saving(true);
       try {
-        await fileSession.save(force);
+        await Promise.all([fileSession.save(force), shown ? new Promise(resolve => window.setTimeout(resolve, savingMinimum)) : null]);
       } catch (error) {
         app.notifications.show("error", "Save failed", "Your changes are kept.", {
           details: error instanceof Error ? error.message : String(error),
           code: "MDC-201"
         });
+      } finally {
+        if (shown) app.header.saving(false);
       }
+    }
+
+    /** One week or month back or forward; dragged days keep their offset. @param {number} direction */
+    function step(direction) {
+      // In focus mode the arrows go through the days of the focus card.
+      if (app.focus.isOpen()) app.focus.step(direction);
+      else if (view === "week" && freeStart) showWeekFrom(app.calendar.addDays(freeStart, 7 * direction));
+      else showDay(view === "week" ? app.calendar.addDays(anchor, 7 * direction) : app.calendar.addMonths(anchor, direction));
     }
 
     /** @param {string} key */
     function showDay(key) {
-      const direction = view === "contacts" || samePeriod(key, anchor) ? 0 : key < anchor ? -1 : 1;
+      const direction = view === "contacts" || shows(key) ? 0 : key < anchor ? -1 : 1;
+      // A day outside the dragged days returns to whole weeks.
+      if (direction) freeStart = "";
       anchor = key;
       render();
       if (direction && view !== "contacts") app.tiles.slide(view === "week" ? "week" : "month", direction);
@@ -521,11 +601,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
     /** The first visible day of the shown period, or today when it is visible. */
     function visibleDay() {
-      if (samePeriod(today, anchor)) return today;
-      return dates.periodStart(anchor, viewPeriod());
+      if (shows(today)) return today;
+      return view === "week" ? weekStart() : dates.periodStart(anchor, viewPeriod());
     }
 
-    /** Copied entries; pasting inserts open copies (docs/ui/Interaction.md#copy-and-paste). @type {MDCEntry[]} */
+    /** Copied entries; pasting inserts open copies (docs/ui/Interaction.md#selection-copy-and-paste). @type {MDCEntry[]} */
     let clipboard = [];
 
     /**
@@ -541,10 +621,6 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     }
     const shownTitles = 3;
 
-    function inboxIndex() {
-      return Math.max(0, /** @type {MDCBacklog} */ (backlog).groups.findIndex(group => group.name === app.backlogFormat.inbox));
-    }
-
     /** Creates the item a dialog result describes. @param {MDCDialogResult} result @param {{extra: string[]} | null} kept */
     function createFrom(result, kept) {
       const target = /** @type {MDCCalendar} */ (calendar);
@@ -557,7 +633,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         });
       }
       if (result.kind === "multiDay") return app.calendar.createMultiDay(target, { ...base, extra, start: result.date, end: result.end });
-      if (!result.date) return app.backlog.create(target, /** @type {MDCBacklog} */ (backlog), inboxIndex(), { ...base, start: result.startTime, end: result.endTime, extra });
+      if (!result.date) return app.backlog.create(target, /** @type {MDCBacklog} */ (backlog), { ...base, start: result.startTime, end: result.endTime, extra });
       return app.calendar.createEntry(target, result.date, { ...base, start: result.startTime, end: result.endTime, extra });
     }
 
@@ -568,7 +644,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
     /** @param {MDCDialogResult} result */
     function showResult(result) {
-      if (result.date && !samePeriod(result.date, anchor) && (!result.end || !samePeriod(result.end, anchor))) showDay(result.date);
+      if (result.date && !shows(result.date) && (!result.end || !shows(result.end))) showDay(result.date);
     }
 
     /** @param {Omit<MDCDialogRequest, "tags">} request @param {MDCDialogHandlers} handlers */
@@ -595,6 +671,19 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       });
     }
 
+    /** A new entry for the backlog, with the tag of `group` preset (none for the ungrouped entries). @param {number} group */
+    function newBacklogEntry(group) {
+      if (!calendar || !backlog) return;
+      const tag = backlog.groups[group]?.name || "";
+      openDialog({ kind: "entry", isNew: true, inBacklog: true, title: "", location: "", note: [], tag, date: "", end: "", startTime: "", endTime: "", rule: null, occurrence: "" }, {
+        apply: result => {
+          execute(createFrom(result, null));
+          showResult(result);
+        },
+        toBacklog: noAction, remove: noAction, deleteOccurrence: noAction, endSeries: noAction
+      });
+    }
+
     /** @param {MDCEntryRef} ref */
     function openEntry(ref) {
       if (!calendar || !backlog) return;
@@ -616,7 +705,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
           if (inBacklog) showResult(result);
         },
         toBacklog: result => {
-          if (calendar && backlog) execute(app.backlog.update(calendar, backlog, ref, { key: "", group: inboxIndex() }, entryFields(result)));
+          // The tag decides the group (docs/Domain.md#backlog).
+          if (calendar && backlog) execute(app.backlog.update(calendar, backlog, ref, { key: "", group: app.backlog.ungrouped }, entryFields(result)));
         },
         remove: () => {
           if (!calendar || !backlog) return;
@@ -799,14 +889,17 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       return clipboard.length > 0;
     }
 
-    /** Inserts open copies of the clipboard at the end of a day. @param {string} key */
-    function paste(key) {
+    /**
+     * Inserts open copies of the clipboard into a day, or into the backlog at a place (docs/ui/Interaction.md#selection-copy-and-paste).
+     * @param {MDCEntryRef | null} target without one, the preselected day
+     */
+    function paste(target) {
       if (!calendar || !backlog || view === "contacts") return;
       if (!clipboard.length) {
-        app.notifications.show("info", "Nothing to paste", "The clipboard is empty.");
+        app.notifications.show("info", "Nothing to paste", "");
         return;
       }
-      execute(app.backlog.pasteEntries(calendar, backlog, clipboard, key || visibleDay()));
+      execute(app.backlog.pasteEntries(calendar, backlog, clipboard, target || { key: visibleDay(), index: 0 }));
     }
 
     /** Jumps to a search hit and highlights it. @param {MDCSearchItem} item */
@@ -869,8 +962,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         selectedContact = index;
         renderContacts();
       },
-      update(index, updated, groups) {
-        if (contacts) execute(app.contacts.update(contacts, index, updated, groups));
+      update(index, updated, groups, field) {
+        const action = contacts ? app.contacts.update(contacts, index, updated, groups) : null;
+        // Repeated edits of one field of one contact are one undo step (docs/Architecture.md#undo-history).
+        if (action) execute(field ? { ...action, coalesce: `contact:${index}:${field}` } : action);
       },
       addGroup(index, group) {
         if (contacts) execute(app.contacts.addGroup(contacts, index, group));
@@ -898,7 +993,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       },
       exportAll() {
         if (contacts?.contacts.length) download("Contacts.vcf", app.vcard.serialize(contacts.contacts));
-        else app.notifications.show("info", "Nothing to export", "No contacts yet.");
+        else app.notifications.show("info", "Nothing to export", "");
       },
       copy(text) {
         void navigator.clipboard.writeText(text).then(
@@ -945,15 +1040,40 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       today() {
         if (!calendar) return;
         if (view === "contacts") view = portrait.matches ? "month" : "week";
-        showDay(today);
+        // Today returns to whole weeks (docs/ui/Interaction.md#keyboard-shortcuts).
+        if (view === "week" && freeStart) showWeekFrom(app.calendar.weekStart(today));
+        else showDay(today);
         const cell = renderer().cell(today);
         if (cell) app.tiles.highlight(cell);
       },
-      previous() { if (calendar) showDay(view === "week" ? app.calendar.addDays(anchor, -7) : app.calendar.addMonths(anchor, -1)); },
-      next() { if (calendar) showDay(view === "week" ? app.calendar.addDays(anchor, 7) : app.calendar.addMonths(anchor, 1)); },
+      previous() { if (calendar) step(-1); },
+      next() { if (calendar) step(1); },
+      snapToWeek() {
+        // After a drag the first wheel gesture returns to the week that is mostly shown (docs/ui/Interaction.md#pointer).
+        if (!calendar || view !== "week" || !freeStart) return false;
+        showWeekFrom(app.calendar.weekStart(app.calendar.addDays(freeStart, 3)));
+        return true;
+      },
+      panStart() {
+        if (!calendar || view !== "week" || app.focus.isOpen()) return false;
+        app.interactions.clearSelection();
+        return app.week.panBegin(calendar, weekStart(), today);
+      },
+      panMove(x, y) { app.week.panMove(x, y); },
+      openFocus(key) {
+        if (!calendar || view !== "week") return;
+        app.interactions.clearSelection();
+        app.focus.open(calendar, key, today);
+      },
+      isFocusOpen() { return app.focus.isOpen(); },
+      panEnd() {
+        const result = app.week.panEnd();
+        if (result) showWeekFrom(result.start, result.rest);
+      },
       showView(next) {
         if (!calendar || next === view) return;
         view = next;
+        freeStart = "";
         render();
       },
       openContact,
@@ -999,7 +1119,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       removeMany: picks => removeMany(picks),
       copy: picks => copy(picks),
       cut: picks => cut(picks),
-      paste: key => paste(key),
+      paste: target => paste(target),
+      newBacklogEntry,
       hasClipboard: () => clipboard.length > 0,
       dayPicks(key) {
         if (!calendar || view === "contacts") return [];

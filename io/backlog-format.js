@@ -4,7 +4,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
 // Parser and serializer for Backlog.md (see docs/DataFormat.md#backlog).
 (function (app) {
-  const inbox = "Inbox";
+  /** Former required group; files that still have it get its entries as ungrouped ones (docs/DataFormat.md#backlog). */
+  const formerInbox = "Inbox";
 
   /**
    * @param {string} source
@@ -58,8 +59,13 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     });
 
     if (!hasHeader) warnings.unshift({ lineNumber: 1, kind: "missing-header", text: lines[0] || "" });
-    // The Inbox group always exists (docs/Domain.md#backlog).
-    if (!backlog.groups.some(candidate => candidate.name === inbox)) backlog.groups.unshift({ name: inbox, entries: [], extra: [] });
+    // The ungrouped entries replace the former Inbox group; its unknown lines stay after the file heading.
+    const inbox = backlog.groups.findIndex(candidate => candidate.name === formerInbox);
+    if (inbox >= 0) {
+      const [former] = backlog.groups.splice(inbox, 1);
+      backlog.ungrouped.push(...former.entries);
+      backlog.head.push(...former.extra);
+    }
     return { backlog, warnings };
   }
 
@@ -75,5 +81,5 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return lines.join(backlog.newline) + backlog.newline;
   }
 
-  app.backlogFormat = { parse, serialize, inbox };
+  app.backlogFormat = { parse, serialize };
 })(window.MDCalendar);

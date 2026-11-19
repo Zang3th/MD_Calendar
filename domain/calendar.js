@@ -193,6 +193,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       label,
       days: [...new Set(actions.flatMap(action => action.days))],
       layout: actions.some(action => action.layout),
+      backlog: actions.some(action => action.backlog),
       size: actions.reduce((total, action) => total + (action.size || 0), 0),
       redo() { actions.forEach(action => action.redo()); },
       undo() { [...actions].reverse().forEach(action => action.undo()); }

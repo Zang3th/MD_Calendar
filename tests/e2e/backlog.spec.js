@@ -5,13 +5,13 @@ const thursday = '.day[data-day="2026-11-12"]';
 test("entries move between the backlog and the days, and saving writes both files", async ({ page, calendar }) => {
   await calendar.openApp({
     "Calendar.md": "# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] Day entry\n",
-    "Backlog.md": "# Backlog\n\n## Inbox\n- [ ] Someday task\n\n## Later\n"
+    "Backlog.md": "# Backlog\n\n## Home\n- [ ] Someday task #Home\n\n## Later\n"
   });
   await page.keyboard.press("b");
-  const inbox = page.locator('.bl__list[data-group="0"]');
-  await calendar.drag(inbox.locator(".ev"), page.locator(`${thursday} .ev`));
+  const home = page.locator('.bl__list[data-group="0"]');
+  await calendar.drag(home.locator(".ev"), page.locator(`${thursday} .ev`));
   await expect(page.locator(`${thursday} .ev__title`)).toHaveText(["Someday task", "Day entry"]);
-  await expect(inbox.locator(".ev")).toHaveCount(0);
+  await expect(home.locator(".ev")).toHaveCount(0);
 
   // The drag steps like a real pointer, so that the empty target list receives several dragover events.
   await calendar.drag(page.locator(`${thursday} .ev`, { hasText: "Day entry" }), page.locator('.bl__list[data-group="1"]'));
@@ -20,8 +20,9 @@ test("entries move between the backlog and the days, and saving writes both file
 
   await page.keyboard.press("Control+s");
   await expect(page.locator("#save")).not.toHaveClass(/is-dirty/);
-  expect(await calendar.readFile("Calendar.md")).toBe("# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] Someday task\n");
-  expect(await calendar.readFile("Backlog.md")).toBe("# Backlog\n\n## Inbox\n\n## Later\n- [ ] Day entry\n");
+  expect(await calendar.readFile("Calendar.md")).toBe("# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] Someday task #Home\n");
+  // Dropped into a group, the untagged entry takes the group's tag (docs/Domain.md#backlog).
+  expect(await calendar.readFile("Backlog.md")).toBe("# Backlog\n\n## Home\n\n## Later\n- [ ] Day entry #Later\n");
 
   await page.keyboard.press("Control+z");
   await expect(page.locator(`${thursday} .ev__title`)).toHaveText(["Someday task", "Day entry"]);
@@ -61,7 +62,7 @@ test("holidays show in the day header and tags take their color from Config.md",
 test("an entry dropped on the backlog title becomes ungrouped without moving the panel, and is saved above the groups", async ({ page, calendar }) => {
   await calendar.openApp({
     "Calendar.md": "# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] Day entry\n",
-    "Backlog.md": "# Backlog\n\n## Inbox\n- [ ] Someday task\n"
+    "Backlog.md": "# Backlog\n\n## Home\n- [ ] Someday task #Home\n"
   });
   await page.keyboard.press("b");
   const head = page.locator(".bl__head").first();
@@ -82,26 +83,61 @@ test("an entry dropped on the backlog title becomes ungrouped without moving the
 
   await page.keyboard.press("Control+s");
   await expect(page.locator("#save")).not.toHaveClass(/is-dirty/);
-  expect(await calendar.readFile("Backlog.md")).toBe("# Backlog\n\n- [ ] Day entry\n\n## Inbox\n- [ ] Someday task\n");
+  expect(await calendar.readFile("Backlog.md")).toBe("# Backlog\n\n- [ ] Day entry\n\n## Home\n- [ ] Someday task #Home\n");
 });
 
 test("backlog groups are reordered by dragging their head, saved in that order and undone in one step", async ({ page, calendar }) => {
-  await calendar.openApp({ "Calendar.md": "# Calendar\n", "Backlog.md": "# Backlog\n\n- [ ] Loose\n\n## Inbox\n- [ ] A\n\n## Later\n- [ ] B\n" });
+  await calendar.openApp({ "Calendar.md": "# Calendar\n", "Backlog.md": "# Backlog\n\n- [ ] Loose\n\n## Home\n- [ ] A #Home\n\n## Later\n- [ ] B #Later\n" });
   await page.keyboard.press("b");
   const heads = page.locator(".bl__head .bl__name");
-  await expect(heads).toHaveText(["Inbox", "Later"]);
-  await calendar.drag(page.locator(".bl__head", { hasText: "Later" }), page.locator(".bl__head", { hasText: "Inbox" }));
-  await expect(heads).toHaveText(["Later", "Inbox"]);
+  await expect(heads).toHaveText(["Home", "Later"]);
+  await calendar.drag(page.locator(".bl__head", { hasText: "Later" }), page.locator(".bl__head", { hasText: "Home" }));
+  await expect(heads).toHaveText(["Later", "Home"]);
   // The drag did not collapse a group, and the moved group still takes entries.
   await expect(page.locator(".bl__group.is-collapsed")).toHaveCount(0);
   await page.keyboard.press("Control+s");
   await expect(page.locator("#save")).not.toHaveClass(/is-dirty/);
-  expect(await calendar.readFile("Backlog.md")).toBe("# Backlog\n\n- [ ] Loose\n\n## Later\n- [ ] B\n\n## Inbox\n- [ ] A\n");
+  expect(await calendar.readFile("Backlog.md")).toBe("# Backlog\n\n- [ ] Loose\n\n## Later\n- [ ] B #Later\n\n## Home\n- [ ] A #Home\n");
   await page.keyboard.press("Control+z");
-  await expect(heads).toHaveText(["Inbox", "Later"]);
+  await expect(heads).toHaveText(["Home", "Later"]);
   // The rebuilt lists keep their drag and drop.
   await calendar.drag(page.locator(".bl__list .ev", { hasText: "A" }), page.locator(".bl__list .ev", { hasText: "B" }), 0.8);
   await expect(page.locator('.bl__list[data-group="1"] .ev__title')).toHaveText(["B", "A"]);
+});
+
+test("a tagged entry goes to its tag's group, keys paste at the pointer and a click on free space adds an entry to the group there", async ({ page, calendar }) => {
+  await calendar.openApp({
+    "Calendar.md": "# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] Report #Work\n- [ ] Plain\n",
+    "Backlog.md": "# Backlog\n\n## Home\n- [ ] Dishes #Home\n",
+    "Config.md": "# Config\n\n## Tags\n- Home: #458588 home\n- Work: #d79921 briefcase\n"
+  });
+  await page.keyboard.press("b");
+  // Dropped onto the panel title (ungrouped), the tagged entry still goes to its tag's group, created for it.
+  await calendar.drag(page.locator(`${thursday} .ev`, { hasText: "Report" }), page.locator(".backlog__title"));
+  await expect(page.locator(".bl__head .bl__name")).toHaveText(["Home", "Work"]);
+  await expect(page.locator('.bl__list[data-group="1"] .ev__title')).toHaveText(["Report"]);
+
+  // Cut on a day, paste with the pointer over the Home group: the untagged entry lands there and takes its tag.
+  await page.locator(`${thursday} .ev`, { hasText: "Plain" }).hover();
+  await page.keyboard.press("Control+x");
+  await page.locator('.bl__list[data-group="0"] .ev').hover();
+  await page.keyboard.press("Control+v");
+  await expect(page.locator('.bl__list[data-group="0"] .ev__title')).toHaveText(["Plain", "Dishes"]);
+  await expect(page.locator(`${thursday} .ev`)).toHaveCount(0);
+
+  // A click on free space below a group opens the dialog for a new entry there, with the group's tag preset.
+  const work = /** @type {{x: number, y: number, width: number, height: number}} */ (await page.locator('.bl__list[data-group="1"]').boundingBox());
+  await page.mouse.click(work.x + 30, work.y + work.height + 6);
+  await expect(page.locator("#dialogTag")).toHaveValue("Work");
+  await page.keyboard.type("Slides");
+  await page.keyboard.press("Enter");
+  await expect(page.locator('.bl__list[data-group="1"] .ev__title')).toHaveText(["Report", "Slides"]);
+
+  await page.keyboard.press("Control+s");
+  await expect(page.locator("#save")).not.toHaveClass(/is-dirty/);
+  expect(await calendar.readFile("Backlog.md")).toBe("# Backlog\n\n## Home\n- [ ] Plain #Home\n- [ ] Dishes #Home\n\n## Work\n- [ ] Report #Work\n- [ ] Slides #Work\n");
+  // Tags are only read: Config.md stays as it was.
+  expect(await calendar.readFile("Config.md")).toBe("# Config\n\n## Tags\n- Home: #458588 home\n- Work: #d79921 briefcase\n");
 });
 
 test("the holiday overview shows vacations, holidays and school vacations as tabs", async ({ page, calendar }) => {

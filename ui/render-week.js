@@ -1,4 +1,3 @@
-
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
 // Week view, landscape and portrait (docs/ui/Views.md). The layout per orientation lives in styles.css.
@@ -33,12 +32,13 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   /**
-   * Shows the week of `anchor`. Returns true when the day lists were rebuilt.
-   * @param {MDCCalendar} calendar @param {string} anchor @param {string} today
+   * Shows `count` days from `start` (seven, or the wider strip while the days are dragged). Returns true when the day
+   * lists were rebuilt.
+   * @param {MDCCalendar} calendar @param {string} start @param {string} today @param {number} [count]
    */
-  function render(calendar, anchor, today) {
-    const days = app.calendar.weekDays(anchor);
-    const rebuilt = days[0] !== shownDays[0] || !board.contains(bars);
+  function render(calendar, start, today, count = 7) {
+    const days = Array.from({ length: count }, (_, index) => app.calendar.addDays(start, index));
+    const rebuilt = days[0] !== shownDays[0] || days.length !== shownDays.length || !board.contains(bars);
     if (rebuilt) {
       shownDays = days;
       sections.clear();
@@ -51,7 +51,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       }
       board.replaceChildren(fragment);
     }
-    const layout = app.calendar.segments(calendar, days[0], 7);
+    board.style.setProperty("--days", String(count));
+    const layout = app.calendar.segments(calendar, days[0], count);
     board.style.setProperty("--lanes", String(layout.lanes));
     days.forEach((key, index) => /** @type {HTMLElement} */ (sections.get(key)).style.setProperty("--lanes", String(layout.dayLanes[index])));
     bars.innerHTML = layout.segments.map(segment => app.tiles.bar(segment, today, true)).join("");
@@ -84,5 +85,87 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     board.hidden = true;
   }
 
-  app.week = { render, renderDays, lists, cell, hide };
+  // ---------- Dragging the days (docs/ui/Interaction.md#pointer) ----------
+  // While dragging, the board shows a strip of three weeks: the shown seven days with one week on each side. The strip
+  // follows the pointer along the days' axis (sideways in landscape, where days are columns; up and down in portrait,
+  // where they are rows) by a translate of its children; the board clips it along that axis only, so that nothing
+  // changes the glass of the bars (no opacity, filter or clip-path). Beyond a week the strip moves on by seven days.
+
+  /**
+   * `start` is the first shown day without offset, `offset` the pixels the days stand after it along the axis (right or
+   * down), `shift` the pointer pixels already turned into whole weeks of `start`, `column` the size of one day.
+   * @type {{calendar: MDCCalendar, today: string, start: string, column: number, offset: number, shift: number} | null}
+   */
+  let pan = null;
+
+  /** Whether the days are rows (portrait), so that dragging and gliding run vertically. */
+  function vertical() {
+    return portrait.matches;
+  }
+
+  /** @param {number} offset pixels the days moved along the axis since the drag began, relative to `pan.start` */
+  function place(offset) {
+    if (!pan) return;
+    pan.offset = offset;
+    board.style.setProperty("--pan", `${Math.round(offset - 7 * pan.column)}px`);
+  }
+
+  /** @param {MDCCalendar} calendar @param {string} start first shown day @param {string} today */
+  function panBegin(calendar, start, today) {
+    const column = daySize();
+    if (!column) return false;
+    pan = { calendar, today, start, column, offset: 0, shift: 0 };
+    board.classList.add("is-panning");
+    render(calendar, app.calendar.addDays(start, -7), today, 21);
+    place(0);
+    return true;
+  }
+
+  /**
+   * @param {number} x pixels the pointer moved to the right since the drag began
+   * @param {number} y pixels it moved down; only the days' axis counts
+   */
+  function panMove(x, y) {
+    if (!pan) return;
+    const offset = vertical() ? y : x;
+    let relative = offset - pan.shift;
+    // Past six days in either direction the strip moves on by a week, so that the drag has no end.
+    if (Math.abs(relative) > 6 * pan.column) {
+      const weeks = relative > 0 ? -1 : 1;
+      pan.start = app.calendar.addDays(pan.start, 7 * weeks);
+      pan.shift += -weeks * 7 * pan.column;
+      relative = offset - pan.shift;
+      render(pan.calendar, app.calendar.addDays(pan.start, -7), pan.today, 21);
+    }
+    place(relative);
+  }
+
+  /**
+   * Ends the drag. Returns the first day to show, snapped to the nearest day, and the pixels the days still stand off
+   * that place, for `settle`.
+   */
+  function panEnd() {
+    if (!pan) return null;
+    const days = Math.round(-pan.offset / pan.column);
+    const result = { start: app.calendar.addDays(pan.start, days), rest: pan.offset + days * pan.column };
+    pan = null;
+    board.classList.remove("is-panning");
+    board.style.removeProperty("--pan");
+    return result;
+  }
+
+  /** Lets the shown days glide the last pixels into place after a drag or a snap. @param {number} rest */
+  function settle(rest) {
+    if (!rest || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const move = vertical() ? `translateY(${Math.round(rest)}px)` : `translateX(${Math.round(rest)}px)`;
+    board.animate([{ transform: move }, { transform: "none" }], { duration: 240, easing: "cubic-bezier(.2,.8,.2,1)" });
+  }
+
+  /** The size of one day along the days' axis in pixels: a column's width, or a row's height in portrait. */
+  function daySize() {
+    const bounds = board.getBoundingClientRect();
+    return (vertical() ? bounds.height : bounds.width) / 7;
+  }
+
+  app.week = { render, renderDays, lists, cell, hide, panBegin, panMove, panEnd, settle, daySize };
 })(window.MDCalendar);

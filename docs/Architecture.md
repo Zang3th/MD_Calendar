@@ -47,8 +47,8 @@ domain/   calendar.js  recurrence.js  backlog.js  contacts.js  search.js
 io/       storage.js  calendar-format.js  backlog-format.js  contacts-format.js
           holidays-format.js  config-format.js  ics.js  vcard.js  folder-state.js
 ui/       tiles.js  render-week.js  render-month.js  render-contacts.js  header.js  start.js  backlog-panel.js
-          holidays-panel.js  occasions-panel.js  search-panel.js  menus.js  pickers.js  dialog.js
-          interactions.js  notifications.js  tooltips.js
+          holidays-panel.js  occasions-panel.js  search-panel.js  focus.js  menus.js  pickers.js
+          dialog.js  interactions.js  notifications.js  tooltips.js
 vendor/   fonts/
 res/logo/ logo and web icon set
 res/icons/ standalone SVG files of the UI icons
@@ -101,6 +101,7 @@ While the page is visible, the stamps of loaded files are checked every two seco
 - Every change to persistent data is one action with a label, an `undo` and a `redo` function, and the view state before and after. This covers calendar entries, backlog and contacts.
 - An operation that touches several files, such as moving an entry from the backlog into the calendar, is one action.
 - The history is capped by entry count and memory size.
+- The history keeps to real changes. After every action it compares a fingerprint of the written files’ texts with the states on the current path; an action that returns the data to an earlier state drops the steps in between, so that a change and its reversal (checking off and on, moving and moving back, a label cycled back) leave no steps. Repeated edits of one field of one contact (a text field, a label cycled on) that follow each other directly are one step, unless the state between them was saved. Both are options of MD_Libs `core/history` (`fingerprint`, `coalesce`).
 - The number of unsaved changes shown in the UI is the distance between the current history position and the position at the last save. When the data serializes to exactly the files on disk again (an entry moved up and back down), the current position becomes the saved one and the count is 0, as MD_Manager compares with the saved text. It survives trimming; when new actions discard a redo branch that contains the saved state, the discarded steps are added to the distance.
 - Reloading a file starts a new history.
 
@@ -122,7 +123,7 @@ Shared systems come from MD_Libs (`../MD_Libs`, `@zang3th/md-libs`), the tested 
 
 | System | MD_Libs | Use in MD_Calendar |
 |---|---|---|
-| Undo history | `core/history` | One history for all written files; the unsaved count is its distance to the saved state. |
+| Undo history | `core/history` | One history for all written files with a fingerprint of their texts; the unsaved count is its distance to the saved state. |
 | Save, undo and redo controls | `core/history` (`controls`) | Labels in `ui/header.js`. |
 | Storage adapter, folder memory | `platform/storage`, `platform/handles` | Five recent folders with the cached summary (`update` keeps their order); `probe` tells a gone folder from a missing permission; `fingerprint` hashes saved files. |
 | MD_Calendar.json | `core/json`, `platform/jsonFile`, `platform/device` | `io/folder-state.js` defines the schema and key order; the device ID is kept in `localStorage`. |

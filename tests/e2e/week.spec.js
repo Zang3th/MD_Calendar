@@ -60,7 +60,7 @@ test("drag and drop moves an entry as one undoable action", async ({ page, calen
   await expect(titles(page, friday)).toHaveText(["C"]);
 });
 
-test("moving an entry and moving it back leaves nothing unsaved", async ({ page, calendar }) => {
+test("moving an entry and moving it back leaves nothing unsaved and nothing to undo", async ({ page, calendar }) => {
   await calendar.openApp({ "Calendar.md": "# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] A\n- [ ] B\n" });
   await calendar.drag(page.locator(`${thursday} .ev`, { hasText: "B" }), page.locator(`${thursday} .ev`, { hasText: "A" }));
   await expect(titles(page, thursday)).toHaveText(["B", "A"]);
@@ -68,6 +68,6 @@ test("moving an entry and moving it back leaves nothing unsaved", async ({ page,
   await calendar.drag(page.locator(`${thursday} .ev`, { hasText: "A" }), page.locator(`${thursday} .ev`, { hasText: "B" }));
   await expect(titles(page, thursday)).toHaveText(["A", "B"]);
   await expect(page.locator("#save")).not.toHaveClass(/is-dirty/);
-  await page.keyboard.press("Control+z");
-  await expect(page.locator("#save .save__count")).toHaveText("1");
+  // A change and its reversal leave no undo steps (docs/Architecture.md#undo-history).
+  await expect(page.locator("#undo")).toBeDisabled();
 });

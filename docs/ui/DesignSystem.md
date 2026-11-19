@@ -152,7 +152,7 @@ Scale: 2, 4, 6, 8, 10, 12, 14, 16, 22 px. Every padding, margin and gap uses a v
 | Area | Spacing |
 |---|---|
 | Page | 14px around the header pill, main panel and backlog panel; 14px between them |
-| Header pill | padding 8px 12px; 14px between the three groups; 10px between title and **+**, 4px after **+**, no gap between undo, redo and save; 4px between the right zone buttons; 6px between icon and label in the view switcher; save control padding 0 10px, 6px between dot, label and counter |
+| Header pill | padding 8px 12px; 14px between the three groups; 10px between title and **+**, 4px after **+**, no gap between undo, redo and save; 4px between the right zone buttons; 6px between icon and label in the view switcher; save control 108px wide in every state, padding 0 10px, 6px between icon, label and counter |
 | Main panel | padding 12px, the sides of the header pill, so that cards start below the logo and end below Options; the week cancels the 5px card spacing and the month the 4px cell margin at the outer edges, the month's ISO week column stays left of the cells |
 | Week | 10px between day cards; day header padding 0 14px 0 16px, 4px between weekday and date, 4px between badges; day list padding 4px 10px 10px |
 | Entries in a day | 6px between entries; entry padding 8px 10px; 8px between check box and text |
@@ -213,7 +213,7 @@ Line icons as inline SVG with a 2px stroke and round caps and joins. No emoji an
   - **12px**: dense places only, namely badges and, in the month, the repeat icon and tag icons.
 - The check mark of an entry is part of its check box, not a sized icon: it fills the whole box (17px, 12px in the month), so it stays centered and scales with the box. The box frame is therefore an inset 1.5px shadow, not a border.
 - An icon button is about twice as large as its icon (16px in 28–36px) and at least 24px in each direction.
-- Header exception: the nine buttons of the header pill (**+**, undo, redo, save and the five buttons on the right) are 36×36px with 18px icons, in landscape and portrait; the saved state of save is the same square, the unsaved state widens it for label and counter. The view switcher keeps 16px icons.
+- Header exception: the nine buttons of the header pill (**+**, undo, redo, save and the five buttons on the right) are 36×36px with 18px icons, in landscape and portrait; the save control is 108px wide in every state, with its icon and label centered. The view switcher keeps 16px icons.
 - Stroke and fill use `currentColor`; the button's state colors the icon.
 - Optical centering and pixel alignment are done with a `translate` group inside the symbol (for example `translate(.5 .5)` or `translate(-.625 0)`), never with CSS offsets.
 - Every symbol also exists as a standalone file `res/icons/<name>.svg` with identical geometry. A unit test checks that file and symbol match.
@@ -257,13 +257,16 @@ The set, chosen by the user from three designs per tag:
 - The view switcher indicator slides between options; panels slide in.
 - A new week or month slides in briefly from the side it comes from (navigation, mouse wheel, jump to today or to a search hit).
 - Jumping to today or to a search hit scrolls smoothly and highlights the target once: after the slide, an accent ring (2px outline in `--accent` at `--strong`) closes in from 8px to 3px around the day, month cell or bar, holds and fades, 1.4s in all; around an entry, which sits in a scrolling list, it stays at 2px and only fades in and out. It never scales the target, so text and icons stay sharp; with reduced motion the ring only fades in and out.
+- After dragging the days, and when a snap or `T` moves them by less than a week, the days glide the remaining distance into place (240ms); a move by a week or more slides in like a new period.
+- The focus card fades in its blurred background and rises in like the dialog; switching its day lets the content glide 16px in from that side.
+- While saving, the save control's arc turns once per 0.8s (a transform); with reduced motion it stands still.
 - The slide of a new period moves the view by 24px only; it does not fade it, because opacity on the view would break the glass blur of the bars inside.
 - Overdue entries are the one continuous animation: a red border beam travels along their outline at a constant speed (24 fading dash pieces of one rounded SVG outline, one lap in 4s). → [Views](Views.md#entry-tile)
 - `prefers-reduced-motion` disables non-essential motion.
 
 ## Completion sound: Arpeggio
 
-Three quick sine tones rising through a C major triad. When it plays is defined in [Interaction](Interaction.md#checking-off); how it is built in [Architecture](../Architecture.md#systems-adopted-from-md_manager).
+Three quick sine tones rising through a C major triad. When it plays is defined in [Interaction](Interaction.md#checking-off); how it is built in [Architecture](../Architecture.md#systems-from-md_libs).
 
 | Voice | Note | Frequency | Start | Attack | Hold | Release | Peak gain |
 |---|---|---|---|---|---|---|---|

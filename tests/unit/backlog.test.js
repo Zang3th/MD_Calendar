@@ -14,7 +14,7 @@ function fixture() {
     newline: "\n", head: [], multiDay: [], series: [], multiDayHead: [], seriesHead: [], seriesRevision: 0,
     days: new Map([["2026-11-12", { key: "2026-11-12", extra: [], entries: [entry("Day A")] }]])
   };
-  const backlog = { newline: "\n", head: [], ungrouped: [entry("Loose A")], groups: [{ name: "Inbox", extra: [], entries: [entry("Inbox A")] }, { name: "Later", extra: [], entries: [entry("Later A"), entry("Later B")] }] };
+  const backlog = { newline: "\n", head: [], ungrouped: [entry("Loose A")], groups: [{ name: "Home", extra: [], entries: [entry("Home A")] }, { name: "Later", extra: [], entries: [entry("Later A"), entry("Later B")] }] };
   return { calendar, backlog };
 }
 
@@ -44,15 +44,15 @@ test("moves between backlog groups and days are single undoable actions", () => 
 
   const scheduled = app.backlog.move(calendar, backlog, { key: "", group: 1, index: 1 }, { key: "2026-11-12", index: 0 });
   assert.equal(scheduled.target, "Calendar.md");
-  assert.deepEqual(roundTrip(state, scheduled), { days: [["2026-11-12", ["Later B", "Day A"]]], groups: [["Inbox A"], ["Later A"]] });
+  assert.deepEqual(roundTrip(state, scheduled), { days: [["2026-11-12", ["Later B", "Day A"]]], groups: [["Home A"], ["Later A"]] });
 
   const parked = app.backlog.move(calendar, backlog, { key: "2026-11-12", index: 1 }, { key: "", group: 0, index: 1 });
   assert.equal(parked.target, "Backlog.md");
-  assert.deepEqual(roundTrip(state, parked), { days: [["2026-11-12", ["Later B"]]], groups: [["Inbox A", "Day A"], ["Later A"]] });
+  assert.deepEqual(roundTrip(state, parked), { days: [["2026-11-12", ["Later B"]]], groups: [["Home A", "Day A"], ["Later A"]] });
 
   const between = app.backlog.move(calendar, backlog, { key: "", group: 0, index: 0 }, { key: "", group: 1, index: 0 });
   assert.equal(between.target, undefined);
-  assert.deepEqual(roundTrip(state, between), { days: [["2026-11-12", ["Later B"]]], groups: [["Day A"], ["Inbox A", "Later A"]] });
+  assert.deepEqual(roundTrip(state, between), { days: [["2026-11-12", ["Later B"]]], groups: [["Day A"], ["Home A", "Later A"]] });
 });
 
 test("a timed entry dragged in from elsewhere goes into its time slot; within its day it lands where dropped", () => {
@@ -91,7 +91,7 @@ test("ungrouped backlog entries move to and from days and groups like a group", 
   };
   const toGroup = app.backlog.move(calendar, backlog, { key: "", group: app.backlog.ungrouped, index: 0 }, { key: "", group: 1, index: 0 });
   assert.deepEqual(ungrouped(toGroup), []);
-  assert.deepEqual(backlog.groups[1].entries.map((/** @type {any} */ item) => item.title), ["Loose A", "Later A", "Later B"]);
+  assert.deepEqual(JSON.parse(JSON.stringify(backlog.groups[1].entries.map((/** @type {any} */ item) => item.title))), ["Loose A", "Later A", "Later B"]);
   const fromDay = app.backlog.move(calendar, backlog, { key: "2026-11-12", index: 0 }, { key: "", group: app.backlog.ungrouped, index: 0 });
   assert.equal(fromDay.target, "Backlog.md");
   assert.deepEqual(ungrouped(fromDay), ["Day A"]);
@@ -100,8 +100,8 @@ test("ungrouped backlog entries move to and from days and groups like a group", 
 test("backlog groups are reordered as one undoable action", () => {
   const state = fixture();
   const names = () => state.backlog.groups.map((/** @type {any} */ group) => group.name).join(",");
-  assert.deepEqual(roundTrip(state, app.backlog.moveGroup(state.backlog, 1, 0)).groups, [["Later A", "Later B"], ["Inbox A"]]);
-  assert.equal(names(), "Later,Inbox");
+  assert.deepEqual(roundTrip(state, app.backlog.moveGroup(state.backlog, 1, 0)).groups, [["Later A", "Later B"], ["Home A"]]);
+  assert.equal(names(), "Later,Home");
   assert.equal(app.backlog.moveGroup(state.backlog, 0, 0), null);
   assert.throws(() => app.backlog.moveGroup(state.backlog, 0, 2));
 });
@@ -110,10 +110,63 @@ test("backlog entries are created, edited, checked off, scheduled and deleted", 
   const state = fixture();
   const { calendar, backlog } = state;
   const fields = { title: "New", start: "", end: "", location: "", note: [] };
-  assert.deepEqual(roundTrip(state, app.backlog.create(calendar, backlog, 0, fields)).groups, [["Inbox A", "New"], ["Later A", "Later B"]]);
-  assert.deepEqual(roundTrip(state, app.backlog.toggle(calendar, backlog, { key: "", group: 0, index: 1 })).groups, [["Inbox A", "New ✓"], ["Later A", "Later B"]]);
-  assert.deepEqual(roundTrip(state, app.backlog.update(calendar, backlog, { key: "", group: 0, index: 0 }, { key: "2026-11-13" }, { title: "Inbox A2" })),
-    { days: [["2026-11-12", ["Day A"]], ["2026-11-13", ["Inbox A2"]]], groups: [["New ✓"], ["Later A", "Later B"]] });
+  assert.deepEqual(roundTrip(state, app.backlog.create(calendar, backlog, { ...fields, tag: "Home" })).groups, [["Home A", "New"], ["Later A", "Later B"]]);
+  assert.deepEqual(roundTrip(state, app.backlog.toggle(calendar, backlog, { key: "", group: 0, index: 1 })).groups, [["Home A", "New ✓"], ["Later A", "Later B"]]);
+  assert.deepEqual(roundTrip(state, app.backlog.update(calendar, backlog, { key: "", group: 0, index: 0 }, { key: "2026-11-13" }, { title: "Home A2" })),
+    { days: [["2026-11-12", ["Day A"]], ["2026-11-13", ["Home A2"]]], groups: [["New ✓"], ["Later A", "Later B"]] });
   assert.equal(app.backlog.update(calendar, backlog, { key: "", group: 1, index: 0 }, { key: "", group: 1 }, { title: "Later A" }), null);
   assert.deepEqual(roundTrip(state, app.backlog.remove(calendar, backlog, { key: "", group: 1, index: 1 })).groups, [["New ✓"], ["Later A"]]);
+});
+
+test("the tag decides the group of an entry from outside; inside the backlog a move gives the new group's tag", () => {
+  const state = fixture();
+  const { calendar, backlog } = state;
+  /** @param {string} title @param {string} tag */
+  const tagged = (title, tag) => ({ ...entry(title), tag });
+  calendar.days.set("2026-11-13", { key: "2026-11-13", extra: [], entries: [tagged("Late", "Later"), tagged("Job", "Work"), entry("Plain")] });
+  /** Group names with their entries as "title #tag". */
+  const shape = () => JSON.parse(JSON.stringify(backlog.groups.map((/** @type {any} */ group) => [group.name, group.entries.map((/** @type {any} */ item) => `${item.title} #${item.tag}`)])));
+  const loose = () => JSON.parse(JSON.stringify(backlog.ungrouped.map((/** @type {any} */ item) => `${item.title} #${item.tag}`)));
+
+  // Dropped into another group, a tagged entry still goes to the end of its own group.
+  roundTrip(state, app.backlog.move(calendar, backlog, { key: "2026-11-13", index: 0 }, { key: "", group: 0, index: 0 }));
+  assert.deepEqual(shape(), [["Home", ["Home A #"]], ["Later", ["Later A #", "Later B #", "Late #Later"]]]);
+
+  // Without a group for its tag one is created at the end; undo removes it again.
+  const created = app.backlog.move(calendar, backlog, { key: "2026-11-13", index: 0 }, { key: "", group: app.backlog.ungrouped, index: 0 });
+  created.redo();
+  assert.deepEqual(shape().map((/** @type {any} */ group) => group[0]), ["Home", "Later", "Work"]);
+  created.undo();
+  assert.deepEqual(shape().map((/** @type {any} */ group) => group[0]), ["Home", "Later"]);
+  created.redo();
+
+  // An untagged entry lands where it is dropped and takes that group's tag.
+  roundTrip(state, app.backlog.move(calendar, backlog, { key: "2026-11-13", index: 0 }, { key: "", group: 1, index: 1 }));
+  assert.deepEqual(shape()[1], ["Later", ["Later A #", "Plain #Later", "Later B #", "Late #Later"]]);
+
+  // Inside the backlog a move to another group re-tags, to the ungrouped entries it untags.
+  roundTrip(state, app.backlog.move(calendar, backlog, { key: "", group: 2, index: 0 }, { key: "", group: 0, index: 0 }));
+  assert.deepEqual(shape()[0], ["Home", ["Job #Home", "Home A #"]]);
+  roundTrip(state, app.backlog.move(calendar, backlog, { key: "", group: 0, index: 0 }, { key: "", group: app.backlog.ungrouped, index: 1 }));
+  assert.deepEqual(loose(), ["Loose A #", "Job #"]);
+
+  // Reordering inside a group never changes a tag, also one that differs from the group (a hand-edited file).
+  backlog.groups[1].entries.unshift(tagged("Foreign", "Car"));
+  roundTrip(state, app.backlog.move(calendar, backlog, { key: "", group: 1, index: 0 }, { key: "", group: 1, index: 2 }));
+  assert.deepEqual(shape()[1][1].slice(0, 3), ["Later A #", "Plain #Later", "Foreign #Car"]);
+});
+
+test("pasting into the backlog and editing a backlog entry's tag follow the tag", () => {
+  const state = fixture();
+  const { calendar, backlog } = state;
+  const copies = [{ ...entry("Car copy"), tag: "Later", done: true }, entry("Plain copy")];
+  // The tagged copy goes to its own group, the untagged one to the pointer's place and takes that group's tag.
+  roundTrip(state, app.backlog.pasteEntries(calendar, backlog, copies, { key: "", group: 0, index: 0 }));
+  assert.deepEqual(JSON.parse(JSON.stringify(backlog.groups.map((/** @type {any} */ group) => group.entries.map((/** @type {any} */ item) => `${item.title} #${item.tag}${item.done ? " ✓" : ""}`)))),
+    [["Plain copy #Home", "Home A #"], ["Later A #", "Later B #", "Car copy #Later"]]);
+  // A changed tag moves the entry to the end of that group; an edit that keeps the tag keeps the place.
+  roundTrip(state, app.backlog.update(calendar, backlog, { key: "", group: 0, index: 0 }, { key: "", group: 0 }, { tag: "Later" }));
+  assert.deepEqual(JSON.parse(JSON.stringify(backlog.groups[1].entries.map((/** @type {any} */ item) => item.title))), ["Later A", "Later B", "Car copy", "Plain copy"]);
+  roundTrip(state, app.backlog.update(calendar, backlog, { key: "", group: 1, index: 0 }, { key: "", group: 1 }, { title: "Later A2" }));
+  assert.equal(backlog.groups[1].entries[0].title, "Later A2");
 });

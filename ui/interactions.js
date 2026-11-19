@@ -71,13 +71,59 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   /** @param {Element} element */
   function dayOf(element) {
-    const cell = /** @type {HTMLElement | null} */ (element.closest(".day[data-day], .mcell[data-day]"));
+    const cell = /** @type {HTMLElement | null} */ (element.closest(".day[data-day], .mcell[data-day], .focus__card[data-day]"));
     return cell?.dataset.day || "";
+  }
+
+  /**
+   * The backlog place at `element` and the point `x`, `y`: the list of the group under it, or of the group nearest to the
+   * point on free space between groups (the ungrouped entries sit at the title), and the position among its tiles, before
+   * the first tile whose middle lies below `y`; null outside the backlog panel.
+   * @param {Element} element @param {number} x @param {number} y
+   * @returns {MDCEntryRef | null}
+   */
+  function backlogPlace(element, x, y) {
+    const panel = element.closest("#backlog");
+    if (!panel) return null;
+    const list = element.closest(".bl__list") || element.closest(".bl__group")?.querySelector(".bl__list") || nearestGroup(panel, x, y)?.querySelector(".bl__list");
+    if (!(list instanceof HTMLElement)) return null;
+    const index = Array.from(list.children).filter(tile => {
+      if (!tile.classList.contains("ev")) return false;
+      const bounds = tile.getBoundingClientRect();
+      return bounds.top + bounds.height / 2 < y;
+    }).length;
+    return { key: "", group: Number(list.dataset.group), index };
+  }
+
+  /** The group section nearest to a point, by the distance to its box; the empty ungrouped list counts at the title. @param {Element} panel @param {number} x @param {number} y */
+  function nearestGroup(panel, x, y) {
+    let best = null;
+    let distance = Infinity;
+    for (const section of panel.querySelectorAll(".bl__group")) {
+      const box = (section.classList.contains("bl__group--ungrouped") && section.querySelector(".bl__list:empty")) ? /** @type {Element} */ (panel.querySelector(".backlog__title")).getBoundingClientRect() : section.getBoundingClientRect();
+      const away = Math.hypot(Math.max(0, box.left - x, x - box.right), Math.max(0, box.top - y, y - box.bottom));
+      if (away < distance) {
+        distance = away;
+        best = section;
+      }
+    }
+    return best;
+  }
+
+  /** The backlog place under the pointer, for keys that act there (docs/ui/Interaction.md#keyboard-shortcuts). */
+  function hoveredBacklogPlace() {
+    const element = pointer && document.elementFromPoint(pointer.x, pointer.y);
+    return element && pointer ? backlogPlace(element, pointer.x, pointer.y) : null;
+  }
+
+  /** Where Ctrl+V pastes: the backlog place or the day under the pointer, else the preselected day. @returns {MDCEntryRef | null} */
+  function pasteTarget() {
+    return hoveredBacklogPlace() || (hoveredDay ? { key: hoveredDay, index: 0 } : null);
   }
 
   /** The day whose body (below its header, outside tiles and bars) contains `element`. @param {Element} element */
   function bodyDay(element) {
-    return element.closest(".day__head, .mcell__head, .ev, .bar, button, a, input") ? "" : dayOf(element);
+    return element.closest(".day__head, .mcell__head, .focus__head, .ev, .bar, button, a, input") ? "" : dayOf(element);
   }
 
   /** Set when the current click began with a selection or an open menu or panel; that click only clears or closes it. */
@@ -136,9 +182,16 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     if (shrinks) app.month.collapse();
     const button = event.target.closest("button");
     if (!button) {
+      const quiet = shrinks || clickClears || event.ctrlKey || event.metaKey;
+      // A click on free space of the backlog creates an entry in the group there (docs/ui/Shell.md#backlog-panel).
+      const place = quiet || event.target.closest(".ev") ? null : backlogPlace(event.target, event.clientX, event.clientY);
+      if (place) {
+        current.newBacklogEntry(/** @type {number} */ (place.group));
+        return;
+      }
       // A click on the body of a day creates an entry there, unless it only clears the selection, closes a menu or
       // panel or shrinks the enlarged cell (docs/ui/Interaction.md#pointer).
-      const key = shrinks || clickClears || event.ctrlKey || event.metaKey ? "" : bodyDay(event.target);
+      const key = quiet ? "" : bodyDay(event.target);
       if (key) current.newEntry(key);
       return;
     }
@@ -154,7 +207,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const action = buttons[button.id];
     const tile = /** @type {HTMLElement | null} */ (button.closest(".ev"));
     if (tile && (event.ctrlKey || event.metaKey)) {
-      // Ctrl+click adds a tile to the selection or removes it (docs/ui/Interaction.md#selection).
+      // Ctrl+click adds a tile to the selection or removes it (docs/ui/Interaction.md#selection-copy-and-paste).
       const id = idOf(pickOf(tile));
       if (selection.has(id)) selection.delete(id);
       else selection.add(id);
@@ -190,8 +243,15 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       current.copy(targets(tile));
       return;
     }
-    const key = event.target.closest(".ev, .bar, button, a") ? "" : dayOf(event.target);
-    if (key && current.hasClipboard()) current.paste(key);
+    if (!current.hasClipboard() || event.target.closest(".ev, .bar, a")) return;
+    // On free space of a backlog group it pastes at the pointer's place there (docs/ui/Interaction.md#pointer).
+    const place = backlogPlace(event.target, event.clientX, event.clientY);
+    if (place) {
+      current.paste(place);
+      return;
+    }
+    const key = event.target.closest("button") ? "" : dayOf(event.target);
+    if (key) current.paste({ key, index: 0 });
   });
 
   /** Last pointer position in the window, for the entry under the pointer. @type {{x: number, y: number} | null} */
@@ -233,21 +293,32 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     clearSelection();
     current().cut(picks);
   }, { when: () => inCalendar() && keyTargets().length > 0 });
-  shortcuts.bind("mod+shift?+v", () => current().paste(hoveredDay), { when: free });
-  // Ctrl+A selects every entry of the day under the pointer, also those hidden behind “+N” in the month.
+  shortcuts.bind("mod+shift?+v", () => current().paste(pasteTarget()), { when: free });
+  // Ctrl+A selects every entry of the day under the pointer, also those hidden behind “+N” in the month, or of the
+  // backlog group under it.
   shortcuts.bind("mod+shift?+a", () => {
-    for (const pick of current().dayPicks(hoveredDay)) selection.add(idOf(pick));
+    const place = hoveredBacklogPlace();
+    if (place) {
+      for (const tile of document.querySelectorAll(`#backlog .bl__list[data-group="${place.group}"] > .ev`)) selection.add(idOf(pickOf(/** @type {HTMLElement} */ (tile))));
+    } else for (const pick of current().dayPicks(hoveredDay)) selection.add(idOf(pick));
     refreshSelection();
-  }, { when: () => inCalendar() && Boolean(hoveredDay) });
+  }, { when: () => inCalendar() && (Boolean(hoveredDay) || Boolean(hoveredBacklogPlace())) });
+  /** Keys that change the view do nothing while the focus card is open (docs/ui/Interaction.md#keyboard-shortcuts). */
+  const viewFree = () => free() && !current().isFocusOpen();
   /** @type {Array<[string, () => void, (() => boolean)?]>} */
   const plainKeys = [
-    ["t", () => current().today()],
-    ["a", () => current().newEntry(current().isContactsView() ? undefined : hoveredDay || undefined)],
-    ["w", () => current().showView("week")],
-    ["m", () => current().showView("month")],
-    ["c", () => current().showView("contacts")],
-    ["b", () => current().toggleBacklog()],
-    ["f", () => current().toggleSearch()],
+    ["t", () => current().today(), viewFree],
+    ["a", () => {
+      // Over the backlog a new entry goes into the group under the pointer.
+      const place = current().isContactsView() ? null : hoveredBacklogPlace();
+      if (place) current().newBacklogEntry(/** @type {number} */ (place.group));
+      else current().newEntry(current().isContactsView() ? undefined : hoveredDay || undefined);
+    }],
+    ["w", () => current().showView("week"), viewFree],
+    ["m", () => current().showView("month"), viewFree],
+    ["c", () => current().showView("contacts"), viewFree],
+    ["b", () => current().toggleBacklog(), viewFree],
+    ["f", () => current().toggleSearch(), viewFree],
     ["?", () => current().showHelp()],
     ["space", () => {
       const picks = keyTargets();
@@ -357,7 +428,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
           handlers?.move(from, place(event.to, entryPosition(event.item, new Set())));
           return;
         }
-        // A selected tile drags the whole selection along (docs/ui/Interaction.md#selection).
+        // A selected tile drags the whole selection along (docs/ui/Interaction.md#selection-copy-and-paste).
         const picks = Array.from(selection, pickFromId).filter(pick => pick.ref);
         const sameList = new Set(others.filter(tile => tile.parentElement === event.to));
         const target = place(event.to, entryPosition(event.item, sameList));
@@ -365,6 +436,30 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         handlers?.moveMany(picks.map(pick => /** @type {MDCEntryRef} */ (pick.ref)), from, target);
       }
     } }));
+  }
+
+  /** Drag and drop inside the focus card: its entries are reordered within the day only. @type {{destroy(): void} | null} */
+  let focusSortable = null;
+
+  /** Binds the list of the focus card after it was drawn, or releases it (null). @param {HTMLElement | null} list */
+  function bindFocusList(list) {
+    focusSortable?.destroy();
+    focusSortable = list ? sortable.create({ Sortable, window, element: list, options: {
+      group: "focus",
+      draggable: ".ev",
+      delay: 180,
+      delayOnTouchOnly: true,
+      fallbackTolerance: 3,
+      filter: ".ev__check, .ev--series",
+      ghostClass: "ev--ghost",
+      dragClass: "ev--drag",
+      onStart() { document.body.classList.add("is-sorting"); },
+      /** @param {{from: HTMLElement, to: HTMLElement, item: HTMLElement}} event */
+      onEnd(event) {
+        document.body.classList.remove("is-sorting");
+        handlers?.move(place(event.from, Number(event.item.dataset.index)), place(event.to, entryPosition(event.item, new Set())));
+      }
+    } }) : null;
   }
 
   // Backlog groups are reordered by dragging their head (docs/ui/Interaction.md#drag-and-drop). The container stays for
@@ -499,9 +594,64 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     wheelSum += event.deltaY;
     if (Math.abs(wheelSum) < 30) return;
     wheelLocked = true;
+    // After the days were dragged, the first gesture only returns to the mostly shown week.
+    if (current.snapToWeek()) return;
     if (wheelSum > 0) current.next();
     else current.previous();
   }, { passive: false });
+
+  // ---------- Double-click on a day header: focus mode (docs/ui/Interaction.md#pointer) ----------
+
+  document.addEventListener("dblclick", event => {
+    if (!handlers || !(event.target instanceof Element) || event.target.closest("button")) return;
+    const day = /** @type {HTMLElement | null} */ (event.target.closest(".wk .day__head"))?.closest(".day");
+    if (day instanceof HTMLElement && day.dataset.day) handlers.openFocus(day.dataset.day);
+  });
+
+  // ---------- Middle button held on the week: drag the days, snap to days on release ----------
+
+  /** @type {{pointer: number, x: number, y: number, dx: number, dy: number, frame: number} | null} */
+  let pan = null;
+  // The browser's autoscroll starts on the middle button's mousedown; on the week the button drags the days instead.
+  main.addEventListener("mousedown", event => {
+    if (event.button === 1 && event.target instanceof Element && event.target.closest(".wk")) event.preventDefault();
+  });
+  main.addEventListener("pointerdown", event => {
+    if (event.button !== 1 || pan || !handlers || !(event.target instanceof Element)) return;
+    const board = event.target.closest(".wk");
+    if (!(board instanceof HTMLElement)) return;
+    event.preventDefault();
+    if (!handlers.panStart()) return;
+    board.setPointerCapture(event.pointerId);
+    pan = { pointer: event.pointerId, x: event.clientX, y: event.clientY, dx: 0, dy: 0, frame: 0 };
+  });
+  main.addEventListener("pointermove", event => {
+    if (!pan || event.pointerId !== pan.pointer || !handlers) return;
+    pan.dx = event.clientX - pan.x;
+    pan.dy = event.clientY - pan.y;
+    // At most one update per frame (AGENTS.md#performance).
+    if (pan.frame) return;
+    const current = handlers;
+    pan.frame = requestAnimationFrame(() => {
+      if (!pan) return;
+      pan.frame = 0;
+      current.panMove(pan.dx, pan.dy);
+    });
+  });
+  /** @param {PointerEvent} event */
+  function endPan(event) {
+    if (!pan || event.pointerId !== pan.pointer || !handlers) return;
+    cancelAnimationFrame(pan.frame);
+    handlers.panMove(pan.dx, pan.dy);
+    pan = null;
+    handlers.panEnd();
+  }
+  main.addEventListener("pointerup", endPan);
+  main.addEventListener("pointercancel", endPan);
+  main.addEventListener("lostpointercapture", endPan);
+  main.addEventListener("auxclick", event => {
+    if (event.button === 1 && event.target instanceof Element && event.target.closest(".wk")) event.preventDefault();
+  });
 
   // ---------- Dragging multi-day bars: move, or change start or end at the bar's ends ----------
 
@@ -603,6 +753,5 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     init, bindLists, refreshSelection, clearSelection,
     /** Opens the file dialog of the calendar import (“+” menu). */
     chooseCalendarFile: () => icsInput.click(),
-    selected: () => Array.from(selection, pickFromId)
-  };
+    selected: () => Array.from(selection, pickFromId), bindFocusList };
 })(window.MDCalendar);

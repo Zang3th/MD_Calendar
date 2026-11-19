@@ -16,24 +16,24 @@ Keyboard navigation of controls is not supported, so keyboard focus is never sho
 | `M` | Month view |
 | `C` | Contacts view |
 | `B` | Show or hide the backlog panel |
-| `T` | Jump to today: the period slides in, the day scrolls into view and is highlighted once (see [Motion](DesignSystem.md#motion)) |
-| `A` | New entry on the day under the pointer, otherwise on the preselected day (in the contacts view: new contact) |
+| `T` | Jump to today: the period slides in, the day scrolls into view and is highlighted once (see [Motion](DesignSystem.md#motion)); after dragging the days it returns to today's whole week |
+| `A` | New entry on the day under the pointer, in the backlog group under the pointer (its tag preset), otherwise on the preselected day (in the contacts view: new contact) |
 | `F` | Open the search bar at the bottom edge |
 | `?` | Show or hide the help |
-| `←` / `→` | Previous or next week or month |
+| `←` / `→` | Previous or next week or month; after dragging the days, seven days back or on, keeping the offset; in focus mode the previous or next day |
 | `Space` | Check off the selection (all open: done; all done: open) |
 | `Del` | Delete the selection |
-| `Ctrl+A` | Select all entries of the day under the pointer, also those hidden behind “+N” |
+| `Ctrl+A` | Select all entries of the day under the pointer, also those hidden behind “+N”, or of the backlog group under it |
 | `Ctrl+C` | Copy the selection |
 | `Ctrl+X` | Cut the selection: copy it and delete it as one undoable action |
-| `Ctrl+V` | Paste onto the day under the pointer, otherwise onto the preselected day |
+| `Ctrl+V` | Paste onto the day under the pointer, or into the backlog group under it at the pointer's position (where the tag decides the group, see [Domain](../Domain.md#backlog)), otherwise onto the preselected day |
 | `Ctrl+S` | Save |
 | `Ctrl+Z` | Undo |
 | `Ctrl+Y`, `Ctrl+Shift+Z` | Redo |
-| `Esc` | Close the picker, dialog, menu or panel; otherwise clear the selection and shrink an enlarged month cell |
+| `Esc` | Close the picker, dialog, menu, panel or focus card; otherwise clear the selection and shrink an enlarged month cell |
 | `Enter` | Confirm the dialog; in an inline field, finish editing |
 
-The arrows, `Space`, `Del`, `Ctrl+A` and `Ctrl+X` do nothing in the contacts view. The help (see [Shell](Shell.md#help)) lists all shortcuts and pointer gestures.
+The arrows, `Space`, `Del`, `Ctrl+A` and `Ctrl+X` do nothing in the contacts view. While the [focus card](Views.md#focus-mode) is open, `W`, `M`, `C`, `B`, `F` and `T` do nothing; `A`, `Ctrl+V` and a right-click on its free space use the focused day, and the actions on entries work on its entries. The help (see [Shell](Shell.md#help)) lists all shortcuts and pointer gestures.
 
 ## Pointer
 
@@ -42,10 +42,15 @@ The arrows, `Space`, `Del`, `Ctrl+A` and `Ctrl+X` do nothing in the contacts vie
 | Click on the body of a day (below its header, outside entries and bars) | New entry on that day |
 | Right-click on an entry (in a day or the backlog) | Copies the entry; on a selected entry it copies the whole selection |
 | Right-click on free space of a day (outside entries, bars and badges) | Pastes into that day when something is copied, otherwise nothing |
+| Right-click on free space of the backlog panel | Pastes into the group there at the pointer's position, like `Ctrl+V` |
+| Click on free space of the backlog panel | New backlog entry in the group under or nearest to the pointer, with its tag preset (see [Shell](Shell.md#backlog-panel)) |
 | Right-click anywhere else | Nothing; the browser menu does not open either, except in text fields |
 | Dragging on free space | Lasso: selects every entry it touches |
 | `Ctrl`+click on an entry | Adds it to the selection or removes it |
-| Mouse wheel over the week or month | One week or month per wheel gesture; a day list that can still scroll in that direction scrolls first |
+| Mouse wheel over the week or month | One week or month per wheel gesture; a day list that can still scroll in that direction scrolls first. After dragging the days, the first gesture only returns to the calendar week that is mostly shown |
+| Double-click on a day header in the week view | Opens the day in [focus mode](Views.md#focus-mode) |
+| Holding the middle button on the week and dragging along the days (sideways in landscape, up and down in portrait) | The days follow the pointer, without end; on release they snap to the nearest whole day with a short glide, so that any seven consecutive days can show. The browser's autoscroll does not start there |
+| Click on the blurred background of the focus card | Closes it |
 
 A click on free space clears the selection; when a selection existed, a menu or panel was open (**+** menu, help, holiday overview, badge list, search bar) or an enlarged month cell shrinks, that click does only this and creates no entry. A `Ctrl`+click creates no entry either. Menus show only icon and label, no shortcut hints; they close with Escape or a click outside, and arrow keys move between their items.
 

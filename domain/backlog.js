@@ -1,7 +1,9 @@
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
 // Backlog operations and moves between days and backlog groups (docs/Domain.md#backlog).
-// An entry place is a day ({key, index}) or a backlog group ({group, index}).
+// An entry place is a day ({key, index}) or a backlog group ({group, index}). Every group is a tag and the ungrouped
+// entries are the untagged ones: the tag decides the group of an entry that arrives from outside the backlog, and a
+// move inside the backlog gives the entry the tag of its new group.
 (function (app) {
   const calendarFile = "Calendar.md";
   /** Group number that addresses the ungrouped entries in an entry place. */
@@ -60,17 +62,78 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     };
   }
 
-  /** @param {MDCCalendar} calendar @param {MDCBacklog} backlog @param {number} group @param {MDCEntryFields & Partial<Pick<MDCEntry, "tag" | "extra">>} fields */
-  function create(calendar, backlog, group, fields) {
-    /** @type {MDCEntry} */
-    const entry = { done: false, tag: "", extra: [], ...fields };
-    const ref = { key: "", group, index: list(calendar, backlog, { key: "", group, index: 0 }).length };
-    return action(calendar, backlog, entry.title, null, { ref, entry });
+  // ---------- Groups are tags (docs/Domain.md#backlog) ----------
+
+  /** A copy of the backlog's lists and groups; entries are immutable and shared. @param {MDCBacklog} backlog */
+  function copyBacklog(backlog) {
+    return { ungrouped: [...backlog.ungrouped], groups: backlog.groups.map(group => ({ ...group, entries: [...group.entries] })) };
+  }
+
+  /** @param {MDCBacklog} backlog @param {ReturnType<typeof copyBacklog>} copy */
+  function restoreBacklog(backlog, copy) {
+    backlog.ungrouped.splice(0, Infinity, ...copy.ungrouped);
+    backlog.groups.splice(0, Infinity, ...copy.groups.map(group => ({ ...group, entries: [...group.entries] })));
   }
 
   /**
-   * Changes an entry and puts it at `target`: its own place, its time slot of a day (when the day or the start time
-   * changes, docs/Domain.md#day-list-order) or the end of a backlog group.
+   * One undo step over the whole backlog and some days: `mutate` may add groups as well as change lists.
+   * @param {MDCCalendar} calendar @param {MDCBacklog} backlog @param {string} label @param {string[]} keys days that change
+   * @param {() => void} mutate @param {string | undefined} target @param {number} size
+   * @returns {MDCDayAction}
+   */
+  function backlogStep(calendar, backlog, label, keys, mutate, target, size) {
+    const days = [...new Set(keys)];
+    const before = { backlog: copyBacklog(backlog), days: days.map(key => [...app.calendar.dayList(calendar, key)]) };
+    mutate();
+    const after = { backlog: copyBacklog(backlog), days: days.map(key => [...app.calendar.dayList(calendar, key)]) };
+    /** @param {typeof before} state */
+    const set = state => {
+      restoreBacklog(backlog, state.backlog);
+      days.forEach((key, index) => app.calendar.dayList(calendar, key).splice(0, Infinity, ...state.days[index]));
+    };
+    set(before);
+    return { label, days, backlog: true, target, size, redo() { set(after); }, undo() { set(before); } };
+  }
+
+  /**
+   * Puts `entry` into the backlog and returns where it went. From outside the backlog a tagged entry goes into the group of
+   * its tag, created at the end when missing, at `at` only when that is in this group, otherwise at its end. Otherwise
+   * the entry goes to `at` (or the end of the ungrouped entries) and takes the tag of that group, where the ungrouped
+   * entries are untagged; moved within its own group it keeps its tag, so that reordering never changes data.
+   * @param {MDCBacklog} backlog @param {MDCEntry} entry @param {{group: number, index: number} | null} at
+   * @param {number | null} source the backlog group the entry comes from, or null from outside the backlog
+   * @returns {{group: number, index: number}}
+   */
+  function place(backlog, entry, at, source) {
+    if (source === null && entry.tag) {
+      let group = backlog.groups.findIndex(candidate => candidate.name === entry.tag);
+      if (group < 0) group = backlog.groups.push({ name: entry.tag, entries: [], extra: [] }) - 1;
+      const entries = backlog.groups[group].entries;
+      const index = at && at.group === group ? Math.min(at.index, entries.length) : entries.length;
+      entries.splice(index, 0, entry);
+      return { group, index };
+    }
+    const group = at ? at.group : ungrouped;
+    const tag = group === ungrouped ? "" : backlog.groups[group].name;
+    const entries = group === ungrouped ? backlog.ungrouped : backlog.groups[group].entries;
+    const index = at ? Math.min(at.index, entries.length) : entries.length;
+    entries.splice(index, 0, entry.tag === tag || source === group ? entry : { ...entry, tag });
+    return { group, index };
+  }
+
+  /**
+   * Creates a backlog entry; its tag decides the group (docs/Domain.md#backlog).
+   * @param {MDCCalendar} calendar @param {MDCBacklog} backlog @param {MDCEntryFields & Partial<Pick<MDCEntry, "tag" | "extra">>} fields
+   */
+  function create(calendar, backlog, fields) {
+    /** @type {MDCEntry} */
+    const entry = { done: false, tag: "", extra: [], ...fields };
+    return backlogStep(calendar, backlog, entry.title, [], () => { place(backlog, entry, null, null); }, undefined, sizeOf(entry));
+  }
+
+  /**
+   * Changes an entry and puts it at `target`: a day (its own place, or its time slot when the day or the start time
+   * changes, docs/Domain.md#day-list-order) or the backlog (any `group`), where its tag decides the group.
    * @param {MDCCalendar} calendar @param {MDCBacklog} backlog @param {MDCEntryRef} ref
    * @param {{key: string, group?: number}} target @param {Partial<MDCEntry>} fields
    * @returns {MDCDayAction | null}
@@ -78,12 +141,20 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   function update(calendar, backlog, ref, target, fields) {
     const entry = entryAt(calendar, backlog, ref);
     const updated = { ...entry, ...fields };
-    const samePlace = target.group === ref.group && (isBacklog(ref) || target.key === ref.key);
+    // Into the backlog the tag decides the group; an entry that keeps its tag keeps its place (docs/Domain.md#backlog).
+    if (target.group !== undefined) {
+      if (isBacklog(ref) && updated.tag === entry.tag && JSON.stringify(updated) === JSON.stringify(entry)) return null;
+      return backlogStep(calendar, backlog, updated.title, isBacklog(ref) ? [] : [ref.key], () => {
+        list(calendar, backlog, ref).splice(ref.index, 1);
+        if (isBacklog(ref) && updated.tag === entry.tag) list(calendar, backlog, ref).splice(ref.index, 0, updated);
+        else place(backlog, updated, null, null);
+      }, isBacklog(ref) ? undefined : backlogFile, sizeOf(entry) + sizeOf(updated));
+    }
+    const samePlace = !isBacklog(ref) && target.key === ref.key;
     if (samePlace && JSON.stringify(updated) === JSON.stringify(entry)) return null;
-    const destination = list(calendar, backlog, { ...target, index: 0 });
-    const index = samePlace && (isBacklog(ref) || updated.start === entry.start) ? ref.index
-      : isBacklog({ ...target, index: 0 }) ? destination.length
-        : app.calendar.timeSlot(destination.filter((_, position) => !samePlace || position !== ref.index), updated.start);
+    const destination = app.calendar.dayList(calendar, target.key);
+    const index = samePlace && updated.start === entry.start ? ref.index
+      : app.calendar.timeSlot(destination.filter((_, position) => !samePlace || position !== ref.index), updated.start);
     return action(calendar, backlog, updated.title, { ref, entry }, { ref: { ...target, index }, entry: updated });
   }
 
@@ -111,7 +182,14 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const entry = entryAt(calendar, backlog, from);
     const length = list(calendar, backlog, to).length - (sameList ? 1 : 0);
     if (to.index < 0 || to.index > length) throw new Error("Invalid target position.");
-    const target = !sameList && !isBacklog(to) && entry.start ? { ...to, index: app.calendar.timeSlot(list(calendar, backlog, to), entry.start) } : to;
+    if (isBacklog(to)) {
+      // Into or inside the backlog: the tag decides the group, or the new group gives the tag (docs/Domain.md#backlog).
+      return backlogStep(calendar, backlog, entry.title, isBacklog(from) ? [] : [from.key], () => {
+        list(calendar, backlog, from).splice(from.index, 1);
+        place(backlog, entry, { group: /** @type {number} */ (to.group), index: to.index }, isBacklog(from) ? /** @type {number} */ (from.group) : null);
+      }, isBacklog(from) ? undefined : backlogFile, 2 * sizeOf(entry));
+    }
+    const target = !sameList && entry.start ? { ...to, index: app.calendar.timeSlot(list(calendar, backlog, to), entry.start) } : to;
     return action(calendar, backlog, entry.title, { ref: from, entry }, { ref: target, entry });
   }
 
@@ -199,6 +277,19 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const ordered = [...refs].sort((left, right) => placeId(left).localeCompare(placeId(right)) || left.index - right.index);
     const moving = ordered.map(ref => entryAt(calendar, backlog, ref));
     const crossing = refs.some(ref => isBacklog(ref) !== isBacklog(target));
+    if (isBacklog(target)) {
+      const keys = refs.filter(ref => !isBacklog(ref)).map(ref => ref.key);
+      return backlogStep(calendar, backlog, `${refs.length} entries`, keys, () => {
+        for (const ref of descending(refs)) list(calendar, backlog, ref).splice(ref.index, 1);
+        // Entries that stay in the target group follow each other from the target position.
+        let next = target.index;
+        moving.forEach((entry, index) => {
+          const source = ordered[index];
+          const placed = place(backlog, entry, { group: /** @type {number} */ (target.group), index: next }, isBacklog(source) ? /** @type {number} */ (source.group) : null);
+          if (placed.group === target.group) next = placed.index + 1;
+        });
+      }, crossing ? backlogFile : undefined, moving.reduce((total, entry) => total + 2 * sizeOf(entry), 0));
+    }
     return snapshot(calendar, backlog, `${refs.length} entries`, [...refs, target], () => {
       for (const ref of descending(refs)) list(calendar, backlog, ref).splice(ref.index, 1);
       const destination = list(calendar, backlog, target);
@@ -209,14 +300,25 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   /**
-   * Inserts copies into a day: timed ones into their time slots, the others at the end; copies are open.
-   * @param {MDCCalendar} calendar @param {MDCBacklog} backlog @param {MDCEntry[]} entries @param {string} key
+   * Inserts open copies into a day (timed ones into their time slots, the others at the end) or into the backlog at
+   * `target`, where they arrive from outside: the tag decides the group (docs/Domain.md#backlog).
+   * @param {MDCCalendar} calendar @param {MDCBacklog} backlog @param {MDCEntry[]} entries @param {MDCEntryRef} target
    */
-  function pasteEntries(calendar, backlog, entries, key) {
-    const ref = { key, index: 0 };
-    return snapshot(calendar, backlog, entries.length === 1 ? entries[0].title : `${entries.length} entries`, [ref], () => {
-      const day = list(calendar, backlog, ref);
-      for (const entry of entries) day.splice(app.calendar.timeSlot(day, entry.start), 0, { ...entry, done: false, note: [...entry.note], extra: [...entry.extra] });
+  function pasteEntries(calendar, backlog, entries, target) {
+    const label = entries.length === 1 ? entries[0].title : `${entries.length} entries`;
+    const copies = entries.map(entry => ({ ...entry, done: false, note: [...entry.note], extra: [...entry.extra] }));
+    if (isBacklog(target)) {
+      return backlogStep(calendar, backlog, label, [], () => {
+        let next = target.index;
+        for (const copy of copies) {
+          const placed = place(backlog, copy, { group: /** @type {number} */ (target.group), index: next }, null);
+          if (placed.group === target.group) next = placed.index + 1;
+        }
+      }, undefined, copies.reduce((total, entry) => total + sizeOf(entry), 0));
+    }
+    return snapshot(calendar, backlog, label, [target], () => {
+      const day = list(calendar, backlog, target);
+      for (const copy of copies) day.splice(app.calendar.timeSlot(day, copy.start), 0, copy);
     }, undefined);
   }
 

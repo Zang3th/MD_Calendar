@@ -26,17 +26,20 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     document.body.classList.toggle("backlog-open", open);
     panel.inert = !open;
     panel.setAttribute("aria-hidden", String(!open));
-    const names = JSON.stringify(backlog.groups.map(group => group.name));
+    // Every group is a tag: its head shows the tag icon and color, so a change of the tags rebuilds the heads too.
+    const names = JSON.stringify(backlog.groups.map(group => [group.name, app.tiles.tint(group.name).style, app.tiles.tagIcon(group.name)]));
     const rebuilt = names !== shownGroups;
     if (rebuilt) {
       shownGroups = names;
       // Ungrouped entries come first, without a head; the list takes no room while it is empty (docs/ui/Shell.md#backlog-panel).
       groupsElement.innerHTML = `<section class="bl__group bl__group--ungrouped" aria-label="Ungrouped"><div class="bl__list" data-group="${app.backlog.ungrouped}"></div></section>` +
-        backlog.groups.map((group, index) =>
-        `<section class="bl__group" aria-label="${app.tiles.escape(group.name)}">` +
-        `<button class="bl__head" type="button" aria-controls="backlogGroup${index}"><span class="bl__name">${group.name === app.backlogFormat.inbox ? app.tiles.icon("inbox") : ""}${app.tiles.escape(group.name)}</span>` +
+        backlog.groups.map((group, index) => {
+          const tinted = app.tiles.tint(group.name);
+          return `<section class="bl__group" aria-label="${app.tiles.escape(group.name)}">` +
+        `<button class="bl__head${tinted.className}"${tinted.style} type="button" aria-controls="backlogGroup${index}"><span class="bl__name">${app.tiles.tagIcon(group.name, "bl__tag")}${app.tiles.escape(group.name)}</span>` +
         `<span class="bl__count"></span><span class="bl__chevron">${app.tiles.icon("chevron-right")}</span></button>` +
-        `<div class="bl__list" id="backlogGroup${index}" data-group="${index}"></div></section>`).join("");
+        `<div class="bl__list" id="backlogGroup${index}" data-group="${index}"></div></section>`;
+        }).join("");
       groupsElement.querySelectorAll(".bl__group:not(.bl__group--ungrouped)").forEach((section, index) => applyCollapsed(section, collapsed.has(backlog.groups[index].name)));
     }
     const ungroupedList = /** @type {HTMLElement} */ (groupsElement.querySelector(".bl__group--ungrouped .bl__list"));

@@ -55,12 +55,13 @@
 ### Backlog
 
 - [x] ~Gruppen minimieren können~
-- [ ] Single-Left-Click: Öffnet Kontext => New ToDo or Group
-- [ ] Controls reparieren
-- [ ] Gruppen und Tag-Zuordnungen reparieren
+- [x] ~Gruppen und Tag-Zuordnungen reparieren~
+- [x] ~Controls reparieren~
+- [x] ~Single-Left-Click: New ToDo~
 
 ### Kontake
 
+- [x] ~Jeder Tag-Wechsel bspw. bei Telefonnummer erzeugt einen Save-State?~
 - [ ] Grundsätzlich überarbeiten
 
 ### Neu-Dialog
@@ -86,8 +87,8 @@
 - [x] ~Right-Click: Ansonsten komplett abklemmen~
 
 #### Nur in der Wochenansicht
-- [ ] Double-Left-Click den Header vom Tag: Focus-Mode
-- [ ] Middle-Click-Hold: Drag View (Ziehen + Snap auf Tage)
+- [x] ~Double-Left-Click den Header vom Tag: Focus-Mode~
+- [x] ~Middle-Click-Hold: Drag View (Ziehen + Snap auf Tage)~
 
 ### Bugs und Verbesserungen
 
@@ -105,7 +106,9 @@
 - [x] ~?-Menü überarbeiten + Rechtsklick ergänzen~
 - [x] ~Überfällige Einträge visuell markieren~
 - [x] ~Sprung-Animation verformt Icons => Visual Glitch~
-- [ ] Loading-Animation beim Save hinzufügen um Schreibzyklen zu maskieren
+- [x] ~Loading-Animation beim Save hinzufügen um Schreibzyklen zu maskieren~
+- [x] ~Save/Saving/Saved muss immer gleich breit bleiben~
+- [x] ~Notification für "Changed externally" anpassen~
 
 ### Release
 
@@ -126,12 +129,12 @@ Ab hier ersetzt MD_Calendar den Google-Kalender als Daily-Driver.
 
 ### Umstieg
 
+- [x] ~Ordner ins NAS-Backup aufnehmen~
 - [ ] Stichtag festlegen
 - [ ] Kalenderdaten exportieren
 - [ ] Kalender: Januar, Februar und März discarden
 - [ ] Kalender: Einträge neutralisieren, einordnen und taggen
 - [ ] Kontaktdaten exportieren
-- [x] ~Ordner ins NAS-Backup aufnehmen~
 
 ### Statistiken und Analyse
 

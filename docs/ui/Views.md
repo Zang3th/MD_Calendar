@@ -46,12 +46,25 @@ Past holidays and vacations are dimmed.
 - Seven day cards side by side, Monday to Sunday.
 - Each card: day header, then the day list from top to bottom. There is no add button; a click on the body of the card creates an entry (see [Interaction](Interaction.md#creating-entries)).
 - Multi-day entries are horizontal bars across the covered days, between day header and list. Only the days a bar covers make room for it; the lists of the other days keep their place. Overlapping bars stack in lanes, ordered by start date, then the longer bar first, then the order in the file. Bars continuing beyond the week have square ends on that side. A bar shows title and date range. A bar with a tag shows the tag icon before its title; a bar without a tag uses the accent gradient. Clicking a bar opens the entry dialog. Dragging a bar moves it, dragging one of its ends changes its start or end (see [Interaction](Interaction.md#drag-and-drop)).
+- The middle button drags the days sideways (see [Interaction](Interaction.md#pointer)); then the view shows the seven days from any weekday, and the title names the month of the first shown day. Bars, badges and the day lists behave as in a whole week. `T`, the wheel, a change of view and a jump to a day outside the shown days return to whole weeks.
 
 ## Week, portrait
 
 - The seven days are rows stacked vertically. Each row: day header on the left, at the top of the row and level with the first entries (weekday, date, badges below the date), multi-day lane, entry grid.
 - **Entry grid: 3 columns × 4 entries = 12 entries at a glance.** Spacing and heights are tuned for this. Entries fill column by column. A 13th entry starts a fourth column and the row scrolls horizontally.
 - Multi-day entries become vertical bars between day header and grid, spanning the covered rows, with vertical text.
+- The middle button drags the day rows up and down, like the columns in [landscape](#week-landscape); the strip, the snap to whole days and the return to whole weeks are the same.
+
+## Focus mode
+
+A double-click on a day header of the week view (landscape or portrait) shows that day as a floating card in front of the app, so that every entry can be read in full.
+
+- The app behind is dimmed and blurred like behind the dialog (`--base` at 40 %, 10px blur). The card is centered, at most 620px wide and as tall as its content, with 48px to the window edges at least; a longer day scrolls inside the card. Surface, frame and shadow are the dialog's; the card fades and rises in like the dialog.
+- Head: weekday in small capitals, the date large (44px, 800) followed by month and year with a “Today” pill on today, centered on the month's text. The day's badges (holidays, birthdays, anniversaries) sit at the top right; the head has no buttons. On today the card carries the accent light of today's day card and an accent frame.
+- Below the head, multi-day entries covering the day as full-width bars with title and range; a click opens them.
+- Then the day list with the usual entry tiles, larger: titles wrap instead of being cut, and below the title the location (with a pin) and every note line (as a dotted list) show. Check box and repeat icon are centered on the whole tile. Done entries keep their dimming. Without entries the list says “No entries”.
+- Checking off, opening, copying, pasting and adding work as in the day (see [Interaction](Interaction.md#pointer)); a click on free space of the card adds an entry to the focused day. Entries can be dragged to another position within the card (occurrences of recurring entries stay, as in the day); they cannot leave it.
+- `←`/`→` show the previous or next day; the card content glides in from that side. `Esc` or a click on the background close it. Changes refresh the card in place and keep its scroll position.
 
 ## Month
 

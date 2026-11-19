@@ -1,12 +1,11 @@
 # Backlog
 
-## Inbox
 - [ ] Cancel the phone contract
+- [x] Sort the photos
 
-## Someday
+## Car
 - [ ] Change the tires #Car
   - Location: Garage
   - Call the garage first
-- [x] Sort the photos
 
-## Empty group
+## Work

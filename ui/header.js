@@ -5,7 +5,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
 // Header pill: logo, title, version, “+”, undo, redo, save control, view switcher, import, help, sound, holidays, backlog (docs/ui/Shell.md#header).
 (function (app) {
-  const flashDuration = 1500;
+  /** Length of the check mark's pop after a save, in milliseconds. */
+  const flashDuration = 400;
   const element = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
   const title = /** @type {HTMLButtonElement} */ (element("title"));
   const titleText = element("titleText");
@@ -25,6 +26,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   const startOnly = [element("appVersion"), element("watermark")];
   let flashTimer = 0;
   let sized = false;
+  /** Saves in flight; while above 0 the control shows “Saving”. A “Saved” that arrives meanwhile waits for the end. */
+  let savingCount = 0;
+  let flashPending = false;
+  /** @type {MDCHeaderState | null} */
+  let lastState = null;
 
   /** The title keeps the width of its longest text so that the arrows next to it never move. */
   function sizeTitle() {
@@ -48,13 +54,14 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   /** @param {MDCHeaderState} state */
   function update(state) {
+    lastState = state;
     if (!sized && state.open) sizeTitle();
     for (const part of openOnly) part.hidden = !state.open;
     for (const part of startOnly) part.hidden = state.open;
     title.disabled = !state.open;
     const week = state.view === "week";
     const contacts = state.view === "contacts";
-    if (state.open) titleText.textContent = contacts ? "Contacts" : app.calendar.formatDay(week ? app.calendar.weekStart(state.anchor) : state.anchor, "MMMM YYYY");
+    if (state.open) titleText.textContent = contacts ? "Contacts" : app.calendar.formatDay(week ? state.start : state.anchor, "MMMM YYYY");
     else titleText.textContent = "MD_Calendar";
     label(newButton, contacts ? "Add contact or import" : "Add entry or import");
     segmented.select({ buttons: views.map(([button]) => button), selected: views.findIndex(([, view]) => view === state.view), thumb });
@@ -67,26 +74,28 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     label(redo, shown.redo.label);
 
     const dirty = shown.save.status !== "saved";
+    const busy = savingCount > 0;
+    save.classList.toggle("is-saving", busy);
+    // “Unsaved” stays until the files are written; while saving, the saving look lies over it.
     save.classList.toggle("is-dirty", dirty);
-    if (dirty) window.clearTimeout(flashTimer);
-    save.classList.toggle("is-flash", !dirty && save.classList.contains("is-flash"));
-    saveText.textContent = dirty ? "Save" : save.classList.contains("is-flash") ? "Saved" : "";
-    saveCount.textContent = dirty ? String(shown.save.count) : "";
-    label(save, shown.save.label);
+    // “Saved” is the resting state and always shows (docs/ui/Shell.md#save-control).
+    saveText.textContent = busy ? "Saving" : dirty ? "Save" : "Saved";
+    saveCount.textContent = dirty && !busy ? String(shown.save.count) : "";
+    label(save, busy ? "Saving…" : shown.save.label);
 
     sound.setAttribute("aria-pressed", String(state.muted));
     label(sound, state.muted ? "Unmute" : "Mute");
   }
 
-  /** Shows “Saved” for a moment after a successful save. */
+  /** Lets the check mark pop once after a successful save; during the saving state it waits for its end. */
   function flashSaved() {
+    if (savingCount > 0) {
+      flashPending = true;
+      return;
+    }
     window.clearTimeout(flashTimer);
     save.classList.add("is-flash");
-    saveText.textContent = "Gespeichert";
-    flashTimer = window.setTimeout(() => {
-      save.classList.remove("is-flash");
-      if (!save.classList.contains("is-dirty")) saveText.textContent = "";
-    }, flashDuration);
+    flashTimer = window.setTimeout(() => save.classList.remove("is-flash"), flashDuration);
   }
 
   /** Writes the version into the label and the watermark. @param {string} version */
@@ -95,5 +104,19 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     element("watermarkVersion").textContent = `v${version}`;
   }
 
-  app.header = { update, flashSaved, setVersion };
+  /**
+   * Starts or ends the saving state (docs/ui/Shell.md#save-control): an accent pill “Saving” with a spinner. Calls nest;
+   * the state ends with the last one and then shows a “Saved” that arrived meanwhile.
+   * @param {boolean} active
+   */
+  function saving(active) {
+    savingCount = Math.max(0, savingCount + (active ? 1 : -1));
+    if (lastState) update(lastState);
+    if (savingCount === 0 && flashPending) {
+      flashPending = false;
+      flashSaved();
+    }
+  }
+
+  app.header = { update, flashSaved, saving, setVersion };
 })(window.MDCalendar);

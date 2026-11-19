@@ -66,7 +66,8 @@ interface MDCalendarNamespace {
     /** Group number that addresses the ungrouped entries in an entry place. */
     ungrouped: number;
     entryAt(calendar: MDCCalendar, backlog: MDCBacklog, ref: MDCEntryRef): MDCEntry;
-    create(calendar: MDCCalendar, backlog: MDCBacklog, group: number, fields: MDCEntryFields & Partial<Pick<MDCEntry, "tag" | "extra">>): MDCDayAction;
+    /** Creates a backlog entry in the group of its tag (ungrouped without a tag). */
+    create(calendar: MDCCalendar, backlog: MDCBacklog, fields: MDCEntryFields & Partial<Pick<MDCEntry, "tag" | "extra">>): MDCDayAction;
     update(calendar: MDCCalendar, backlog: MDCBacklog, ref: MDCEntryRef, target: { key: string; group?: number }, fields: Partial<MDCEntry>): MDCDayAction | null;
     remove(calendar: MDCCalendar, backlog: MDCBacklog, ref: MDCEntryRef): MDCDayAction;
     toggle(calendar: MDCCalendar, backlog: MDCBacklog, ref: MDCEntryRef): MDCDayAction;
@@ -76,7 +77,7 @@ interface MDCalendarNamespace {
     removeEntries(calendar: MDCCalendar, backlog: MDCBacklog, refs: MDCEntryRef[], label: string): MDCDayAction;
     toggleEntries(calendar: MDCCalendar, backlog: MDCBacklog, refs: MDCEntryRef[]): MDCDayAction;
     moveEntries(calendar: MDCCalendar, backlog: MDCBacklog, refs: MDCEntryRef[], target: MDCEntryRef): MDCDayAction;
-    pasteEntries(calendar: MDCCalendar, backlog: MDCBacklog, entries: MDCEntry[], key: string): MDCDayAction;
+    pasteEntries(calendar: MDCCalendar, backlog: MDCBacklog, entries: MDCEntry[], target: MDCEntryRef): MDCDayAction;
   };
   calendarFormat: {
     parse(text: string): { calendar: MDCCalendar; warnings: MDCFormatWarning[] };
@@ -92,10 +93,12 @@ interface MDCalendarNamespace {
   backlogFormat: {
     parse(text: string): { backlog: MDCBacklog; warnings: MDCFormatWarning[] };
     serialize(backlog: MDCBacklog): string;
-    inbox: string;
   };
   holidaysFormat: { parse(text: string): { holidays: MDCHolidays; warnings: MDCFormatWarning[] } };
-  configFormat: { parse(text: string): { config: MDCConfig; warnings: MDCFormatWarning[] }; hue(color: string): number };
+  configFormat: {
+    parse(text: string): { config: MDCConfig; warnings: MDCFormatWarning[] };
+    hue(color: string): number;
+  };
   contactsFormat: {
     parse(text: string): { contacts: MDCContacts; warnings: MDCFormatWarning[] };
     serialize(contacts: MDCContacts): string;
@@ -139,7 +142,7 @@ interface MDCalendarNamespace {
   };
   tooltips: { hide(): void };
   sounds: { play(): Promise<void>; setMuted(value: boolean): void; isMuted(): boolean };
-  header: { update(state: MDCHeaderState): void; flashSaved(): void; setVersion(version: string): void };
+  header: { update(state: MDCHeaderState): void; flashSaved(): void; saving(active: boolean): void; setVersion(version: string): void };
   contactsView: {
     init(handlers: MDCContactsHandlers): void;
     render(contacts: MDCContacts, selected: number, today: string): void;
@@ -167,7 +170,7 @@ interface MDCalendarNamespace {
     tagIconIds(): string[];
     setContacts(contacts: MDCContacts | null): void;
     slide(id: string, direction: number): void;
-    dayTiles(calendar: MDCCalendar, key: string, today: string, options?: { limit?: number; compact?: boolean }): { html: string; hidden: number };
+    dayTiles(calendar: MDCCalendar, key: string, today: string, options?: { limit?: number; compact?: boolean; details?: boolean }): { html: string; hidden: number };
     backlogTiles(entries: readonly MDCEntry[]): string;
     bar(segment: MDCSegment, today: string, withRange: boolean): string;
     badges(key: string, max: number, compact?: boolean): string;
@@ -179,12 +182,34 @@ interface MDCalendarNamespace {
   };
   backlogPanel: { render(backlog: MDCBacklog, open: boolean): boolean; lists(): HTMLElement[] };
   holidaysPanel: { update(holidays: MDCHolidays, today: string): void; toggle(holidays: MDCHolidays, today: string, vacations: (year: number) => MDCPeriod[]): void; isOpen(): boolean };
-  week: MDCViewRenderer;
+  focus: {
+    open(calendar: MDCCalendar, key: string, today: string): void;
+    close(): void;
+    refresh(calendar: MDCCalendar, today: string): void;
+    step(direction: number): void;
+    isOpen(): boolean;
+    /** The focused day, or "" while closed. */
+    day(): string;
+  };
+  week: Omit<MDCViewRenderer, "render"> & {
+    /** Shows `count` days (seven by default) from `start`; returns true when the day lists were rebuilt. */
+    render(calendar: MDCCalendar, start: string, today: string, count?: number): boolean;
+    panBegin(calendar: MDCCalendar, start: string, today: string): boolean;
+    /** Pixels the pointer moved right and down since the drag began; only the days' axis counts. */
+    panMove(x: number, y: number): void;
+    /** The snapped first day and the pixels the days still stand off it, or null without a drag. */
+    panEnd(): { start: string; rest: number } | null;
+    settle(rest: number): void;
+    /** Size of one day along the days' axis: a column's width, or a row's height in portrait. */
+    daySize(): number;
+  };
   month: MDCViewRenderer & { toggle(key: string): void; collapse(): void };
   dialog: { open(request: MDCDialogRequest, handlers: MDCDialogHandlers): void; close(): void; isOpen(): boolean };
   interactions: {
     init(handlers: MDCInteractionHandlers): void;
     bindLists(lists: HTMLElement[]): void;
+    /** Binds the entry list of the focus card for reordering, or releases it (null). */
+    bindFocusList(list: HTMLElement | null): void;
     refreshSelection(): void;
     clearSelection(): void;
     chooseCalendarFile(): void;
@@ -212,13 +237,15 @@ type MDCNotificationOptions = {
   details?: MDCNotificationBody;
   /** Stays until dismissed; errors always stay. */
   persistent?: boolean;
-  actions?: Array<{ label: string; run(): void; primary?: boolean }>;
+  actions?: Array<{ label: string; run(): void; primary?: boolean; tone?: "warning" | "success" }>;
 };
 type MDCHeaderState = {
   open: boolean;
   view: MDCView;
   backlogOpen: boolean;
   anchor: string;
+  /** First shown day of the week view, which a drag can move off Monday. */
+  start: string;
   unsaved: number;
   history: MDCHistory;
   muted: boolean;
@@ -260,7 +287,8 @@ type MDCPick = { ref?: MDCEntryRef; series?: number; key: string };
 type MDCMenuItem = { label: string; icon: string; danger?: boolean; run(): void };
 type MDCContactsHandlers = {
   select(index: number): void;
-  update(index: number, updated: MDCContact, groups?: string[]): void;
+  /** `field` names the edited field, so that repeated edits of it are one undo step. */
+  update(index: number, updated: MDCContact, groups?: string[], field?: string): void;
   addGroup(index: number, group: string): void;
   remove(index: number): void;
   importText(text: string, name: string): void;
@@ -279,6 +307,16 @@ type MDCInteractionHandlers = {
   today(): void;
   previous(): void;
   next(): void;
+  /** Returns to the mostly shown week after the days were dragged; false when there is nothing to snap. */
+  snapToWeek(): boolean;
+  /** Starts dragging the days of the week view; false when the view does not allow it. */
+  panStart(): boolean;
+  /** @param x pixels the pointer moved right since the drag began @param y pixels it moved down */
+  panMove(x: number, y: number): void;
+  panEnd(): void;
+  /** Opens the day `key` of the week view in focus mode. */
+  openFocus(key: string): void;
+  isFocusOpen(): boolean;
   showView(view: MDCView): void;
   toggleBacklog(): void;
   toggleHolidays(): void;
@@ -294,7 +332,10 @@ type MDCInteractionHandlers = {
   removeMany(picks: MDCPick[]): void;
   copy(picks: MDCPick[]): void;
   cut(picks: MDCPick[]): void;
-  paste(key: string): void;
+  /** Pastes into a day or a backlog place; without a target into the preselected day. */
+  paste(target: MDCEntryRef | null): void;
+  /** Opens the dialog for a new backlog entry with the tag of `group` preset. */
+  newBacklogEntry(group: number): void;
   hasClipboard(): boolean;
   dayPicks(key: string): MDCPick[];
   moveMany(refs: MDCEntryRef[], dragged: MDCEntryRef, target: MDCEntryRef): void;
@@ -514,6 +555,8 @@ type MDCUndoAction = {
   backlog?: boolean;
   /** For a move between Calendar.md and Backlog.md: the file that receives the entry. */
   target?: string;
+  /** Actions with the same key that follow each other directly become one undo step (MD_Libs history). */
+  coalesce?: string;
   /** Changes contacts; `selectAfter` and `selectBefore` are the contacts to show after redo and undo. */
   contacts?: boolean;
   selectAfter?: number;

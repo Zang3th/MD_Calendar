@@ -51,8 +51,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
    * @type {Array<Array<[string, Array<[string, string, string?]>]>>}
    */
   const columns = [
-    [["Views", [["Week", "W"], ["Month", "M"], ["Contacts", "C"], ["Backlog", "B"]]],
-      ["Navigate", [["Previous / Next", "left right", "wheel"], ["Today", "T"], ["Search", "F"]]],
+    [["Views", [["Week", "W"], ["Month", "M"], ["Contacts", "C"], ["Backlog", "B"], ["Focus day", "", "double"]]],
+      ["Navigate", [["Previous / Next", "left right", "wheel"], ["Drag days", "", "middle"], ["Today", "T"], ["Search", "F"]]],
       ["Select", [["Area", "", "drag"], ["Add / Remove", "Ctrl", "+click"], ["Whole day", "Ctrl+A"]]]],
     [["Edit", [["New entry", "A", "click"], ["Done / Undone", "Space"], ["Delete", "Del"], ["Copy", "Ctrl+C", "right"], ["Paste", "Ctrl+V", "right"], ["Cut", "Ctrl+X", "-"]]],
       ["History", [["Save", "Ctrl+S"], ["Undo", "Ctrl+Z"], ["Redo", "Ctrl+Y|Ctrl+Shift+Z"]]]]
@@ -60,7 +60,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   /** Keys that apply everywhere, in one line below the columns. */
   const general = [["Help", "?"], ["Close / Clear", "Esc"], ["Confirm", "Enter"]];
   /** @type {Record<string, [string, string]>} */
-  const gestures = { click: ["mouse-click", "Click"], right: ["mouse-right-click", "Right-click"], wheel: ["mouse-wheel", "Mouse wheel"], drag: ["lasso", "Drag"] };
+  const gestures = {
+    click: ["mouse-click", "Click"], right: ["mouse-right-click", "Right-click"], wheel: ["mouse-wheel", "Mouse wheel"], drag: ["lasso", "Drag"],
+    double: ["mouse-double-click", "Double-click on the day header"], middle: ["mouse-middle-drag", "Drag with the middle button"]
+  };
   /** @type {Record<string, string>} */
   const arrows = { left: app.tiles.icon("chevron-left"), right: app.tiles.icon("chevron-right") };
   /** @param {string} key */

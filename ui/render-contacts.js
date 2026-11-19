@@ -211,9 +211,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return contact ? /** @type {MDCContact} */ (JSON.parse(JSON.stringify(contact))) : null;
   }
 
-  /** @param {MDCContact} updated @param {string[]} [groups] */
-  function commit(updated, groups) {
-    if (shown && handlers) handlers.update(shown.selected, updated, groups);
+  /** @param {MDCContact} updated @param {string[]} [groups] @param {string} [field] the edited field, for one undo step per field */
+  function commit(updated, groups, field) {
+    if (shown && handlers) handlers.update(shown.selected, updated, groups, field);
   }
 
   /** Applies a changed field; invalid dates are rejected and the field returns to its value. @param {string} key @param {string} value */
@@ -243,7 +243,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     else if (name === "firstName" || name === "lastName" || name === "nickname" || name === "company" || name === "position") contact[name] = trimmed;
     else return;
     while (contact.note.length && !contact.note[contact.note.length - 1]) contact.note.pop();
-    commit(contact);
+    commit(contact, undefined, key);
   }
 
   board.addEventListener("click", event => {
@@ -272,6 +272,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         const cycle = labelCycles[/** @type {keyof typeof labelCycles} */ (kind)];
         const item = contact[/** @type {keyof typeof labelCycles} */ (kind)][Number(index)];
         item.label = cycle[(cycle.indexOf(item.label) + 1) % cycle.length];
+        commit(contact, undefined, `label:${data.cycle}`);
+        return;
       } else if (data.add) {
         const kind = /** @type {keyof typeof labelCycles | "anniversaries"} */ (data.add);
         if (kind === "anniversaries") contact.anniversaries.push({ label: "", date: shown.today });

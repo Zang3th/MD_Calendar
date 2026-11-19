@@ -77,7 +77,7 @@ An entry, a recurring entry and a multi-day entry can be turned into each other 
 ## Backlog
 
 - The backlog holds entries without a date: same fields as an entry except date and position.
-- It holds **ungrouped** entries and ordered **groups**. Ungrouped entries belong to the backlog itself and come before all groups. The group **Inbox** always exists and is the target for quick capture from outside the app.
+- It holds **ungrouped** entries and ordered **groups**. Ungrouped entries belong to the backlog itself and come before all groups; they are the untagged entries and the target for quick capture from outside the app. Every group is a tag: the tag decides the group. An entry with a tag that arrives from outside the backlog (dragged from a day, pasted, “To backlog”, created) goes into the group of its tag, created at the end when missing, at the dropped position only when that lies in this group. Inside the backlog, moving an entry into another group gives it that group’s tag, moving it to the ungrouped entries removes its tag, and reordering within a group never changes a tag; an untagged entry dropped into a group takes the group’s tag. Groups are not created by hand: tags come from `Config.md` and the entries.
 - Scheduling a backlog entry **moves** it into a day. An entry can move from a day back into the ungrouped entries or any backlog group.
 - Entries can be reordered and moved between the ungrouped entries and the groups. Groups can be reordered; the ungrouped entries always come first.
 

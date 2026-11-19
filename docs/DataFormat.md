@@ -8,7 +8,7 @@ How the [domain](Domain.md) is stored. Markdown files in one folder hold all dat
 - A folder is a calendar folder when it holds `MD_Calendar.json`. Only such a folder opens; “New calendar” on the start card adds the file to a folder (see [Shell](ui/Shell.md#start-card)).
 - The app reads and writes only the files listed below. Other files in the folder are ignored.
 - File names are fixed.
-- The format is English: file names, headings, `#Key` lines, labels and fixed values (`yes`, `Inbox`). Only the user's own content (titles, notes, names, tag and group names) is written as the user enters it.
+- The format is English: file names, headings, `#Key` lines, labels and fixed values (`yes`). Only the user's own content (titles, notes, names, tag and group names) is written as the user enters it.
 
 | File | Content | Written by the app |
 |---|---|---|
@@ -97,7 +97,7 @@ The conventions follow MD_Manager: headings structure the file, `#Key` lines sta
 ### Backlog
 
 - Entries directly below `# Backlog`, before the first `##` heading, are ungrouped. Without ungrouped entries the file has no such lines.
-- Each `##` heading is a group in display order. `Inbox` always exists; a file without it gets it as the first group. Empty groups are kept.
+- Each `##` heading is a group in display order; its name is a tag (see [Domain](Domain.md#backlog)). Empty groups are kept. A `## Inbox` group from earlier versions is read as ungrouped entries; its unknown lines move after the file heading.
 - Entries use the same syntax as day entries. Unknown lines are reported and kept after the element they followed, as in the calendar file.
 
 ### Contacts

@@ -40,11 +40,12 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   /**
-   * @param {{title: string, done: boolean, start: string, end: string, tag: string}} item
+   * @param {{title: string, done: boolean, start: string, end: string, tag: string, location?: string, note?: readonly string[]}} item
    * @param {string} attributes data attributes identifying the item
    * @param {boolean} overdue @param {boolean} series @param {boolean} compact
+   * @param {boolean} [details] also shows location and note lines (focus mode, docs/ui/Views.md#focus-mode)
    */
-  function tile(item, attributes, overdue, series, compact) {
+  function tile(item, attributes, overdue, series, compact, details = false) {
     const classes = ["ev", series && "ev--series", item.done && "is-done", overdue && "is-overdue"].filter(Boolean).join(" ");
     const tagged = tint(item.tag);
     const time = item.start ? `${item.start}${item.end && !compact ? `–${item.end}` : ""}` : "";
@@ -55,29 +56,41 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       (time ? `<span class="ev__time">${time}</span>` : "") +
       tagIcon(item.tag, "ev__tag") +
       `<span class="ev__title">${escape(item.title)}</span>` +
-      `</span></button>` +
+      `</span>${details ? detailLines(item) : ""}</button>` +
       // Outside the text lines, so that it stays centered on the whole tile (docs/ui/Views.md#entry-tile).
       (series ? `<span class="ev__repeat">${icon("repeat")}</span>` : "") +
       (overdue ? beam : "") +
       `</div>`;
   }
 
+  /** Location and note lines below the title of a tile; empty without either. @param {{location?: string, note?: readonly string[]}} item */
+  function detailLines(item) {
+    const notes = (item.note || []).filter(line => line.trim());
+    if (!item.location && !notes.length) return "";
+    return `<span class="ev__details">` +
+      (item.location ? `<span class="ev__location">${icon("pin")}<span>${escape(item.location)}</span></span>` : "") +
+      (notes.length ? `<span class="ev__notes">${notes.map(line => `<span class="ev__note">${escape(line)}</span>`).join("")}</span>` : "") +
+      `</span>`;
+  }
+
   /**
    * The day list of one day in display order (occurrences in their time slots between the entries).
-   * @param {MDCCalendar} calendar @param {string} key @param {string} today @param {{limit?: number, compact?: boolean}} [options]
+   * @param {MDCCalendar} calendar @param {string} key @param {string} today
+   * @param {{limit?: number, compact?: boolean, details?: boolean}} [options] `details` adds location and note lines
    */
   function dayTiles(calendar, key, today, options = {}) {
     const occurrences = app.recurrence.occurrences(calendar, key);
     const entries = app.calendar.entries(calendar, key);
     const limit = options.limit ?? Infinity;
     const compact = Boolean(options.compact);
+    const details = Boolean(options.details);
     const html = [];
     for (const item of app.recurrence.dayOrder(occurrences, entries).slice(0, limit)) {
       if ("occurrence" in item) {
         const { series, index, done } = item.occurrence;
         // Occurrences of recurring entries are never overdue (docs/Domain.md#entry).
-        html.push(tile({ title: series.title, done, start: series.startTime, end: series.endTime, tag: series.tag }, `data-series="${index}" data-key="${key}"`, false, true, compact));
-      } else html.push(tile(item.entry, `data-index="${item.index}"`, app.calendar.isOverdue(item.entry, key, today), false, compact));
+        html.push(tile({ title: series.title, done, start: series.startTime, end: series.endTime, tag: series.tag, location: series.location, note: series.note }, `data-series="${index}" data-key="${key}"`, false, true, compact, details));
+      } else html.push(tile(item.entry, `data-index="${item.index}"`, app.calendar.isOverdue(item.entry, key, today), false, compact, details));
     }
     return { html: html.join(""), hidden: Math.max(0, occurrences.length + entries.length - limit) };
   }

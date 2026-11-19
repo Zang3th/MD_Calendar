@@ -16,7 +16,7 @@ const calendarText = "# Calendar\n\n## November 2026\n\n### 02.11.2026\n- [ ] De
 // Matching and ranking are tested in MD_Libs core/search; these tests cover the calendar index and its options.
 test("search covers title, location and tag of every kind, ignores diacritics and needs every word", () => {
   const { calendar } = app.calendarFormat.parse(calendarText);
-  const { backlog } = app.backlogFormat.parse("# Backlog\n\n## Inbox\n- [ ] Call the doctor\n");
+  const { backlog } = app.backlogFormat.parse("# Backlog\n\n## Health\n- [ ] Call the doctor #Health\n");
   const titles = (/** @type {string} */ query) => plain(app.search.search(calendar, backlog, 1, query, "2026-11-12", 10)).map((/** @type {any} */ hit) => hit.title);
   assert.deepEqual(titles("dentist"), ["Dentist Müller", "Dentist appointment"]);
   assert.deepEqual(titles("muller"), ["Dentist Müller"]);
@@ -61,7 +61,7 @@ test("ICS events become entries, multi-day entries and series; past ones are don
 
 test("several selected entries move together into one place as one action", () => {
   const { calendar } = app.calendarFormat.parse("# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] A\n- [ ] B\n- [ ] C\n\n### 13.11.2026\n- [ ] D\n");
-  const { backlog } = app.backlogFormat.parse("# Backlog\n\n## Inbox\n- [ ] E\n");
+  const { backlog } = app.backlogFormat.parse("# Backlog\n\n## Home\n- [ ] E #Home\n");
   const action = app.backlog.moveEntries(calendar, backlog, [{ key: "2026-11-12", index: 2 }, { key: "2026-11-12", index: 0 }, { key: "", group: 0, index: 0 }], { key: "2026-11-13", index: 0 });
   assert.equal(action.target, "Calendar.md");
   action.redo();
