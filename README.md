@@ -53,8 +53,8 @@ Examples of every file are stored locally in [`data/parsing/`](https://github.co
 - Handles of the five most recently opened folders are stored in IndexedDB.
   - Calendar content remains in its Markdown files.
 
-| File | Content | Written by the app |
-|:-----|:--------|:-------------------|
+| File | Content | Written |
+|:-----|:--------|:--------|
 | `Calendar.md` | Entries, multi-day entries, recurring entries | yes |
 | `Backlog.md` | Backlog groups and their entries | yes |
 | `Contacts.md` | Contacts with birthdays | yes |
@@ -146,7 +146,7 @@ The verification pipeline builds the bundle and runs strict TypeScript checking 
   </thead>
   <tbody>
     <tr><td>master</td><td>19.11.2026</td><td>591</td><td>805</td><td>5,472</td><td>86</td><td>See <a href="https://github.com/Zang3th/MD_Calendar/blob/master/docs/Roadmap.md">roadmap</a></td></tr>
-    <tr><td>v0.7.0</td><td>19.11.2026</td><td>591</td><td>805</td><td>5,472</td><td>86</td><td>Reworked entry dialog, contacts and start page, collapsible backlog groups, focus mode</td></tr>
+    <tr><td>v0.7.0</td><td>19.11.2026</td><td>591</td><td>805</td><td>5,472</td><td>86</td><td>Reworked entry dialog, contacts and start page</td></tr>
     <tr><td>v0.6.0</td><td>16.11.2026</td><td>517</td><td>606</td><td>4,070</td><td>59</td><td>Project baseline with MD_Libs as application core</td></tr>
   </tbody>
 </table>
