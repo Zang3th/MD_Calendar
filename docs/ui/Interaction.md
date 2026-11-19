@@ -16,7 +16,7 @@ Keyboard navigation of controls is not supported, so keyboard focus is never sho
 | `M` | Month view |
 | `C` | Contacts view |
 | `B` | Show or hide the backlog panel |
-| `T` | Jump to today: the period slides in, the day scrolls into view and is highlighted once |
+| `T` | Jump to today: the period slides in, the day scrolls into view and is highlighted once (see [Motion](DesignSystem.md#motion)) |
 | `A` | New entry on the day under the pointer, otherwise on the preselected day (in the contacts view: new contact) |
 | `F` | Open the search bar at the bottom edge |
 | `?` | Show or hide the help |
@@ -33,7 +33,7 @@ Keyboard navigation of controls is not supported, so keyboard focus is never sho
 | `Esc` | Close the picker, dialog, menu or panel; otherwise clear the selection and shrink an enlarged month cell |
 | `Enter` | Confirm the dialog; in an inline field, finish editing |
 
-The arrows, `Space`, `Del`, `Ctrl+A` and `Ctrl+X` do nothing in the contacts view. The help (see [Shell](Shell.md#help)) lists the main ones.
+The arrows, `Space`, `Del`, `Ctrl+A` and `Ctrl+X` do nothing in the contacts view. The help (see [Shell](Shell.md#help)) lists all shortcuts and pointer gestures.
 
 ## Pointer
 

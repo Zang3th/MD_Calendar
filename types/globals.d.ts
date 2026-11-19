@@ -175,7 +175,7 @@ interface MDCalendarNamespace {
     describeOccasion(item: { name: string; label: string; age: number | null }): string;
     setTags(tags: MDCTag[]): MDCTag[];
     setHolidays(holidays: MDCHolidays): void;
-    pulse(element: HTMLElement): void;
+    highlight(element: HTMLElement): void;
   };
   backlogPanel: { render(backlog: MDCBacklog, open: boolean): boolean; lists(): HTMLElement[] };
   holidaysPanel: { update(holidays: MDCHolidays, today: string): void; toggle(holidays: MDCHolidays, today: string, vacations: (year: number) => MDCPeriod[]): void; isOpen(): boolean };

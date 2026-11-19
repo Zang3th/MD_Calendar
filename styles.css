@@ -370,6 +370,17 @@ body.is-sorting .backlog__title { outline: 1px dashed var(--edge); outline-offse
 .ev.is-done .ev__title { text-decoration: line-through; }
 .ev.is-overdue { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) var(--ring), transparent); }
 .ev.is-overdue .ev__check { --edge-color: var(--danger); }
+/* Border beam of an overdue tile: 24 pieces of one rounded outline over border and red outline (2px wide, radius of
+   the tile minus 1px). Each piece is 1.5 % of the outline, a step behind the one before and fainter (linear fade),
+   so that the light has a long tail that bends around the corners; all move at a constant speed, one lap in 4s. */
+.ev__beam { position: absolute; top: -1px; left: -1px; width: calc(100% + 2px); height: calc(100% + 2px); overflow: visible; pointer-events: none;
+  fill: none; stroke: var(--danger); stroke-width: 2px; }
+.ev__beam rect { --fade: calc(1 - var(--i) / 24); x: 1px; y: 1px; width: calc(100% - 2px); height: calc(100% - 2px); rx: 12px;
+  stroke-dasharray: 1.5 98.5; stroke-opacity: var(--fade); animation: overdue-beam 4s linear infinite; }
+.mcell .ev__beam rect { rx: 7px; }
+/* Units in px: with pathLength they count in outline percent, and a calc() with a plain number is not accepted here. */
+@keyframes overdue-beam { from { stroke-dashoffset: calc(var(--i) * 1.5px); } to { stroke-dashoffset: calc(var(--i) * 1.5px - 100px); } }
+@media (prefers-reduced-motion: reduce) { .ev__beam { display: none; } }
 .day.is-past .ev:not(.is-overdue) { opacity: var(--o-past); }
 .day.is-past .ev:not(.is-overdue):hover { opacity: var(--o-hover); }
 .ev--ghost, .ev--along { opacity: var(--o-disabled) !important; }
@@ -699,14 +710,37 @@ button.occ__row:hover, button.occ__row:focus-visible { background: color-mix(in 
 #helpButton[aria-expanded="true"] { color: var(--text); background: var(--glass-2); }
 .hp__head--center { justify-content: center; min-height: 34px; }
 #helpPanel { width: min(600px, calc(100vw - 28px)); max-height: none; }
-#helpContent { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; overflow: visible; }
-@media (max-width: 760px) { #helpContent { grid-template-columns: minmax(0, 1fr); } #helpPanel { max-height: calc(100vh - 100px); } #helpContent { overflow: auto; } }
+#helpContent { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; overflow: visible; }
+@media (max-width: 760px) { #helpContent { grid-template-columns: minmax(0, 1fr); overflow: auto; } #helpPanel { max-height: calc(100vh - 100px); } }
+/* Each group is a card of its own, so that the groups separate at a glance. */
+.help__column { display: flex; flex-direction: column; gap: 10px; }
+.help__group { padding: 0 4px 4px; border-radius: 12px; background: var(--card); border: 1px solid var(--card-edge); }
+.help__group .hp__title { margin: 10px 6px 4px; }
+/* The last card of each column fills it, so that both columns end level. */
+.help__group:last-child { flex: 1; }
 .keys { margin: 0; display: grid; gap: 2px; }
-.keys__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 28px; padding: 2px 6px; border-radius: 9px; }
-.keys dt { color: var(--text); }
-.keys dd { margin: 0; display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: 11px; white-space: nowrap; }
-.keys kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 6px; font-size: 11.5px; font-weight: 700; color: var(--text);
+/* Action and key caps. Groups with pointer gestures lay every row on one grid: keys, a join ("+" or "or") and an end
+   cell with the gesture icon or the last key, so that joins and ends line up; a single key runs to the right edge. */
+.keys__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 10px; padding: 2px 6px; }
+.keys--pointer .keys__row { grid-template-columns: minmax(0, 1fr) auto 12px 22px; column-gap: 4px; }
+/* A row without gesture cells lets its keys run to the right edge. */
+.keys--pointer .keys__caps:last-child { grid-column: 2 / -1; }
+.keys dt { color: var(--text); line-height: 24px; }
+.keys dd { margin: 0; }
+.keys__caps, .help__hint { color: var(--muted); font-size: 11px; white-space: nowrap; }
+.help__hint, .keys__combo { display: flex; align-items: center; gap: 4px; }
+/* Alternative combinations stack, each right-aligned like a single one; label and gesture stay on the first line,
+   so that the second combination hangs below its own action. */
+.keys__caps { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.keys__combo { min-height: 24px; }
+.keys__join { line-height: 24px; text-align: center; font-size: 11px; color: var(--muted); }
+.keys__end { display: grid; place-items: center; height: 24px; color: var(--text); }
+:is(.keys, .help__general) kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 6px; font-size: 11.5px; font-weight: 700; color: var(--text);
   background: color-mix(in srgb, var(--base) 40%, transparent); border: 1px solid var(--edge); border-bottom-width: 2px; }
+.keys__arrow { padding: 0; }
+.keys__arrow .ui-icon { width: 12px; height: 12px; }
+.help__general { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 22px; margin: 0; padding: 0 6px 2px; }
+.help__hint > span:last-child { margin-left: 4px; font-size: 13px; color: var(--muted); }
 
 /* ---------- Date and time picker in the entry dialog ---------- */
 .dlg__form { position: relative; }

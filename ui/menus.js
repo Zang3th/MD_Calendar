@@ -42,21 +42,55 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   });
 
   /**
-   * The main shortcuts by task, laid out like the quick reference of MD_Manager: action left, keys right as key caps.
-   * "+" joins the keys of one combination, "|" separates alternative combinations.
-   * The full list is in docs/ui/Interaction.md.
+   * Every shortcut and pointer gesture by task (docs/ui/Shell.md#help). "+" joins the keys of one combination, "|"
+   * separates alternatives, which stack, a space sets keys side by side; "left" and "right" are the arrow keys.
+   * In groups with pointer gestures every row is laid out on one grid: keys, a join ("or", or "+" when the gesture is
+   * written "+name" and goes with the keys), and an end cell with the gesture icon or the last key of a combination,
+   * so that every "+" and "or" lines up. A single key ends at the right edge; the gesture "-" keeps a combination in
+   * line with the keys around it instead.
+   * @type {Array<Array<[string, Array<[string, string, string?]>]>>}
    */
   const columns = [
-    [["Navigation", [["Week", "W"], ["Month", "M"], ["Contacts", "C"], ["Today", "T"], ["Backlog", "B"], ["Search", "F"]]],
-      ["View", [["Select area", "Left Click+Drag"], ["Select day", "Ctrl+A"], ["Clear / Close", "Esc"]]]],
-    [["Edit", [["Add new", "A"], ["Done", "Space"], ["Copy", "Ctrl+C"], ["Cut", "Ctrl+X"], ["Paste", "Ctrl+V"], ["Delete", "Del"]]],
-      ["State", [["Save", "Ctrl+S"], ["Undo", "Ctrl+Z"], ["Redo", "Ctrl+Y|Ctrl+Shift+Z"]]]]
+    [["Views", [["Week", "W"], ["Month", "M"], ["Contacts", "C"], ["Backlog", "B"]]],
+      ["Navigate", [["Previous / Next", "left right", "wheel"], ["Today", "T"], ["Search", "F"]]],
+      ["Select", [["Area", "", "drag"], ["Add / Remove", "Ctrl", "+click"], ["Whole day", "Ctrl+A"]]]],
+    [["Edit", [["New entry", "A", "click"], ["Done / Undone", "Space"], ["Delete", "Del"], ["Copy", "Ctrl+C", "right"], ["Paste", "Ctrl+V", "right"], ["Cut", "Ctrl+X", "-"]]],
+      ["History", [["Save", "Ctrl+S"], ["Undo", "Ctrl+Z"], ["Redo", "Ctrl+Y|Ctrl+Shift+Z"]]]]
   ];
+  /** Keys that apply everywhere, in one line below the columns. */
+  const general = [["Help", "?"], ["Close / Clear", "Esc"], ["Confirm", "Enter"]];
+  /** @type {Record<string, [string, string]>} */
+  const gestures = { click: ["mouse-click", "Click"], right: ["mouse-right-click", "Right-click"], wheel: ["mouse-wheel", "Mouse wheel"], drag: ["lasso", "Drag"] };
+  /** @type {Record<string, string>} */
+  const arrows = { left: app.tiles.icon("chevron-left"), right: app.tiles.icon("chevron-right") };
+  /** @param {string} key */
+  const cap = key => key in arrows ? `<kbd class="keys__arrow" aria-label="${key === "left" ? "Left arrow" : "Right arrow"}">${arrows[key]}</kbd>` : `<kbd>${key}</kbd>`;
   /** @param {string} keys */
-  const caps = keys => keys.split("|").map(combination => combination.split("+").map(key => `<kbd>${key}</kbd>`).join("<span>+</span>")).join("<span>/</span>");
-  // Groups sit in two columns side by side, so that the panel never scrolls.
-  helpContent.innerHTML = columns.map(groups => `<div class="help__column">` + groups.map(([group, rows]) => `<h3 class="hp__title">${group}</h3><dl class="keys">` +
-    /** @type {string[][]} */ (rows).map(([action, keys]) => `<div class="keys__row"><dt>${action}</dt><dd>${caps(keys)}</dd></div>`).join("") + `</dl>`).join("") + `</div>`).join("");
+  const caps = keys => keys.split("|").map(combination => combination.split("+").map(part => part.split(" ").filter(Boolean).map(cap).join("")).join("<span>+</span>")).map(combination => `<span class="keys__combo">${combination}</span>`).join("");
+  /** @param {string} name */
+  const mouse = name => `<span role="img" aria-label="${gestures[name][1]}">${app.tiles.icon(gestures[name][0])}</span>`;
+  /** @param {string} keys @param {string} join @param {string} end */
+  const grid = (keys, join, end) => `<dd class="keys__caps">${keys}</dd><dd class="keys__join">${join}</dd><dd class="keys__end">${end}</dd>`;
+  /**
+   * The cells after the action. Without a grid (no gestures in the group, or a single key) the keys alone run to the
+   * right edge. @param {string} keys @param {string | undefined} gesture @param {boolean} withPointer
+   */
+  function cells(keys, gesture, withPointer) {
+    const split = keys.includes("|") ? -1 : keys.lastIndexOf("+");
+    if (!withPointer || (!gesture && split < 0)) return `<dd class="keys__caps">${caps(keys)}</dd>`;
+    if (gesture === "-") return grid(caps(keys), "", "");
+    if (!gesture) return grid(caps(keys.slice(0, split)), "+", cap(keys.slice(split + 1)));
+    const name = gesture.replace(/^\+/, "");
+    return grid(caps(keys), keys ? (gesture.startsWith("+") ? "+" : "or") : "", mouse(name));
+  }
+  // Groups sit in two columns side by side, so that the panel never scrolls; the general keys span both.
+  helpContent.innerHTML = columns.map(groups => `<div class="help__column">` + groups.map(([group, rows]) => {
+    const withPointer = rows.some(row => row[2] && row[2] !== "-");
+    return `<section class="help__group"><h3 class="hp__title">${group}</h3><dl class="keys${withPointer ? " keys--pointer" : ""}">` +
+      rows.map(([action, keys, gesture]) => `<div class="keys__row"><dt>${action}</dt>${cells(keys, gesture, withPointer)}</div>`).join("") +
+      `</dl></section>`;
+  }).join("") + `</div>`).join("") +
+    `<p class="help__general">` + general.map(([action, keys]) => `<span class="help__hint">${caps(keys)}<span>${action}</span></span>`).join("") + `</p>`;
 
   /** Places a floating element at a point or below an anchor, kept inside the window. @param {HTMLElement} element @param {number} x @param {number} y */
   function placeAt(element, x, y) {

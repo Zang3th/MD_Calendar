@@ -256,7 +256,9 @@ The set, chosen by the user from three designs per tag:
 - Short, interruptible, compositor-friendly transitions (transform, opacity).
 - The view switcher indicator slides between options; panels slide in.
 - A new week or month slides in briefly from the side it comes from (navigation, mouse wheel, jump to today or to a search hit).
-- Jumping to today scrolls smoothly and pulses the target day once.
+- Jumping to today or to a search hit scrolls smoothly and highlights the target once: after the slide, an accent ring (2px outline in `--accent` at `--strong`) closes in from 8px to 3px around the day, month cell or bar, holds and fades, 1.4s in all; around an entry, which sits in a scrolling list, it stays at 2px and only fades in and out. It never scales the target, so text and icons stay sharp; with reduced motion the ring only fades in and out.
+- The slide of a new period moves the view by 24px only; it does not fade it, because opacity on the view would break the glass blur of the bars inside.
+- Overdue entries are the one continuous animation: a red border beam travels along their outline at a constant speed (24 fading dash pieces of one rounded SVG outline, one lap in 4s). → [Views](Views.md#entry-tile)
 - `prefers-reduced-motion` disables non-essential motion.
 
 ## Completion sound: Arpeggio

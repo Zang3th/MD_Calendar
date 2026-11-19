@@ -74,7 +74,7 @@
 ### Suche
 
 - [x] ~Scrollbar fixen~
-- [ ] Springen + Hightlighting fixen
+- [x] ~Springen + Highlighting fixen~
 
 ### Controls
 
@@ -102,8 +102,9 @@
 - [x] ~Tastaturhighlighting abklemmen~
 - [x] ~Drag-and-Drop Test zwischen Backlog und Tagen ist wackelig im parallelen Lauf~
 - [x] ~Highlighting von markierten ToDos fixen~
-- [ ] ?-Menü überarbeiten + Rechtsklick ergänzen
-- [ ] Sprung-Animation verformt Icons => Visual Glitch
+- [x] ~?-Menü überarbeiten + Rechtsklick ergänzen~
+- [x] ~Überfällige Einträge visuell markieren~
+- [x] ~Sprung-Animation verformt Icons => Visual Glitch~
 - [ ] Loading-Animation beim Save hinzufügen um Schreibzyklen zu maskieren
 
 ### Release

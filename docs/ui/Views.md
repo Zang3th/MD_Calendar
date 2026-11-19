@@ -17,7 +17,7 @@ Rotating the screen switches to the default view of the new orientation. The bac
 - The tile is tinted with its tag color and shows the tag icon; without a tag it uses the neutral item surface and has no icon.
 - Time: in the week view (landscape) on its own small line above the title in the tag color; elsewhere inline before the title.
 - Done: `--o-past` opacity (55 %), title struck through, check box filled.
-- Overdue: red check box border and a red outline.
+- Overdue: red check box border and a red outline; a border beam travels around the tile at a constant speed without pause, one lap in 4s: a light in full `--danger` with a long tail over about a third of the outline that fades to transparent and bends around the rounded corners, over border and outline. It is hidden with reduced motion.
 - Hover lifts the tile slightly.
 
 ## Day header

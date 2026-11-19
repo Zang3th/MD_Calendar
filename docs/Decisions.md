@@ -256,6 +256,12 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 **Reasons:** not every backlog entry fits a group; the format needs no new syntax and old files stay valid. The title as drop area avoids a drop zone that appears on drag start and moves the panel under the pointer.
 **Rejected:** a reserved “Ungrouped” group heading; a drop area shown only while dragging.
 
+## D48 · Running outline on overdue entries
+
+**Decision:** Besides their red outline, overdue entries show a border beam: a red light with a fading tail that keeps circling the outline, one lap in 4s; with reduced motion it is hidden. The light and its long tail are 24 dash pieces of one rounded SVG outline, each a step behind and fainter than the one before, all moved by the same stroke dash offset. → [Views](ui/Views.md#entry-tile)
+**Reasons:** overdue entries need attention, and a moving light draws the eye without making the tile louder. The fading tail reads as light; moving along the outline keeps the speed constant on every side, and the pieces let the long tail bend around the corners. Overdue tiles are few and small, so repainting their outline each frame is cheap.
+**Rejected:** a solid dash running along the outline (it looked like a snake game); a conic gradient rotating around the center (it crawls along the middle of the long sides and rushes over the short ones); animating the gradient angle through `@property` (same unevenness); one straight gradient moved with `offset-path` (a long tail runs straight off the outline at corners and short sides).
+
 ## Research notes
 
 Open-source projects that were evaluated and what they contributed:

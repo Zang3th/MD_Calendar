@@ -21,6 +21,12 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return `<svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-${name}"></use></svg>`;
   }
 
+  /**
+   * The border beam of overdue tiles (docs/ui/Views.md#entry-tile): pieces of one rounded outline, piece 0 the head,
+   * each following piece a step behind and fainter, so that the tail bends around the corners. Built once.
+   */
+  const beam = `<svg class="ev__beam" aria-hidden="true">${Array.from({ length: 24 }, (_, index) => `<rect pathLength="100" style="--i:${index}"></rect>`).join("")}</svg>`;
+
   /** Class and style that tint an element with its tag color; empty without a configured tag. @param {string} tag */
   function tint(tag) {
     const style = tagStyles.get(tag);
@@ -52,6 +58,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       `</span></button>` +
       // Outside the text lines, so that it stays centered on the whole tile (docs/ui/Views.md#entry-tile).
       (series ? `<span class="ev__repeat">${icon("repeat")}</span>` : "") +
+      (overdue ? beam : "") +
       `</div>`;
   }
 
@@ -173,10 +180,14 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return tags.filter(tag => !known.has(tag.icon));
   }
 
-  /** Slides a newly shown period in from the side it comes from (docs/ui/DesignSystem.md#motion). @param {string} id @param {number} direction */
+  /**
+   * Slides a newly shown period in from the side it comes from (docs/ui/DesignSystem.md#motion). Only a transform:
+   * opacity on the whole view would make it the backdrop root of the glass bars inside, whose blur then jumps.
+   * @param {string} id @param {number} direction
+   */
   function slide(id, direction) {
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    document.getElementById(id)?.animate([{ transform: `translateX(${direction * 24}px)`, opacity: 0.4 }, { transform: "none", opacity: 1 }], { duration: 220, easing: "cubic-bezier(.2,.8,.2,1)" });
+    document.getElementById(id)?.animate([{ transform: `translateX(${direction * 24}px)` }, { transform: "none" }], { duration: 220, easing: "cubic-bezier(.2,.8,.2,1)" });
   }
 
   /** @param {MDCContacts | null} next */
@@ -190,13 +201,26 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     for (const holiday of holidays.holidays) holidaysByDay.set(holiday.date, [...(holidaysByDay.get(holiday.date) || []), holiday.name]);
   }
 
-  /** Scrolls a day into view and highlights it once (docs/ui/DesignSystem.md#motion). @param {HTMLElement} element */
-  function pulse(element) {
+  /**
+   * Scrolls a day, entry or bar into view and highlights it once (docs/ui/DesignSystem.md#motion): an accent ring closes
+   * in around it and fades. An outline instead of a scale keeps text and icons sharp and moves nothing; it starts after
+   * the slide of a new period. A day column draws its card in ::before, so the ring goes there. An entry sits in a
+   * scrolling list with 4px of room, so its ring stays close and only fades in and out.
+   * @param {HTMLElement} element
+   */
+  function highlight(element) {
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
     element.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "nearest", inline: "nearest" });
-    if (reduced) return;
-    element.animate([{ transform: "scale(1)" }, { transform: "scale(1.015)" }, { transform: "scale(1)" }], { duration: 600, easing: "ease-out" });
+    const ring = "color-mix(in srgb, var(--accent) var(--strong), transparent)";
+    const close = element.classList.contains("ev") ? "2px" : "3px";
+    const from = reduced ? close : element.classList.contains("ev") ? "2px" : "8px";
+    element.animate([
+      { outlineStyle: "solid", outlineWidth: "2px", outlineColor: "transparent", outlineOffset: from, zIndex: 2 },
+      { outlineStyle: "solid", outlineWidth: "2px", outlineColor: ring, outlineOffset: close, zIndex: 2, offset: 0.25 },
+      { outlineStyle: "solid", outlineWidth: "2px", outlineColor: ring, outlineOffset: close, zIndex: 2, offset: 0.65 },
+      { outlineStyle: "solid", outlineWidth: "2px", outlineColor: "transparent", outlineOffset: close, zIndex: 2 }
+    ], { duration: 1400, delay: 180, easing: "ease-out", pseudoElement: element.classList.contains("day") ? "::before" : undefined });
   }
 
-  app.tiles = { escape, icon, tint, tagIcon, tagIconIds, dayTiles, backlogTiles, bar, badges, describeOccasion, dayOccasions, setTags, setContacts, setHolidays, pulse, slide };
+  app.tiles = { escape, icon, tint, tagIcon, tagIconIds, dayTiles, backlogTiles, bar, badges, describeOccasion, dayOccasions, setTags, setContacts, setHolidays, highlight, slide };
 })(window.MDCalendar);

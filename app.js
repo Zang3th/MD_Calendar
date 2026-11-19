@@ -819,19 +819,24 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         }
         const ref = /** @type {MDCEntryRef} */ (item.ref);
         const tile = document.querySelector(`.bl__list[data-group="${ref.group}"] .ev[data-index="${ref.index}"]`);
-        if (tile instanceof HTMLElement) app.tiles.pulse(tile);
+        if (tile instanceof HTMLElement) app.tiles.highlight(tile);
         return;
       }
       const series = item.kind === "series" ? calendar.series[/** @type {number} */ (item.series)] : null;
       const key = series && !("raw" in series) ? app.search.nextOccurrence(series, today) : item.key;
       if (view === "contacts") view = portrait.matches ? "month" : "week";
       showDay(key);
-      const cell = renderer().cell(key);
-      const tile = item.kind === "entry" ? cell?.querySelector(`.ev[data-index="${item.ref?.index}"]`)
-        : item.kind === "series" ? cell?.querySelector(`.ev[data-series="${item.series}"]`)
+      const find = () => item.kind === "entry" ? renderer().cell(key)?.querySelector(`.ev[data-index="${item.ref?.index}"]`)
+        : item.kind === "series" ? renderer().cell(key)?.querySelector(`.ev[data-series="${item.series}"]`)
           : document.querySelector(`.bar[data-multi="${item.multi}"]`);
-      const target = tile instanceof HTMLElement ? tile : cell;
-      if (target) app.tiles.pulse(target);
+      let tile = find();
+      // A hit hidden behind "+N" in the month: the cell enlarges, so that the entry itself shows.
+      if (!tile && item.kind !== "multiDay" && view === "month") {
+        app.month.toggle(key);
+        tile = find();
+      }
+      const target = tile instanceof HTMLElement ? tile : renderer().cell(key);
+      if (target) app.tiles.highlight(target);
     }
 
     app.searchPanel.init(query => calendar && backlog ? app.search.search(calendar, backlog, dataVersion, query, today, 30) : [], jumpTo);
@@ -942,7 +947,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         if (view === "contacts") view = portrait.matches ? "month" : "week";
         showDay(today);
         const cell = renderer().cell(today);
-        if (cell) app.tiles.pulse(cell);
+        if (cell) app.tiles.highlight(cell);
       },
       previous() { if (calendar) showDay(view === "week" ? app.calendar.addDays(anchor, -7) : app.calendar.addMonths(anchor, -1)); },
       next() { if (calendar) showDay(view === "week" ? app.calendar.addDays(anchor, 7) : app.calendar.addMonths(anchor, 1)); },
