@@ -89,6 +89,23 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       order(left).localeCompare(order(right), "en")).slice(0, count);
   }
 
+  /**
+   * The contact whose birthday comes next from `today` on, by name on the same day; -1 when no contact has a birthday.
+   * @param {MDCContacts} contacts @param {string} today
+   */
+  function nextBirthdayIndex(contacts, today) {
+    let best = -1;
+    let soonest = Infinity;
+    contacts.contacts.forEach((contact, index) => {
+      const days = nextBirthday(contact, today)?.days ?? Infinity;
+      if (days < soonest || (days === soonest && days < Infinity && sortName(contact).localeCompare(sortName(contacts.contacts[best]), "en") < 0)) {
+        best = index;
+        soonest = days;
+      }
+    });
+    return best;
+  }
+
   /** Whether a contact matches the search text (name, email, phone). @param {MDCContact} contact @param {string} query */
   function matches(contact, query) {
     const words = query.toLowerCase().split(/\s+/).filter(Boolean);
@@ -234,5 +251,5 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     };
   }
 
-  app.contacts = { name, occasionsOn, nextBirthday, upcoming, matches, sortName, create, update, remove, importContacts, isLeap };
+  app.contacts = { name, occasionsOn, nextBirthday, nextBirthdayIndex, upcoming, matches, sortName, create, update, remove, importContacts, isLeap };
 })(window.MDCalendar);

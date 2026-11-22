@@ -129,26 +129,29 @@ Ab hier ersetzt MD_Calendar den Google-Kalender als Daily-Driver.
 ### Umstieg
 
 - [x] ~Ordner ins NAS-Backup aufnehmen~
-- [ ] Stichtag festlegen => 23.11.2026
-- [ ] Kalenderdaten exportieren
-- [ ] Kalender: Januar, Februar und März discarden
-- [ ] Kalender: Einträge neutralisieren, einordnen und taggen
-- [ ] Kontaktdaten exportieren
+- [x] ~Stichtag festlegen => 23.11.2026~
+- [x] ~Kalenderdaten exportieren~
+- [x] ~Kalender: Einträge neutralisieren, einordnen und taggen~
+- [x] ~Kontaktdaten exportieren~
 
 ### Statistiken und Analyse
 
 - [ ] Feature ausarbeiten
 
-### Kontakte
+### Synchronisierung
+
+- [ ] Feature ausarbeiten
 
 ### Bugs und Verbesserungen
 
-- [ ] Farben für die Tags finalisieren
-- [ ] Highlight-Animation verbessern
+- [x] ~Farben für die Tags finalisieren~
+- [x] ~Highlight-Animation verbessern~
+- [x] ~Serien löschen verbessern~
+- [ ] Enter und CTRL + Enter in Notes
+- [ ] Rechtschreibkorrektur in Notes ausschalten
 
 ### Release
 
-- [ ] Dummy-Daten verschieben
 - [ ] Docs + README aktualisieren
 
 ## Mobile

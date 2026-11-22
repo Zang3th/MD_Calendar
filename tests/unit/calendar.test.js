@@ -12,7 +12,7 @@ function plain(value) {
 /** @param {Record<string, string[]>} days @returns {any} */
 function calendarWith(days) {
   const map = new Map(Object.entries(days).map(([key, titles]) => [key, {
-    key, extra: [], entries: titles.map(title => ({ done: false, start: "", end: "", title, tag: "", location: "", note: [], extra: [] }))
+    key, extra: [], pins: [], entries: titles.map(title => ({ done: false, start: "", end: "", title, tag: "", location: "", note: [], extra: [] }))
   }]));
   return { newline: "\n", head: [], days: map, multiDay: [], series: [], multiDayHead: [], seriesHead: [], seriesRevision: 0 };
 }
@@ -168,4 +168,14 @@ test("multi-day bars stack by start date, then the longer bar, then file order",
     ["Later", 3, 4, 1, false, true]
   ]);
   assert.equal(lanes, 3);
+});
+
+test("a vacation within another one follows it one level deeper; overlaps and equal periods stay side by side", () => {
+  const period = (/** @type {string} */ title, /** @type {string} */ start, /** @type {string} */ end) => ({ title, start, end });
+  const nested = domain.nestPeriods([
+    period("Rome", "2026-08-05", "2026-08-09"), period("Summer", "2026-08-03", "2026-08-21"), period("Day trip", "2026-08-06", "2026-08-06"),
+    period("Garda", "2026-08-14", "2026-08-18"), period("Overlap", "2026-08-20", "2026-08-25"), period("Same", "2026-08-20", "2026-08-25")
+  ]);
+  assert.deepEqual(plain(nested).map((/** @type {any} */ item) => [item.period.title, item.depth]),
+    [["Summer", 0], ["Rome", 1], ["Day trip", 2], ["Garda", 1], ["Overlap", 0], ["Same", 0]]);
 });

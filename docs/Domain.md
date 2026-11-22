@@ -6,7 +6,7 @@ The business model and its rules. How the model is stored is described in [DataF
 
 - All dates and times are local time. There are no time zones.
 - An all-day value is a plain date, never a point in time.
-- Dates are written as `DD.MM.YYYY` everywhere: in the data files, in the UI and in inputs. A date without a year (a birthday) is `DD.MM.`.
+- Dates are written as `DD.MM.YYYY` everywhere: in the data files, in the UI and in inputs. A date without a year (a birthday) is `DD.MM.` in the files and `DD.MM` in the UI. The holiday overview is the exception and writes `DD.MM.YY` (see [Views](ui/Views.md#holiday-overview)).
 - Weeks start on Monday. Week numbers follow ISO 8601.
 
 ## Entry
@@ -27,7 +27,7 @@ An entry belongs to one day of the calendar.
 - All entries can be edited, including entries on past days.
 - An **open entry on a past day is overdue**. It stays on its day and is highlighted. It is never moved automatically.
 - Occurrences of recurring entries are never overdue.
-- A time places an entry when it lands on a day and always places occurrences of recurring entries (see [Day list order](#day-list-order)).
+- A time places an entry when it lands on a day and places occurrences of recurring entries until they are placed by hand (see [Day list order](#day-list-order)).
 
 ## Multi-day entry
 
@@ -39,9 +39,9 @@ An entry belongs to one day of the calendar.
 - The **time slot** of a start time: directly before the first normal entry with a later start time; when no normal entry starts later, directly after the last normal entry with a time; when no normal entry has a time, first. Normal entries without a time do not count.
 - A normal entry with a time goes into its time slot when it is created, pasted or imported, when it moves to another day (in the dialog or by dragging it in from another day or the backlog) and when its start time changes. A new or pasted entry without a time goes to the end of the day; one dragged in lands where it is dropped.
 - After that, normal entries keep their stored order and are freely sortable: dragging within a day puts an entry exactly where it is dropped, and other edits keep its place.
-- Occurrences of recurring entries are not sortable; they always sit in their time slot among the normal entries.
-- Occurrences without a time, and all occurrences of a day whose normal entries have no time, come first.
-- Occurrences that land in the same place are ordered by time, then by title.
+- An occurrence of a recurring entry sits in its time slot among the normal entries until it is **placed** by hand: dragging an occurrence within its day places every occurrence of that day exactly as dropped (those hidden behind “+N” in the month where they are shown), and the occurrence stays part of its series. A placed occurrence stays directly before the normal entry that followed it when entries are added, edited, moved or deleted; dragging a normal entry past it puts the entry where it is dropped.
+- Occurrences that are not placed: those without a time, and all of a day whose normal entries have no time, come first; others take their time slot. Occurrences that land in the same place are ordered by time, then by title; placed ones come before them, in their order.
+- A placement is dropped in the same step when its occurrence goes away: the occurrence is deleted, the series ends before that day or is deleted, or its start date or rule no longer hits that day. A new start time or title keeps every placement.
 
 Birthdays, anniversaries and holidays are not list items; they belong to the day itself.
 
@@ -63,7 +63,7 @@ Rules have no end when created. Actions on a series:
 | Delete one occurrence | Adds an exception date (`EXDATE`). |
 | Check off one occurrence | Records the date as done for this series. |
 
-Single occurrences cannot be moved or renamed.
+Single occurrences cannot be moved to another day or renamed; within their day they can be placed (see [Day list order](#day-list-order)).
 
 - “End series here” sets `UNTIL` to the date of the chosen occurrence; it stays the last one.
 - A whole series can be deleted.
@@ -78,6 +78,7 @@ An entry, a recurring entry and a multi-day entry can be turned into each other 
 
 - The backlog holds entries without a date: same fields as an entry except date, time and position. An entry that arrives in the backlog (dragged, pasted, moved or created there in the entry dialog) loses its time; scheduling it again sets no time.
 - It holds **ungrouped** entries and ordered **groups**. Ungrouped entries belong to the backlog itself and come before all groups; they are the untagged entries and the target for quick capture from outside the app. Every group is a tag: the tag decides the group. An entry with a tag that arrives from outside the backlog (dragged from a day, pasted, given “Backlog” as its date, created) goes into the group of its tag, created at the end when missing, at the dropped position only when that lies in this group. Inside the backlog, moving an entry into another group gives it that group’s tag, moving it to the ungrouped entries removes its tag, and reordering within a group never changes a tag; an untagged entry dropped into a group takes the group’s tag. Groups are not created by hand: tags come from `Config.md` and the entries.
+- A backlog entry cannot be done: only a day can be done, so the backlog shows no check box and `Space` leaves its entries alone. A done state in `Backlog.md` is kept as it stands.
 - Scheduling a backlog entry **moves** it into a day. An entry can move from a day back into the ungrouped entries or any backlog group.
 - Entries can be reordered and moved between the ungrouped entries and the groups. Groups can be reordered; the ungrouped entries always come first.
 

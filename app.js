@@ -111,6 +111,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     let contacts = null;
     /** Index of the contact shown in the contacts view, or -1. */
     let selectedContact = 0;
+    /** Set once a contact was opened; until then the contacts view shows the contact whose birthday comes next. */
+    let contactChosen = false;
     /** @type {MDCHolidays} */
     let holidays = { holidays: [], vacations: [] };
     /** @type {MDCConfig} */
@@ -173,6 +175,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
     function renderContacts() {
       if (!contacts) return;
+      if (!contactChosen) selectedContact = Math.max(0, app.contacts.nextBirthdayIndex(contacts, today));
       selectedContact = Math.min(selectedContact, contacts.contacts.length - 1);
       app.contactsView.render(contacts, selectedContact, today);
     }
@@ -412,6 +415,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
     /** @param {MDCStorageAdapter} opened */
     async function openFolder(opened) {
+      // The contact opened last belongs to the folder it was opened in.
+      contactChosen = false;
       await startSession(opened);
       updateFolderState(opened, app.folderState.opened);
       app.start.hide();
@@ -493,6 +498,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         const selectAfter = action.selectAfter ?? selectedContact;
         after = { view: /** @type {MDCView} */ ("contacts"), anchor, contact: selectAfter };
         selectedContact = selectAfter;
+        contactChosen = true;
       }
       // Every change of the data, also through undo and redo, starts a new data version, so that the cached texts the
       // history's fingerprint reads are never stale.
@@ -517,7 +523,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       app.interactions.clearSelection();
       if (entry.target) firstFile = /** @type {MDCFileName} */ (undone ? (entry.target === calendarFile ? backlogFile : calendarFile) : entry.target);
       const target = (undone ? entry.beforeViewState : entry.afterViewState) || { view, anchor };
-      if (target.contact !== undefined && target.contact >= 0) selectedContact = target.contact;
+      if (target.contact !== undefined && target.contact >= 0) {
+        selectedContact = target.contact;
+        contactChosen = true;
+      }
       if (target.view !== view || !shows(target.anchor)) {
         view = target.view;
         anchor = target.anchor;
@@ -633,7 +642,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       const base = { title: result.title, location: result.location, note: result.note, tag: result.tag };
       if (result.kind === "series") {
         return app.calendar.createSeries(target, {
-          ...base, extra, start: result.date, startTime: result.startTime, endTime: result.endTime,
+          ...base, id: "", extra, start: result.date, startTime: result.startTime, endTime: result.endTime,
           rule: /** @type {MDCRule} */ (result.rule), except: [], done: []
         });
       }
@@ -723,7 +732,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         return;
       }
       openDialog({ kind: "entry", isNew: true, inBacklog: false, title: "", location: "", note: [], tag: "", date: key || visibleDay(), end: "", startTime: "", endTime: "", rule: null, occurrence: "" }, {
-        apply: createAndShow,
+        apply: createAndShow, create: createAndShow,
         remove: noAction, deleteOccurrence: noAction, endSeries: noAction
       });
     }
@@ -733,7 +742,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       if (!calendar || !backlog) return;
       const tag = backlog.groups[group]?.name || "";
       openDialog({ kind: "entry", isNew: true, inBacklog: true, title: "", location: "", note: [], tag, date: "", end: "", startTime: "", endTime: "", rule: null, occurrence: "" }, {
-        apply: createAndShow,
+        apply: createAndShow, create: createAndShow,
         remove: noAction, deleteOccurrence: noAction, endSeries: noAction
       });
     }
@@ -759,6 +768,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
           execute(app.backlog.update(calendar, backlog, ref, target, entryFields(result)));
           if (inBacklog) showResult(result);
         },
+        create: createAndShow,
         remove: () => {
           if (!calendar || !backlog) return;
           execute(app.backlog.remove(calendar, backlog, ref));
@@ -785,6 +795,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
             })
             : app.calendar.combine(result.title, [app.calendar.deleteSeries(calendar, index), createFrom(result, series)]));
         },
+        create: createAndShow,
         remove: () => {
           if (!calendar) return;
           execute(app.calendar.deleteSeries(calendar, index));
@@ -817,6 +828,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
             ? app.calendar.updateMultiDay(calendar, index, { ...item, title: result.title, location: result.location, note: result.note, tag: result.tag, start: result.date, end: result.end })
             : app.calendar.combine(result.title, [app.calendar.deleteMultiDay(calendar, index), createFrom(result, item)]));
         },
+        create: createAndShow,
         remove: () => {
           if (!calendar) return;
           execute(app.calendar.deleteMultiDay(calendar, index));
@@ -842,6 +854,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     function openContact(index) {
       if (!contacts || !contacts.contacts[index]) return;
       selectedContact = index;
+      contactChosen = true;
       view = "contacts";
       render();
     }
@@ -882,6 +895,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
     /** Marks all picked entries done, or all open when they are all done; plays the sound when something got done. @param {MDCPick[]} picks */
     function toggleMany(picks) {
+      // Backlog entries cannot be done (docs/Domain.md#backlog).
+      picks = picks.filter(pick => !pick.ref || !app.backlog.isBacklog(pick.ref));
       if (!calendar || !backlog || !picks.length) return;
       const currentBacklog = backlog;
       const done = picks.some(pick => !pickDone(pick));
@@ -1010,6 +1025,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     app.contactsView.init({
       select(index) {
         selectedContact = index;
+        contactChosen = true;
         renderContacts();
       },
       update(index, updated, field) {
@@ -1196,12 +1212,18 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         execute(app.backlog.toggle(calendar, backlog, ref));
         if (app.backlog.entryAt(calendar, backlog, ref).done) void app.sounds.play();
       },
-      move(from, to) {
+      move(from, to, placed) {
         if (!calendar || !backlog) return;
-        if (!execute(app.backlog.move(calendar, backlog, from, to))) {
+        if (!execute(app.backlog.move(calendar, backlog, from, to, placed))) {
           renderer().renderDays(calendar, [from.key, to.key], today);
           app.backlogPanel.render(backlog, backlogOpen);
         }
+      },
+      placeOccurrences(key, placed, dragged) {
+        if (!calendar) return;
+        const series = calendar.series[dragged];
+        const label = series && !("raw" in series) ? series.title : "Occurrence";
+        if (!execute(app.calendar.placeOccurrences(calendar, key, placed, label))) renderer().renderDays(calendar, [key], today);
       },
       moveGroup(from, to) {
         if (backlog) execute(app.backlog.moveGroup(backlog, from, to));

@@ -141,34 +141,39 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   /**
-   * The day list in display order (docs/Domain.md#day-list-order): normal entries keep their stored order, and each timed
-   * occurrence goes directly before the first normal entry with a later start time, or after the last timed one.
-   * Occurrences without a time, and all occurrences of a day without timed entries, come first.
+   * The day list in display order (docs/Domain.md#day-list-order): normal entries keep their stored order. A placed
+   * occurrence goes directly before the normal entry at its position; the others go into their time slot: directly before
+   * the first normal entry with a later start time, or after the last timed one. Occurrences without a time, and all
+   * occurrences of a day without timed entries, come first. In one gap placed occurrences come first, in their order.
    * @param {readonly MDCOccurrence[]} occurrences @param {readonly MDCEntry[]} entries
+   * @param {ReadonlyMap<number, number>} [placed] series index → number of normal entries before it, in display order
    * @returns {Array<{occurrence: MDCOccurrence} | {entry: MDCEntry, index: number}>}
    */
-  function dayOrder(occurrences, entries) {
+  function dayOrder(occurrences, entries, placed = new Map()) {
     let lastTimed = -1;
     entries.forEach((entry, index) => { if (entry.start) lastTimed = index; });
+    /** @type {Map<number, MDCOccurrence[]>} Occurrences before the entry at that index; entries.length means after the last. */
+    const gaps = new Map();
+    const add = (/** @type {number} */ gap, /** @type {MDCOccurrence} */ occurrence) => gaps.set(gap, [...(gaps.get(gap) || []), occurrence]);
+    const bySeries = new Map(occurrences.map(occurrence => [occurrence.index, occurrence]));
+    for (const [index, at] of placed) {
+      const occurrence = bySeries.get(index);
+      if (occurrence) add(Math.min(at, entries.length), occurrence);
+    }
+    const free = occurrences.filter(occurrence => !placed.has(occurrence.index));
+    const first = (/** @type {MDCOccurrence} */ occurrence) => !occurrence.series.startTime || lastTimed < 0;
+    for (const occurrence of free.filter(first)) add(0, occurrence);
+    for (const occurrence of free.filter(occurrence => !first(occurrence))) {
+      const later = entries.findIndex(entry => entry.start !== "" && entry.start > occurrence.series.startTime);
+      add(later < 0 ? lastTimed + 1 : later, occurrence);
+    }
     /** @type {Array<{occurrence: MDCOccurrence} | {entry: MDCEntry, index: number}>} */
     const order = [];
-    /** @type {Map<number, MDCOccurrence[]>} Occurrences placed before the entry at that index; lastTimed + 1 means after it. */
-    const placed = new Map();
-    for (const occurrence of occurrences) {
-      const time = occurrence.series.startTime;
-      if (!time || lastTimed < 0) {
-        order.push({ occurrence });
-        continue;
-      }
-      const later = entries.findIndex(entry => entry.start !== "" && entry.start > time);
-      const slot = later < 0 ? lastTimed + 1 : later;
-      placed.set(slot, [...(placed.get(slot) || []), occurrence]);
-    }
     entries.forEach((entry, index) => {
-      for (const occurrence of placed.get(index) || []) order.push({ occurrence });
+      for (const occurrence of gaps.get(index) || []) order.push({ occurrence });
       order.push({ entry, index });
     });
-    for (const occurrence of placed.get(entries.length) || []) order.push({ occurrence });
+    for (const occurrence of gaps.get(entries.length) || []) order.push({ occurrence });
     return order;
   }
 

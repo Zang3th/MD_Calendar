@@ -40,9 +40,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
    * Removes `from` (if set) and inserts `to` (if set), across days and backlog groups.
    * @param {MDCCalendar} calendar @param {MDCBacklog} backlog @param {string} label
    * @param {{ref: MDCEntryRef, entry: MDCEntry} | null} from @param {{ref: MDCEntryRef, entry: MDCEntry} | null} to
+   * @param {{key: string, pins: MDCPin[]} | null} [placed] the pins of one day as dropped
    * @returns {MDCDayAction}
    */
-  function action(calendar, backlog, label, from, to) {
+  function action(calendar, backlog, label, from, to, placed = null) {
     /** @param {{ref: MDCEntryRef, entry: MDCEntry} | null} removed @param {{ref: MDCEntryRef, entry: MDCEntry} | null} inserted */
     function apply(removed, inserted) {
       if (removed) list(calendar, backlog, removed.ref).splice(removed.ref.index, 1);
@@ -50,15 +51,23 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     }
     const refs = [from?.ref, to?.ref].filter(ref => ref !== undefined);
     const crossing = from && to && isBacklog(from.ref) !== isBacklog(to.ref);
+    const days = [...new Set(refs.filter(ref => !isBacklog(ref)).map(ref => ref.key))];
+    // Placed occurrences keep their place among the entries (docs/Domain.md#day-list-order).
+    const options = { ...app.calendar.pinOptions(from, to), placed };
+    /** @type {Array<{key: string, pins: readonly MDCPin[]}>} */
+    let saved = [];
     return {
       label,
-      days: [...new Set(refs.filter(ref => !isBacklog(ref)).map(ref => ref.key))],
+      days,
       backlog: refs.some(isBacklog),
       // Saving writes the target of a move between the files first (docs/DataFormat.md#rules-for-the-calendar-file).
       target: crossing && to ? (isBacklog(to.ref) ? backlogFile : calendarFile) : undefined,
       size: (from ? sizeOf(from.entry) : 0) + (to ? sizeOf(to.entry) : 0),
-      redo() { apply(from, to); },
-      undo() { apply(to, from); }
+      redo() { saved = app.calendar.keepPins(calendar, days, () => apply(from, to), options); },
+      undo() {
+        apply(to, from);
+        app.calendar.restorePins(calendar, saved);
+      }
     };
   }
 
@@ -83,13 +92,17 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
    */
   function backlogStep(calendar, backlog, label, keys, mutate, target, size) {
     const days = [...new Set(keys)];
-    const before = { backlog: copyBacklog(backlog), days: days.map(key => [...app.calendar.dayList(calendar, key)]) };
+    const pins = days.map(key => app.calendar.pins(calendar, key));
+    const before = { backlog: copyBacklog(backlog), days: days.map(key => [...app.calendar.dayList(calendar, key)]), pins };
     mutate();
-    const after = { backlog: copyBacklog(backlog), days: days.map(key => [...app.calendar.dayList(calendar, key)]) };
+    const afterDays = days.map(key => [...app.calendar.dayList(calendar, key)]);
+    // Entries only leave the days here; the pins keep their place among the others.
+    const after = { backlog: copyBacklog(backlog), days: afterDays, pins: days.map((_, index) => app.calendar.repin(before.days[index], afterDays[index], pins[index])) };
     /** @param {typeof before} state */
     const set = state => {
       restoreBacklog(backlog, state.backlog);
       days.forEach((key, index) => app.calendar.dayList(calendar, key).splice(0, Infinity, ...state.days[index]));
+      app.calendar.restorePins(calendar, days.map((key, index) => ({ key, pins: state.pins[index] })));
     };
     set(before);
     return { label, days, backlog: true, target, size, redo() { set(after); }, undo() { set(before); } };
@@ -178,13 +191,17 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   /**
    * Moves an entry between any two places; `to.index` is the position after the entry was removed. A timed entry that
-   * arrives on a day from elsewhere goes into its time slot instead (docs/Domain.md#day-list-order).
+   * arrives on a day from elsewhere goes into its time slot instead (docs/Domain.md#day-list-order). Within a day
+   * `placed` gives its placed occurrences as dropped, so that an entry can pass them.
    * @param {MDCCalendar} calendar @param {MDCBacklog} backlog @param {MDCEntryRef} from @param {MDCEntryRef} to
+   * @param {MDCPlacement[] | null} [placed]
    * @returns {MDCDayAction | null}
    */
-  function move(calendar, backlog, from, to) {
+  function move(calendar, backlog, from, to, placed = null) {
     const sameList = from.group === to.group && (isBacklog(from) || from.key === to.key);
-    if (sameList && from.index === to.index) return null;
+    const pinned = placed && sameList && !isBacklog(from) ? { key: from.key, pins: app.calendar.toPins(calendar, from.key, placed) } : null;
+    const pinsChange = pinned && JSON.stringify(pinned.pins) !== JSON.stringify(app.calendar.pins(calendar, from.key));
+    if (sameList && from.index === to.index && !pinsChange) return null;
     const entry = entryAt(calendar, backlog, from);
     const length = list(calendar, backlog, to).length - (sameList ? 1 : 0);
     if (to.index < 0 || to.index > length) throw new Error("Invalid target position.");
@@ -196,7 +213,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       }, isBacklog(from) ? undefined : backlogFile, 2 * sizeOf(entry));
     }
     const target = !sameList && entry.start ? { ...to, index: app.calendar.timeSlot(list(calendar, backlog, to), entry.start) } : to;
-    return action(calendar, backlog, entry.title, { ref: from, entry }, { ref: target, entry });
+    return action(calendar, backlog, entry.title, { ref: from, entry }, { ref: target, entry }, pinned);
   }
 
   /**
@@ -228,24 +245,35 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
    * One undo step over several lists: `mutate` changes the lists, the action restores or reapplies their contents.
    * @param {MDCCalendar} calendar @param {MDCBacklog} backlog @param {string} label @param {MDCEntryRef[]} places
    * @param {() => void} mutate @param {string | undefined} target
+   * @param {{moved?: Set<MDCEntry>, replaced?: Map<MDCEntry, MDCEntry>, placed?: {key: string, pins: MDCPin[]} | null}} [pinning]
+   * how placed occurrences follow the change (docs/Domain.md#day-list-order)
    * @returns {MDCDayAction}
    */
-  function snapshot(calendar, backlog, label, places, mutate, target) {
+  function snapshot(calendar, backlog, label, places, mutate, target, pinning = {}) {
     const unique = [...new Map(places.map(ref => [placeId(ref), ref])).values()];
     const before = unique.map(ref => [...list(calendar, backlog, ref)]);
+    const pinsBefore = unique.map(ref => isBacklog(ref) ? [] : app.calendar.pins(calendar, ref.key));
     mutate();
     const after = unique.map(ref => [...list(calendar, backlog, ref)]);
-    /** @param {MDCEntry[][]} contents */
-    const set = contents => unique.forEach((ref, index) => list(calendar, backlog, ref).splice(0, Infinity, ...contents[index]));
-    set(before);
+    const pinsAfter = unique.map((ref, index) => {
+      if (isBacklog(ref)) return [];
+      if (pinning.placed && pinning.placed.key === ref.key) return pinning.placed.pins;
+      return pinsBefore[index].length ? app.calendar.repin(before[index], after[index], pinsBefore[index], pinning.moved, pinning.replaced) : pinsBefore[index];
+    });
+    /** @param {MDCEntry[][]} contents @param {ReadonlyArray<readonly MDCPin[]>} placed */
+    const set = (contents, placed) => unique.forEach((ref, index) => {
+      list(calendar, backlog, ref).splice(0, Infinity, ...contents[index]);
+      if (!isBacklog(ref)) app.calendar.restorePins(calendar, [{ key: ref.key, pins: placed[index] }]);
+    });
+    set(before, pinsBefore);
     return {
       label,
       days: [...new Set(unique.filter(ref => !isBacklog(ref)).map(ref => ref.key))],
       backlog: unique.some(isBacklog),
       target,
       size: after.flat().reduce((total, entry) => total + sizeOf(entry), 0),
-      redo() { set(after); },
-      undo() { set(before); }
+      redo() { set(after, pinsAfter); },
+      undo() { set(before, pinsBefore); }
     };
   }
 
@@ -264,18 +292,23 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   /** Marks all entries done, or all open when they are all done already. @param {MDCCalendar} calendar @param {MDCBacklog} backlog @param {MDCEntryRef[]} refs */
   function toggleEntries(calendar, backlog, refs) {
     const done = !refs.every(ref => entryAt(calendar, backlog, ref).done);
+    /** @type {Map<MDCEntry, MDCEntry>} */
+    const replaced = new Map();
     return snapshot(calendar, backlog, `${refs.length} entries`, refs, () => {
       for (const ref of refs) {
         const entries = list(calendar, backlog, ref);
-        entries[ref.index] = { ...entries[ref.index], done };
+        const changed = { ...entries[ref.index], done };
+        replaced.set(entries[ref.index], changed);
+        entries[ref.index] = changed;
       }
-    }, undefined);
+    }, undefined, { replaced });
   }
 
   /**
    * Moves several entries to one place, in their order, starting at `target.index` of the target list
    * after they were removed. `dragged` is the entry the pointer moved; it keeps its place among them. Timed entries that
-   * arrive on a day from elsewhere go into their time slots instead (docs/Domain.md#day-list-order).
+   * arrive on a day from elsewhere go into their time slots instead (docs/Domain.md#day-list-order). Placed occurrences
+   * keep their place among the entries that stay.
    * @param {MDCCalendar} calendar @param {MDCBacklog} backlog @param {MDCEntryRef[]} refs @param {MDCEntryRef} target
    * @returns {MDCDayAction}
    */
@@ -302,7 +335,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       const slotted = moving.map((entry, index) => Boolean(entry.start) && !isBacklog(target) && placeId(ordered[index]) !== placeId(target));
       destination.splice(Math.min(target.index, destination.length), 0, ...moving.filter((_, index) => !slotted[index]));
       for (const entry of moving.filter((_, index) => slotted[index])) destination.splice(app.calendar.timeSlot(destination, entry.start), 0, entry);
-    }, crossing ? (isBacklog(target) ? backlogFile : calendarFile) : undefined);
+    }, crossing ? (isBacklog(target) ? backlogFile : calendarFile) : undefined, { moved: new Set(moving) });
   }
 
   /**

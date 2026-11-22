@@ -17,6 +17,10 @@ test("entries move between the backlog and the days, and saving writes both file
   await calendar.drag(page.locator(`${thursday} .ev`, { hasText: "Day entry" }), page.locator('.bl__list[data-group="1"]'));
   await expect(page.locator('.bl__list[data-group="1"] .ev__title')).toHaveText(["Day entry"]);
   await expect(page.locator(".bl__count").nth(1)).toHaveText("1");
+  // A backlog entry has no check box, and Space leaves it open (docs/Domain.md#backlog).
+  await expect(page.locator('.bl__list[data-group="1"] .ev__check')).toHaveCount(0);
+  await page.locator('.bl__list[data-group="1"] .ev').hover();
+  await page.keyboard.press("Space");
 
   await page.keyboard.press("Control+s");
   await expect(page.locator("#save")).not.toHaveClass(/is-dirty/);
@@ -142,18 +146,23 @@ test("a tagged entry goes to its tag's group, keys paste at the pointer and a cl
 
 test("the holiday overview shows vacations, holidays and school vacations as tabs", async ({ page, calendar }) => {
   await calendar.openApp({
-    "Calendar.md": "# Calendar\n\n## Multi-day\n\n### Trip #Vacation\n#Start\n- 23.11.2026\n#End\n- 25.11.2026\n",
+    "Calendar.md": "# Calendar\n\n## November 2026\n\n### 24.11.2026\n- [ ] Day trip #Vacation\n\n## Multi-day\n\n### Trip #Vacation\n#Start\n- 23.11.2026\n#End\n- 25.11.2026\n",
     "Holidays.md": "# Holidays\n\n## Holidays\n- 25.12.2026 Christmas Day\n\n## School vacations\n- 23.12.2026 - 06.01.2027 Christmas vacation\n",
     "Config.md": "# Config\n\n## Tags\n- Vacation: #00ff00 vacation\n"
   });
   await page.locator("#holidaysButton").click();
   await expect(page.getByRole("tab")).toHaveText(["Vacation", "Holidays", "School vacations"]);
   await expect(page.getByRole("tab", { name: "Vacation", exact: true })).toHaveAttribute("aria-selected", "true");
-  await expect(page.locator("#holidaysContent .hp__name")).toHaveText(["Trip"]);
+  // A vacation within another one is listed below it, indented.
+  await expect(page.locator("#holidaysContent .hp__name")).toHaveText(["Trip", "Day trip"]);
+  await expect(page.locator("#holidaysContent .hp__date")).toHaveText(["23.11.26 – 25.11.26", "24.11.26"]);
+  await expect(page.locator("#holidaysContent .hp__row").nth(1)).toHaveClass(/hp__row--sub/);
   await page.getByRole("tab", { name: "Holidays" }).click();
   await expect(page.locator("#holidaysContent .hp__name")).toHaveText(["Christmas Day"]);
+  await expect(page.locator("#holidaysContent .hp__date")).toHaveText(["25.12.26"]);
   await page.getByRole("tab", { name: "School vacations" }).click();
   await expect(page.locator("#holidaysContent .hp__name")).toHaveText(["Christmas vacation"]);
+  await expect(page.locator("#holidaysContent .hp__date")).toHaveText(["23.12.26 – 06.01.27"]);
   await page.locator("[data-year='1']").click();
   await expect(page.locator("#holidaysContent .hp__name")).toHaveText(["Christmas vacation"]);
 });

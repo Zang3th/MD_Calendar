@@ -442,6 +442,15 @@
           stroke-linecap="round"
           stroke-linejoin="round"/>
     </symbol>
+    <symbol id="tag-heart" viewBox="0 0 32 32" fill="none">
+    <g transform="translate(0 -.5)">
+    <path d="M16 26C16 26 5 19.5 5 12.5Q5 7 10 7Q13.5 7 16 10.5Q18.5 7 22 7Q27 7 27 12.5C27 19.5 16 26 16 26Z"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </g>
+    </symbol>
     <symbol id="tag-home" viewBox="0 0 32 32" fill="none">
     <path d="M5 15L16 6L27 15M8 13V25Q8 27 10 27H22Q24 27 24 25V13M13.5 27V21Q13.5 20 14.5 20H17.5Q18.5 20 18.5 21V27"
           stroke="currentColor"
@@ -576,15 +585,20 @@
     <header class="hp__head hp__head--center"><span class="hp__year">Shortcuts</span></header>
     <div class="hp__content" id="helpContent"></div>
   </section>
-  <dialog class="dlg" id="dialog" aria-label="Entry">
+  <dialog class="dlg" id="dialog" aria-label="Entry" tabindex="-1">
     <form class="dlg__form" method="dialog" novalidate>
+      <div class="dlg__head">
+        <button class="iconbtn dlg__dup" id="dialogDuplicate" type="button" aria-label="Duplicate" hidden><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-copy"></use></svg></button>
+        <button class="iconbtn dlg__delete" id="dialogDelete" type="button" aria-label="Delete" aria-controls="dialogDeleteMenu" hidden><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-trash"></use></svg></button>
+        <button class="iconbtn" id="dialogClose" type="button" aria-label="Close"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-close"></use></svg></button>
+      </div>
       <input class="dlg__title" id="dialogTitle" placeholder="What is it?" aria-label="Title" autocomplete="off">
       <div class="dlg__bar">
         <div class="dlg__toks" id="dialogTokens" role="toolbar" aria-label="Details"></div>
         <button class="btn btn--primary" id="dialogApply" type="submit">Apply</button>
       </div>
       <div class="dlg__pop" id="dialogPop" tabindex="-1" hidden></div>
-      <footer class="dlg__actions" id="dialogActions" hidden></footer>
+      <div class="menu glass dlg__menu" id="dialogDeleteMenu" role="menu" aria-label="Delete" hidden></div>
     </form>
   </dialog>
   <div class="watermark" id="watermark" hidden>© 2026 MD_Calendar <span id="watermarkVersion"></span> · Tim Krüger (Zang3th) · <a href="https://github.com/Zang3th" target="_blank" rel="noopener noreferrer">GitHub</a></div>

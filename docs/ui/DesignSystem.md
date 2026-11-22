@@ -159,7 +159,7 @@ Scale: 2, 4, 6, 8, 10, 12, 14, 16, 22 px. Every padding, margin and gap uses a v
 | Month | 8px between cells; cell padding 0 6px 6px; 4px between entries; entry padding 0 8px; “+N” 4px below the entries; ISO week number 8px from the top |
 | Backlog panel | padding 16px 14px; 16px between groups; 6px between entries; group head 28px high, padding 0 6px, 4px above the list, radius 9px, `--glass-2` on hover; counter 2px 8px, 8px after the group name; 16px chevron at the right |
 | Holiday overview | padding 12px; rows 6px |
-| Entry dialog | centered in the upper 60 % of the window (20 % above the center); padding 20px; 12px between title, tokens and footer; title field padding 10px 16px, radius 16px, 22px/800; tokens 32px high, padding 0 10px, radius 10px, 6px apart, an unset token 32px square; Apply 32px high, 12px after the tokens; popovers 360px wide, padding 10px, 10px gaps, radius 16px, 8px below the tokens, centered under the title; pills 30px high, fully rounded, 6px apart, sharing the width; time wheels 180px high in a recessed well (radius 12px), columns 1fr 1fr 18px 1fr 1fr, rows 36px at 18px/700 tabular, a middle band 36px high in `--accent` at `--hover` with a 30 % accent edge, the panel color fading over the top and bottom 30 %; note 5 lines of 24px, padding 10px 14px, not resizable; footer buttons 8px 12px |
+| Entry dialog | centered in the upper 60 % of the window (20 % above the center); padding 20px; duplicate, delete and close as 34px icon buttons 4px apart above the title at the right, reaching 8px into the padding, duplicate in `--accent`, delete in `--danger`; 12px between title and tokens; Apply 32px high, padding 0 16px, 12px after the tokens at the bottom right; title field padding 10px 16px, radius 16px, 22px/800; tokens 32px high, padding 0 10px, radius 10px, 6px apart, an unset token 32px square; popovers 360px wide, at most 372px high (the date popover), padding 10px, 10px gaps, radius 16px, 8px below the tokens, horizontally centered in the dialog; pills 30px high, fully rounded, 6px apart, sharing the width; time wheels 180px high in a recessed well (radius 12px), columns 1fr 1fr 18px 1fr 1fr, rows 36px at 18px/700 tabular, a middle band 36px high in `--accent` at `--hover` with a 30 % accent edge, the panel color fading over the top and bottom 30 %; note popover 372px high without padding, the note filling it with lines of 24px, padding 17px 16px so that exactly 14 lines fit before it scrolls, no frame of its own, not resizable; series delete menu as the context menu, radius 16px, 8px below the trash button, right-aligned with it |
 | Menus and search bar | menus padding 6px; items 8px 10px; 10px between icon and label. The search bar is two separate glass surfaces without an enclosing panel: the field (44px high, padding 0 14px, radius 16px) 28px above the window edge and, 8px above it, the hit list (padding 6px, radius 16px), each with one 1px `--edge` frame |
 | Start card | width 460px, padding 22px 24px 24px; heading (18px, 800) to list 16px, list to buttons 20px; buttons 40px high, gap 10px, “Open folder” primary, “New calendar” on `--glass-2`; rows padding 11px 12px, gap 6px; name 13.5px 700 with the detail line 2px below (11.5px, 600, `--faint`); day 12px 700 `--muted` above the time 11.5px 600 `--faint`, right-aligned |
 | Contacts | 14px between list and detail; list padding 12px; detail padding 22px; “Next up” tiles padding 6px 10px, 5px apart, radius 12px, 10px above a divider to the sort |
@@ -231,29 +231,30 @@ The set, chosen by the user from three designs per tag:
 
 | Icon ID | Meant for | Drawing |
 |---|---|---|
-| `home` | Privat | House |
-| `briefcase` | Arbeit | Office building |
+| `home` | Private | House |
+| `briefcase` | Work | Office building |
 | `dumbbell` | Gym | Dumbbell |
-| `finance` | Finanzen | Stack of coins |
-| `games` | Spielen | Die |
+| `finance` | Finance | Stack of coins |
+| `games` | Games | Die |
 | `sauna` | Sauna | Steam above a bench |
 | `sport` | Sport | Running shoe |
-| `cooking` | Kochen | Pot with steam |
-| `code` | Programmieren | Angle brackets with slash |
-| `household` | Haushalt | Washing machine |
-| `shopping` | Einkaufen | Shopping cart |
+| `cooking` | Cooking | Pot with steam |
+| `code` | Programming | Angle brackets with slash |
+| `household` | Household | Washing machine |
+| `shopping` | Shopping | Shopping cart |
 | `karate` | Karate | Gi jacket |
-| `car` | Auto | Car from the side |
-| `doctor` | Arzt | Cross in a rounded square |
+| `car` | Car | Car from the side |
+| `doctor` | Doctor | Cross in a rounded square |
 | `physio` | Physio | Stretching figure |
 | `vacation` | Vacation | Palm tree |
+| `heart` | Relationship | Heart, the same drawing as the UI icon `heart` |
 
 ## Motion
 
 - Short, interruptible, compositor-friendly transitions (transform, opacity).
 - The view switcher indicator slides between options; panels slide in.
 - A new week or month slides in briefly from the side it comes from (navigation, mouse wheel, jump to today or to a search hit).
-- Jumping to today or to a search hit, and creating an item in the entry dialog, scrolls smoothly and highlights the target once: after the slide, an accent ring (2px outline in `--accent` at `--strong`) closes in from 8px to 3px around the day, month cell or bar, holds and fades, 1.4s in all; around an entry, which sits in a scrolling list, it stays at 2px and only fades in and out. It never scales the target, so text and icons stay sharp; with reduced motion the ring only fades in and out.
+- Jumping to today or to a search hit, and creating an item in the entry dialog, scrolls smoothly and highlights the target once: after the slide, its own frame lights up in one long pulse: the border turns full `--accent` with a 2px inner accent edge and an accent glow (18px at `--strong` and 44px at `--ring` around a day, month cell or bar; inside an entry, which sits in a scrolling list, 18px at `--strong`); it rises over the first 20 %, holds until 60 % and fades back to the target's own look, 1.3s in all after a 120ms pause. There is no extra ring and no scale, so nothing moves and text and icons stay sharp; reduced motion keeps it, as it only fades.
 - After dragging the days, and when a snap or `T` moves them by less than a week, the days glide the remaining distance into place (240ms); a move by a week or more slides in like a new period.
 - The entry dialog fades in and rises 8px into place (200ms). It does not scale, and it keeps its own compositor layer while open, so that its icons do not snap to other pixels when the motion ends.
 - The focus card fades in its blurred background and rises in like the dialog; switching its day lets the content glide 16px in from that side.

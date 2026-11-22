@@ -12,9 +12,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   const dropped = ["Nickname", "Company", "Position", "Groups", "Favorite"];
   const labelled = { Phone: "phones", Email: "emails", Address: "addresses" };
 
-  /** DD.MM.YYYY or DD.MM. into YYYY-MM-DD or --MM-DD; "" when invalid. @param {string} value */
+  /** DD.MM.YYYY, DD.MM. (file) or DD.MM (input) into YYYY-MM-DD or --MM-DD; "" when invalid. @param {string} value */
   function parseBirthday(value) {
-    const partial = /^(\d{2})\.(\d{2})\.$/.exec(value.trim());
+    const partial = /^(\d{2})\.(\d{2})\.?$/.exec(value.trim());
     if (!partial) return app.calendar.parseDate(value);
     // 29 February is a valid birthday without a year.
     return app.calendar.parseDate(`${partial[1]}.${partial[2]}.2000`) ? `--${partial[2]}-${partial[1]}` : "";

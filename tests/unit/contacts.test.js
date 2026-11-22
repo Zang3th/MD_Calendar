@@ -25,6 +25,7 @@ test("the contacts golden file round-trips with all fields", () => {
     note: ["Met at university.", "Prefers phone calls."], extra: []
   });
   assert.equal(contacts.contacts[1].birthday, "--05-17");
+  assert.equal(app.contactsFormat.parseBirthday("17.05"), "--05-17");
 });
 
 test("unknown contact lines stay, the heading is rewritten from the name", () => {
@@ -88,4 +89,7 @@ test("next up lists the soonest birthdays and anniversaries from today, birthday
     [0, "birthday", "2026-11-19", 30], [1, "anniversary", "2026-11-19", 8],
     [2, "anniversary", "2027-02-28", 7], [2, "birthday", "2027-11-18", null], [3, "anniversary", "2027-12-01", 0]
   ]);
+  // The contact whose birthday comes next, ignoring anniversaries; none without birthdays.
+  assert.equal(app.contacts.nextBirthdayIndex(contacts, "2026-11-20"), 2);
+  assert.equal(app.contacts.nextBirthdayIndex(app.contactsFormat.parse("# Contacts\n\n## Contacts\n\n### Dan\n#FirstName\n- Dan\n").contacts, "2026-11-20"), -1);
 });

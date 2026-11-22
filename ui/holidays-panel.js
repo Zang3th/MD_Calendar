@@ -25,9 +25,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   /** Own vacations of a year: entries and multi-day entries with the tag “Vacation”. @type {(year: number) => MDCPeriod[]} */
   let personal = () => [];
 
-  /** @param {string} key */
+  /** DD.MM.YY @param {string} key */
   function short(key) {
-    return app.calendar.formatDay(key, "DD.MM.");
+    return app.calendar.formatDay(key, "DD.MM.") + key.slice(2, 4);
   }
 
   /** @param {string} key */
@@ -56,8 +56,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         `<span class="hp__name">${escape(vacation.name)}</span></li>`).join("")
         || empty(data.vacations.length ? `No school vacations in ${year}.` : "No Holidays.md in the folder.");
     }
-    return personal(year).map(item =>
-      `<li class="hp__row${pastClass(item.end)}"><span class="hp__date hp__date--range">${range(item.start, item.end)}</span>` +
+    // A vacation within another one is listed below it, indented (docs/ui/Views.md#holiday-overview).
+    return app.calendar.nestPeriods(personal(year)).map(({ period: item, depth }) =>
+      `<li class="hp__row${depth ? " hp__row--sub" : ""}${pastClass(item.end)}"${depth ? ` style="--depth:${depth}"` : ""}><span class="hp__date hp__date--range">${range(item.start, item.end)}</span>` +
       `<span class="hp__name">${escape(item.title)}</span></li>`).join("")
       || empty(`No vacation in ${year}.`);
   }

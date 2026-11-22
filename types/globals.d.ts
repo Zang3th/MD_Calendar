@@ -14,6 +14,15 @@ interface MDCalendarNamespace {
     isoWeek(key: string): number;
     entries(calendar: MDCCalendar, key: string): readonly MDCEntry[];
     dayList(calendar: MDCCalendar, key: string): MDCEntry[];
+    pins(calendar: MDCCalendar, key: string): readonly MDCPin[];
+    placedAt(calendar: MDCCalendar, key: string): Map<number, number>;
+    repin(before: readonly MDCEntry[], after: readonly MDCEntry[], pins: readonly MDCPin[], moved?: Set<MDCEntry>, replaced?: Map<MDCEntry, MDCEntry>): MDCPin[];
+    keepPins(calendar: MDCCalendar, keys: string[], change: () => void, options?: { moved?: Set<MDCEntry>; replaced?: Map<MDCEntry, MDCEntry>; placed?: { key: string; pins: MDCPin[] } | null }): Array<{ key: string; pins: readonly MDCPin[] }>;
+    restorePins(calendar: MDCCalendar, states: Array<{ key: string; pins: readonly MDCPin[] }>): void;
+    pinOptions(from: { ref: MDCEntryRef; entry: MDCEntry } | null, to: { ref: MDCEntryRef; entry: MDCEntry } | null): { moved?: Set<MDCEntry>; replaced?: Map<MDCEntry, MDCEntry> };
+    toPins(calendar: MDCCalendar, key: string, placed: MDCPlacement[]): MDCPin[];
+    slug(title: string, taken: ReadonlySet<string>): string;
+    placeOccurrences(calendar: MDCCalendar, key: string, placed: MDCPlacement[], label: string): MDCDayAction | null;
     timeSlot(list: readonly MDCEntry[], time: string): number;
     createEntry(calendar: MDCCalendar, key: string, fields: MDCEntryFields & Partial<Pick<MDCEntry, "tag" | "extra">>): MDCDayAction;
     updateEntry(calendar: MDCCalendar, ref: MDCEntryRef, key: string, fields: MDCEntryFields): MDCDayAction | null;
@@ -33,6 +42,7 @@ interface MDCalendarNamespace {
     deleteMultiDay(calendar: MDCCalendar, index: number): MDCDayAction;
     segments(calendar: MDCCalendar, start: string, count: number): { segments: MDCSegment[]; lanes: number; dayLanes: number[] };
     taggedPeriods(calendar: MDCCalendar, tag: string, year: number): MDCPeriod[];
+    nestPeriods(periods: readonly MDCPeriod[]): Array<{ period: MDCPeriod; depth: number }>;
     changeOccurrences(calendar: MDCCalendar, occurrences: Array<{ index: number; key: string }>, mode: "done" | "open" | "delete"): MDCDayAction[];
     importEvents(calendar: MDCCalendar, events: MDCIcsEvent[], today: string): { action: MDCDayAction | null; entries: number; series: number; multiDay: number; duplicates: number; simplified: number };
   };
@@ -40,6 +50,7 @@ interface MDCalendarNamespace {
     name(contact: MDCContact): string;
     occasionsOn(contacts: MDCContacts, key: string): Array<MDCOccasion & { age: number | null }>;
     nextBirthday(contact: MDCContact, today: string): { days: number; date: string; age: number | null } | null;
+    nextBirthdayIndex(contacts: MDCContacts, today: string): number;
     upcoming(contacts: MDCContacts, today: string, count: number): MDCUpcoming[];
     matches(contact: MDCContact, query: string): boolean;
     sortName(contact: MDCContact): string;
@@ -58,7 +69,7 @@ interface MDCalendarNamespace {
     serializeRule(rule: MDCRule): string;
     occursOn(rule: MDCRule, start: string, key: string): boolean;
     occurrences(calendar: MDCCalendar, key: string): readonly MDCOccurrence[];
-    dayOrder(occurrences: readonly MDCOccurrence[], entries: readonly MDCEntry[]): Array<{ occurrence: MDCOccurrence } | { entry: MDCEntry; index: number }>;
+    dayOrder(occurrences: readonly MDCOccurrence[], entries: readonly MDCEntry[], placed?: ReadonlyMap<number, number>): Array<{ occurrence: MDCOccurrence } | { entry: MDCEntry; index: number }>;
     weekday(key: string): number;
     weekdays: string[];
   };
@@ -71,7 +82,7 @@ interface MDCalendarNamespace {
     update(calendar: MDCCalendar, backlog: MDCBacklog, ref: MDCEntryRef, target: { key: string; group?: number }, fields: Partial<MDCEntry>): MDCDayAction | null;
     remove(calendar: MDCCalendar, backlog: MDCBacklog, ref: MDCEntryRef): MDCDayAction;
     toggle(calendar: MDCCalendar, backlog: MDCBacklog, ref: MDCEntryRef): MDCDayAction;
-    move(calendar: MDCCalendar, backlog: MDCBacklog, from: MDCEntryRef, to: MDCEntryRef): MDCDayAction | null;
+    move(calendar: MDCCalendar, backlog: MDCBacklog, from: MDCEntryRef, to: MDCEntryRef, placed?: MDCPlacement[] | null): MDCDayAction | null;
     moveGroup(backlog: MDCBacklog, from: number, to: number): MDCDayAction | null;
     isBacklog(ref: MDCEntryRef): boolean;
     removeEntries(calendar: MDCCalendar, backlog: MDCBacklog, refs: MDCEntryRef[], label: string): MDCDayAction;
@@ -276,6 +287,8 @@ type MDCDialogRequest = {
 type MDCDialogResult = Omit<MDCDialogRequest, "isNew" | "occurrence" | "inBacklog" | "tags" | "locations">;
 type MDCDialogHandlers = {
   apply(result: MDCDialogResult): void;
+  /** Creates a new item from the dialog's values; Apply uses it once Duplicate has turned the dialog into a new item. */
+  create(result: MDCDialogResult): void;
   remove(): void;
   deleteOccurrence(): void;
   endSeries(): void;
@@ -344,7 +357,9 @@ type MDCInteractionHandlers = {
   openMultiDay(index: number): void;
   toggle(ref: MDCEntryRef): void;
   toggleOccurrence(index: number, key: string): void;
-  move(from: MDCEntryRef, to: MDCEntryRef): void;
+  move(from: MDCEntryRef, to: MDCEntryRef, placed: MDCPlacement[] | null): void;
+  /** Places the occurrences of a day as dropped; `dragged` is the series of the dropped one. */
+  placeOccurrences(key: string, placed: MDCPlacement[], dragged: number): void;
   moveGroup(from: number, to: number): void;
   undo(): void;
   redo(): void;
@@ -401,10 +416,16 @@ type MDCEntry = {
   /** Unknown lines preserved after the entry */
   extra: string[];
 };
+/** An occurrence placed by hand: the series ID and the number of normal entries before it (docs/Domain.md#day-list-order). */
+type MDCPin = { id: string; at: number };
+/** A placement as dropped on screen: the series index and the number of normal entries before it. */
+type MDCPlacement = { series: number; at: number };
 type MDCDay = {
   /** ISO date YYYY-MM-DD */
   key: string;
   entries: MDCEntry[];
+  /** Occurrences placed by hand, in display order; replaced, never changed in place */
+  pins: MDCPin[];
   /** Unknown lines preserved after the day heading */
   extra: string[];
 };
@@ -420,6 +441,8 @@ type MDCRule = {
   until: string;
 };
 type MDCSeries = {
+  /** Readable ID, set when an occurrence is placed by hand for the first time; "" without */
+  id: string;
   title: string;
   tag: string;
   /** First day (ISO key) */

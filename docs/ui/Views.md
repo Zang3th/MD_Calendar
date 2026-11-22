@@ -13,7 +13,7 @@ Rotating the screen switches to the default view of the new orientation. The bac
 
 ## Entry tile
 
-- Check box, optional time, tag icon, title. A recurring entry shows a repeat icon (16px, 12px in the month view) at the right end, vertically centered on the whole tile.
+- Check box (none in the backlog, see [Domain](../Domain.md#backlog)), optional time, tag icon, title. A recurring entry shows a repeat icon (16px, 12px in the month view) at the right end, vertically centered on the whole tile.
 - The tile is tinted with its tag color and shows the tag icon; without a tag it uses the neutral item surface and has no icon.
 - Time: in the week view (landscape) on its own small line above the title in the tag color; elsewhere inline before the title.
 - Done: `--o-past` opacity (55 %), title struck through, check box filled.
@@ -26,18 +26,20 @@ Rotating the screen switches to the default view of the new orientation. The bac
 - **Badges** start at the top right of the day card, by priority: anniversaries (heart, `--heart`), then birthdays (gift, `--warm`), then holidays (calendar with a star, `--accent-2`).
   - **Written out** (week, while they fit: 2 badges in the landscape week, 5 in the portrait week): an anniversary or birthday shows the icon, the name and the age or number of years; several of one kind share one badge with the icon and their count; a holiday shows its name. Badges stack downwards.
   - **Compact** (month, and the week when the written-out badges do not fit): one icon badge per kind in a row, with the count when there are several.
-  - Every anniversary or birthday badge, also for a single person, and every compact holiday badge opens a list below it, right-aligned to it, or left-aligned when there is no room to its left (badges at the left edge, as in the portrait week), in the color of its kind: a header with the icon on a tinted tile, the title (“2 birthdays”, “Anniversary”, “2 holidays”) and the weekday and date; below it one row per name. Birthdays show “turns 32” as a pill, anniversaries their label (“Wedding”) and “6 years”; rows of people end with a chevron and open the contact, holidays are only listed.
+  - Every anniversary or birthday badge, also for a single person, and every compact holiday badge opens a list below it, right-aligned to it, or left-aligned when there is no room to its left (badges at the left edge, as in the portrait week), in the color of its kind: a header with the icon on a tinted tile, the title (“2 birthdays”, “Anniversary”, “2 holidays”) and the weekday and date; below it one row per name. Birthdays show “turns 32” as a pill, anniversaries their label (“Wedding”) and “6 years”; rows of people end with a chevron and open the contact, holidays are only listed. A second click on the badge closes the list.
 - School vacations are not shown in the week and month views; they appear only in the [holiday overview](#holiday-overview).
 
 ## Holiday overview
 
 An icon button in the right zone of the header toggles a small floating glass panel below the button. It shows the lists of one year; arrows switch the year. Below the year, a segmented control with a sliding indicator (as the view switcher) switches between three tabs by mouse; only the list of the selected tab is shown, so the panel does not scroll:
 
-1. “Vacation”: own vacations, that is entries and multi-day entries with the tag “Vacation”; date or date range and title. Consecutive days with the same title form one range. Without vacations: “No vacation in <year>.”
+1. “Vacation”: own vacations, that is entries and multi-day entries with the tag “Vacation”; date or date range and title. Consecutive days with the same title form one range. A vacation that lies within another one (a trip during a vacation) follows it, indented by 16px per level with a 2px guide line in `--accent-2` at `--ring` that joins it to the vacation above; vacations that only overlap or cover the same days stay side by side. Without vacations: “No vacation in <year>.”
 2. “Holidays”: date, weekday and name of each public holiday.
 3. “School vacations”: date range and name of each school vacation of North Rhine-Westphalia; a one-day vacation shows one date.
 
 “Vacation” is selected at first; the selected tab stays when the year changes and when the panel opens again. The list area has a fixed height, so the panel keeps its size when the tab changes.
+
+All dates in the overview are written as `DD.MM.YY`.
 
 Past holidays and vacations are dimmed.
 
@@ -72,22 +74,22 @@ A double-click on a day header of the week view (landscape or portrait) shows th
 - A slim column (20px) on the left shows the ISO week number of each row, without a column heading. The current week's number is highlighted in the accent color.
 - Each cell: date (the first of a month shows the month name), compact badges (see [Day header](#day-header)), compact entry list.
 - Visible entries per cell: as many as the cell's height leaves room for next to its bar lanes. When not all fit, the remaining ones collapse into a “+N” chip, which takes the place of the last entry row.
-- Clicking “+N” enlarges the cell in place, at its width, until all its entries show: it lies over the cells below it, or, when they lack the room, aligned to the bottom of the month and over the cells above it; then it covers the bars of its own row. A cell taller than the month scrolls. The chip then reads “Less” and shrinks the cell back, as do Escape, a click elsewhere in the month and a change of month. At most one cell is enlarged; it closes by itself once its entries fit again. Its entries behave as everywhere else: check, open, select and drag and drop within the cell and to other days.
+- Clicking “+N” enlarges the cell in place, at its width, until all its entries show: it lies over the cells below it, or, when they lack the room, aligned to the bottom of the month and over the cells above it; then it covers the bars of its own row. A cell taller than the month scrolls. The chip then shows a centered dash and shrinks the cell back, as do Escape, a click elsewhere in the month and a change of month. At most one cell is enlarged; it closes by itself once its entries fit again. Its entries behave as everywhere else: check, open, select and drag and drop within the cell and to other days.
 - In narrow cells (portrait) tiles show only check box and title.
 - Multi-day bars run across the cells of each week row; only the cells a bar covers make room for it.
 
 ## Contacts
 
-A full contact editor with a list on the left and the selected contact on the right.
+A full contact editor with a list on the left and the selected contact on the right. Until a contact was opened in the open folder, the view shows the contact whose birthday comes next (by name on the same day; the first contact when none has a birthday); afterwards the contact opened last. Opening a contact means selecting it in the list or in “Next up”, opening it from a day badge, creating or editing it, or returning to it with undo or redo.
 
 ### List
 
 - Search field across name, email and phone; filters while typing.
-- “Next up” below the search field, above the sort and in every sort: the next three birthdays and anniversaries from today on, soonest first (on the same day birthdays before anniversaries, then by name). Each is a tile tinted like an entry, `--warm` for birthdays and `--heart` for anniversaries, filled on the day itself, with the short weekday and day (“Sat 21”), the name and the details (“today · 30”, “32”, “Wedding · 9”). A click selects the contact. It stays in place while the list scrolls, is hidden while a search is active and when no contact has a date.
+- “Next up” below the search field, above the sort and in every sort: the next three birthdays and anniversaries from today on, soonest first (on the same day birthdays before anniversaries, then by name). Each is a tile tinted like an entry, `--warm` for birthdays and `--heart` for anniversaries, filled on the day itself, with the date and short weekday (“21.11, Sat”), the name and the details (“today · 30”, “32”, “Wedding · 9”). A click selects the contact. It stays in place while the list scrolls, is hidden while a search is active and when no contact has a date.
 - Sort: “A–Z” or “Birthday”.
 - Sorted by name: sections by initial letter. Sorted by birthday: chronological by day and month from January, one section per month, then “No birthday”. Choosing “Birthday” scrolls the list to the next birthday (with its month heading when it is the first of its month); choosing “A–Z” scrolls to the top. Edits and searches keep the scroll position.
 - Row: initials avatar with a color gradient derived from the name, display name, and a second line. Sorted by name it shows the first phone number and never a birthday. Sorted by birthday it shows the birthday with its year when known, without an icon (“25 November 1989 · turns 37”, “25 November”), in `--warm` for every contact with a birthday.
-- “Import” opens a vCard file; the result is reported in a notification. “Export” saves all contacts as one vCard file.
+- “Import” (download icon) opens a vCard file; the result is reported in a notification. “Export” (upload icon) saves all contacts as one vCard file.
 - Footer: number of contacts and the file name.
 
 ### Detail
@@ -96,8 +98,8 @@ A full contact editor with a list on the left and the selected contact on the ri
 - Actions below the name, side by side: “vCard” (export) and “Delete”.
 - Section cards in two columns:
   - “Phone”, “Email”, “Addresses”: one row per value with a label button (click cycles through the labels), the value, a direct link (call, mail) or a copy button (address), and a remove button; “Add …” adds a row.
-  - “Dates”: birthday (`DD.MM.YYYY` or `DD.MM.`) with the upcoming age (“turns 34”) in `--warm` right after the date in the same line, anniversaries with an editable label and a date, without icons. Every row has a remove button; the birthday’s is disabled while there is none.
-  - “Note”: full width, a plain field without a resize handle, as in the entry dialog.
+  - “Dates”: birthday (`DD.MM.YYYY` or `DD.MM`) with the upcoming age (“turns 34”) in `--warm` right after the date in the same line, anniversaries with an editable label and a date, without icons. Every row has a remove button; the birthday’s is disabled while there is none.
+  - “Notes”: full width, written straight into the section without a field frame of its own and without a resize handle; it grows with its text and never scrolls itself; the section edge lights up while the note has the focus, as in the entry dialog.
 - Inline fields have no frame; a surface appears on hover and an accent outline on focus. Remove buttons are always visible.
 - “Dates”: an invalid birthday or anniversary date is rejected with a notification and the field returns to its value.
 - “Create new contact” in the **+** menu and `A` create a new contact and focus its name.

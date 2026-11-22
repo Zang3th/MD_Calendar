@@ -8,6 +8,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   const multiDayHeading = "## Multi-day";
   const seriesHeading = "## Recurring";
   const entryPattern = /^- \[([ xX])\] (.*)$/;
+  /** The position of an occurrence placed by hand in a day (docs/DataFormat.md#calendar). */
+  const pinPattern = /^- @(\S+)$/;
+  const idPattern = /^\S+$/;
   /** An indented line below an entry: up to two spaces or one tab of indentation are cut off, the rest is kept as written. */
   const subLinePattern = /^(?: {1,2}|\t)(.*\S.*)$/;
   const timePattern = /^([01]\d|2[0-3]):([0-5]\d)(?: - ([01]\d|2[0-3]):([0-5]\d))? (.+)$/;
@@ -15,7 +18,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   const locationPrefix = "Location: ";
   const blockKeys = {
     multiDay: ["Start", "End", "Location", "Note"],
-    series: ["Start", "Repeat", "Except", "Done", "Location", "Note"]
+    series: ["Id", "Start", "Repeat", "Except", "Done", "Location", "Note"]
   };
 
   const { parseDate: dayKey, formatDate: displayDate } = app.calendar;
@@ -84,6 +87,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       return { title, tag, start, end, location, note, extra };
     }
 
+    const id = values.Id ? single("Id") : "";
+    if (id === null || (id && !idPattern.test(id))) return null;
     const startMatch = seriesStartPattern.exec(single("Start") || "");
     const start = startMatch ? dayKey(startMatch[1]) : "";
     const rule = app.recurrence.parseRule(single("Repeat") || "");
@@ -92,7 +97,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     if (!startMatch || !start || !rule || except.includes("") || done.includes("")) return null;
     warnings.push(...itemWarnings);
     return {
-      title, tag, start,
+      id, title, tag, start,
       startTime: startMatch[2] ? `${startMatch[2]}:${startMatch[3]}` : "",
       endTime: startMatch[4] ? `${startMatch[4]}:${startMatch[5]}` : "",
       rule, except, done, location, note, extra
@@ -103,8 +108,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
    * Parses the lines of a ## Multi-day or ## Recurring section into the calendar.
    * @param {MDCCalendar} calendar @param {"multiDay" | "series"} kind
    * @param {Array<{line: string, index: number}>} section @param {MDCFormatWarning[]} warnings
+   * @param {Map<object, number>} headings line index of each parsed item's heading
    */
-  function parseSection(calendar, kind, section, warnings) {
+  function parseSection(calendar, kind, section, warnings, headings) {
     const list = /** @type {Array<MDCMultiDay | MDCSeries | MDCRawBlock>} */ (kind === "multiDay" ? calendar.multiDay : calendar.series);
     const head = kind === "multiDay" ? calendar.multiDayHead : calendar.seriesHead;
     /** @type {Array<{line: string, index: number}> | null} */
@@ -113,8 +119,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       if (!item) return;
       const lines = trimTrailingBlanks(item.map(entry => entry.line));
       const parsed = parseItem(kind, lines, item[0].index, warnings);
-      if (parsed) list.push(parsed);
-      else {
+      if (parsed) {
+        list.push(parsed);
+        headings.set(parsed, item[0].index);
+      } else {
         list.push({ raw: lines });
         warnings.push({ lineNumber: item[0].index + 1, kind: "invalid-item", text: lines[0] });
       }
@@ -159,8 +167,13 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       extraTarget.push(line);
     }
 
+    /** @type {Map<object, number>} */
+    const headings = new Map();
+    /** References to placed occurrences, resolved once the series are known. @type {Array<{day: MDCDay, id: string, at: number, target: string[], position: number, line: string, index: number}>} */
+    const references = [];
+
     function closeSection() {
-      if (section) parseSection(calendar, section.kind, section.lines, warnings);
+      if (section) parseSection(calendar, section.kind, section.lines, warnings, headings);
       section = null;
     }
 
@@ -197,10 +210,17 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         }
         day = calendar.days.get(key) || null;
         if (!day) {
-          day = { key, entries: [], extra: [] };
+          day = { key, entries: [], pins: [], extra: [] };
           calendar.days.set(key, day);
         }
         extraTarget = day.extra;
+        return;
+      }
+      const reference = day ? pinPattern.exec(line) : null;
+      if (reference && day) {
+        // Kept like an unknown line until it is resolved below.
+        references.push({ day, id: reference[1], at: day.entries.length, target: extraTarget, position: extraTarget.length, line, index });
+        extraTarget.push(line);
         return;
       }
       const item = entryPattern.exec(line);
@@ -214,10 +234,44 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       preserve(index, day ? "unknown-line" : "outside-day", line);
     });
     closeSection();
+    resolveReferences(calendar, references, headings, warnings);
 
     if (!hasHeader) warnings.unshift({ lineNumber: 1, kind: "missing-header", text: lines[0] || "" });
     warnings.sort((left, right) => left.lineNumber - right.lineNumber);
     return { calendar, warnings };
+  }
+
+  /**
+   * Turns the references of the days into pins (docs/DataFormat.md#calendar). A reference to an ID of no series, to a day
+   * without an occurrence of that series, or repeated in one day is reported and stays as an unknown line. A series that
+   * repeats the ID of an earlier one is reported; references resolve to the first.
+   * @param {MDCCalendar} calendar @param {Array<{day: MDCDay, id: string, at: number, target: string[], position: number, line: string, index: number}>} references
+   * @param {Map<object, number>} headings @param {MDCFormatWarning[]} warnings
+   */
+  function resolveReferences(calendar, references, headings, warnings) {
+    /** @type {Map<string, MDCSeries>} */
+    const ids = new Map();
+    for (const series of calendar.series) {
+      if ("raw" in series || !series.id) continue;
+      if (ids.has(series.id)) warnings.push({ lineNumber: (headings.get(series) ?? 0) + 1, kind: "unknown-line", text: `#Id ${series.id}` });
+      else ids.set(series.id, series);
+    }
+    /** @type {Map<string[], number[]>} */
+    const resolved = new Map();
+    for (const reference of references) {
+      const series = ids.get(reference.id);
+      const holds = series && !series.except.includes(reference.day.key) && app.recurrence.occursOn(series.rule, series.start, reference.day.key);
+      if (!holds || reference.day.pins.some(pin => pin.id === reference.id)) {
+        warnings.push({ lineNumber: reference.index + 1, kind: "unknown-line", text: reference.line });
+        continue;
+      }
+      reference.day.pins.push({ id: reference.id, at: reference.at });
+      resolved.set(reference.target, [...(resolved.get(reference.target) || []), reference.position]);
+    }
+    for (const [target, positions] of resolved) {
+      // The kept lines leave their lists from the back, so that the positions stay valid.
+      for (const position of positions.sort((left, right) => right - left)) target.splice(position, 1);
+    }
   }
 
   /**
@@ -246,6 +300,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   /** @param {MDCMultiDay | MDCSeries} item @param {Array<[string, string[]]>} blocks */
   function itemLines(item, blocks) {
     const lines = [`### ${item.title}${item.tag ? ` #${item.tag}` : ""}`];
+    if ("id" in item && item.id) lines.push("#Id", `- ${item.id}`);
     for (const [name, values] of blocks) {
       if (values.length) lines.push(`#${name}`, ...values.map(value => `- ${value}`));
     }
@@ -279,14 +334,23 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const keys = Array.from(calendar.days.keys()).sort();
     for (const key of keys) {
       const day = /** @type {MDCDay} */ (calendar.days.get(key));
-      if (!day.entries.length && !day.extra.length) continue;
+      if (!day.entries.length && !day.extra.length && !day.pins.length) continue;
       const dayMonth = key.slice(0, 7);
       if (dayMonth !== month) {
         month = dayMonth;
         lines.push("", `## ${months[Number(key.slice(5, 7)) - 1]} ${key.slice(0, 4)}`);
       }
       lines.push("", `### ${displayDate(key)}`, ...day.extra);
-      for (const entry of day.entries) lines.push(...entryLines(entry));
+      // Placed occurrences stand before the entry at their position (docs/DataFormat.md#calendar).
+      let pin = 0;
+      const pinsUpTo = (/** @type {number} */ at) => {
+        for (; pin < day.pins.length && day.pins[pin].at <= at; pin += 1) lines.push(`- @${day.pins[pin].id}`);
+      };
+      day.entries.forEach((entry, index) => {
+        pinsUpTo(index);
+        lines.push(...entryLines(entry));
+      });
+      pinsUpTo(Infinity);
     }
     if (calendar.multiDay.length || calendar.multiDayHead.length) {
       // Ordered by start date; equal start dates keep their stored order. Unreadable items follow.

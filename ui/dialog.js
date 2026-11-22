@@ -1,8 +1,9 @@
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
-// Entry dialog (docs/ui/Shell.md#entry-dialog): the title and one strip of tokens for date, time, repeat, tag, location
-// and note, with Apply at its end. Each token opens a popover of one width with ready choices; only what is set shows
-// its value. Tab moves from token to token and keeps what the open popover holds; Enter applies from everywhere.
+// Entry dialog (docs/ui/Shell.md#entry-dialog): duplicate, delete and close above the title at the right, the title, and
+// below it one strip of tokens for date, time, repeat, tag, location and note, ended by Apply. Each token opens a popover of one width with
+// ready choices; only what is set shows its value. Tab moves from token to token and keeps what the open popover holds;
+// Enter saves from everywhere.
 (function (app) {
   const element = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
   const dialog = /** @type {HTMLDialogElement} */ (element("dialog"));
@@ -10,8 +11,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   const title = /** @type {HTMLInputElement} */ (element("dialogTitle"));
   const tokens = element("dialogTokens");
   const pop = element("dialogPop");
-  const actions = element("dialogActions");
+  const deleteMenu = element("dialogDeleteMenu");
   const apply = /** @type {HTMLButtonElement} */ (element("dialogApply"));
+  const remove = /** @type {HTMLButtonElement} */ (element("dialogDelete"));
+  const duplicate = /** @type {HTMLButtonElement} */ (element("dialogDuplicate"));
+  const closeButton = /** @type {HTMLButtonElement} */ (element("dialogClose"));
   /** Notifications and tooltip, each with the node it is put back before when the dialog closes. */
   const overlays = /** @type {Array<[HTMLElement, ChildNode | null]>} */ (["notifications", "appTooltip"].map(id => [element(id), element(id).nextSibling]));
   const icon = (/** @type {string} */ name) => app.tiles.icon(name);
@@ -115,11 +119,12 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
    * @param {string} name popover the token opens @param {string} symbol @param {string} value shown value, "" for an
    * unset token (icon only) @param {string} label accessible name @param {string} [style] @param {string} [blocked] why
    * the token cannot be chosen with the current choices; it stays visible and dimmed, and its accessible name says why
+   * @param {boolean} [set] for an icon-only token: lit when something is set
    */
-  function token(name, symbol, value, label, style = "", blocked = "") {
+  function token(name, symbol, value, label, style = "", blocked = "", set = false) {
     const id = { date: "dialogDate", time: "dialogTime", repeat: "dialogRepeat", tag: "dialogTag", location: "dialogLocation", note: "dialogNoteToken" }[name];
     const shown = blocked ? "" : value;
-    return `<button type="button" class="dlg__tok${shown ? "" : " is-off"}${style ? " has-tag" : ""}" id="${id}" data-pop="${name}" aria-expanded="${state.open === name}"` +
+    return `<button type="button" class="dlg__tok${shown ? "" : " is-off"}${set ? " is-set" : ""}${style ? " has-tag" : ""}" id="${id}" data-pop="${name}" aria-expanded="${state.open === name}"` +
       (blocked ? ` aria-disabled="true" aria-label="${esc(`${label}: ${blocked}`)}"` : ` aria-label="${esc(label)}"`) +
       `${style}>${symbol}${shown ? `<span>${esc(shown)}</span>` : ""}</button>`;
   }
@@ -137,10 +142,34 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       token("time", icon("clock"), time, time ? `Time: ${time}` : "Time", "", blocked) +
       token("repeat", icon("repeat"), repeatText(), state.repeat ? `Repeat: ${repeatText()}` : "Repeat", "", blocked) +
       token("tag", tag ? app.tiles.tagIcon(tag.name, "dlg__tagicon") || icon("tag") : icon("tag"), state.tag, state.tag ? `Tag: ${state.tag}` : "Tag", tagStyle) +
-      token("location", icon("pin"), state.location, state.location ? `Location: ${state.location}` : "Location") +
-      token("note", icon("note"), noteLine, noteLine ? `Note: ${noteLine}` : "Note");
+      // Location and note show only whether they are set.
+      token("location", icon("pin"), "", state.location ? `Location: ${state.location}` : "Location", "", "", Boolean(state.location)) +
+      token("note", icon("note"), "", noteLine ? `Notes: ${noteLine}` : "Notes", "", "", Boolean(noteLine));
+    compactTokens();
     // A title is enough; a series cannot go to the backlog.
-    apply.disabled = !title.value.trim();
+    allowSave();
+  }
+
+  /** Tokens that drop their value when the strip is full, in this order; they keep their icon. */
+  const compactOrder = ["tag", "repeat", "time", "date"];
+  /** Width of a token that shows only its icon. */
+  const compactWidth = 32;
+
+  /**
+   * When the strip is wider than its room, tokens drop their value and show only their icon, tag first, until it fits.
+   * One layout read, then writes. A strip without room (the dialog not yet shown) is left as it is.
+   */
+  function compactTokens() {
+    const room = tokens.clientWidth;
+    if (!room) return;
+    let excess = tokens.scrollWidth - room;
+    const shown = compactOrder.map(name => /** @type {HTMLElement | null} */ (tokens.querySelector(`[data-pop="${name}"]:not(.is-off)`)))
+      .filter(token => token !== null).map(token => [token, token.offsetWidth - compactWidth]);
+    for (const [token, saving] of /** @type {Array<[HTMLElement, number]>} */ (shown)) {
+      if (excess <= 0) break;
+      token.classList.add("is-compact");
+      excess -= saving;
+    }
   }
 
   /** The month calendar of the date popover. */
@@ -246,14 +275,13 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       pop.innerHTML = `<label class="dlg__search">${icon("pin")}<input id="dialogLocationInput" value="${esc(state.location)}" placeholder="Location" autocomplete="off" aria-label="Location"></label>` +
         `<div class="dlg__list" id="dialogPlaces">${locationList("")}</div>`;
     } else if (name === "note") {
-      pop.innerHTML = `<textarea class="dlg__note" id="dialogNote" placeholder="Note" aria-label="Note" rows="5">${esc(state.note)}</textarea>`;
+      pop.innerHTML = `<textarea class="dlg__note" id="dialogNote" placeholder="Notes" aria-label="Notes">${esc(state.note)}</textarea>`;
     }
     pop.className = `dlg__pop dlg__pop--${name}`;
-    // Below the strip of tokens, centered under the title. Layout offsets, not the boxes on screen, so that the rise of
-    // the opening dialog does not shift it: one layout read, then writes.
-    const anchor = /** @type {HTMLElement | null} */ (tokens.querySelector(`[data-pop="${name}"]`));
-    const top = anchor ? anchor.offsetTop + anchor.offsetHeight : tokens.offsetTop + tokens.offsetHeight;
-    const left = title.offsetLeft + (title.offsetWidth - pop.offsetWidth) / 2;
+    // Below the strip of tokens, centered in the dialog. Layout offsets, not the boxes on screen, so that the rise of the
+    // opening dialog does not shift it: one layout read, then writes.
+    const top = tokens.offsetTop + tokens.offsetHeight;
+    const left = (form.clientWidth - pop.offsetWidth) / 2;
     pop.style.top = `${top + 8}px`;
     pop.style.left = `${Math.round(left)}px`;
     const field = /** @type {HTMLInputElement | HTMLTextAreaElement | null} */ (pop.querySelector("input:not(.dlg__num), textarea"));
@@ -558,6 +586,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   // ---------- Open, close, apply ----------
 
+  /** Save and duplicate need a title. */
+  function allowSave() {
+    apply.disabled = duplicate.disabled = !title.value.trim();
+  }
+
   /** @param {MDCDialogRequest} next @param {MDCDialogHandlers} nextHandlers */
   function open(next, nextHandlers) {
     request = next;
@@ -573,22 +606,57 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     render();
     dialog.showModal();
     liftNotices();
-    title.focus();
-    title.setSelectionRange(title.value.length, title.value.length);
-    // A new item starts with its day choice open; the title keeps the focus.
-    if (next.isNew) showPop("date", false);
+    // A new item starts with the focus in its title; an existing one only shows itself, with the focus on the dialog, so
+    // that no cursor blinks until the user starts editing. Tab then moves to the title.
+    if (next.isNew) {
+      title.focus();
+      title.setSelectionRange(title.value.length, title.value.length);
+    } else dialog.focus();
+    // The dialog starts with the calendar open, or with the note when there is one; the focus stays where it is.
+    showPop(state.note ? "note" : "date", false);
   }
 
-  /** Delete for entries and multi-day entries; the choices of a series behind one “Delete…”. */
+  /**
+   * Duplicate and the trash button are only there for an existing item. Trash deletes it; for an occurrence of a series
+   * it opens the delete menu.
+   */
   function renderActions() {
-    actions.hidden = !request || request.isNew;
-    if (!request || request.isNew) {
-      actions.innerHTML = "";
-      return;
+    closeDeleteMenu(false);
+    remove.hidden = duplicate.hidden = !request || request.isNew;
+    const menu = Boolean(request?.kind === "series" && request.occurrence);
+    remove.setAttribute("aria-label", menu ? "Delete…" : "Delete");
+    if (menu) {
+      remove.setAttribute("aria-haspopup", "menu");
+      remove.setAttribute("aria-expanded", "false");
+    } else {
+      remove.removeAttribute("aria-haspopup");
+      remove.removeAttribute("aria-expanded");
     }
-    actions.innerHTML = request.kind === "series" && request.occurrence
-      ? `<button class="btn btn--danger" id="dialogDelete" type="button" data-menu aria-expanded="false">Delete…</button>`
-      : `<button class="btn btn--danger" id="dialogDelete" type="button" data-action="remove">Delete</button>`;
+  }
+
+  /** The delete choices of a series occurrence, as a menu below the trash button. */
+  function openDeleteMenu() {
+    const item = (/** @type {string} */ action, /** @type {string} */ symbol, /** @type {string} */ label, danger = false) =>
+      `<button class="menu__item${danger ? " menu__item--danger" : ""}" type="button" role="menuitem" data-action="${action}">${icon(symbol)}${label}</button>`;
+    deleteMenu.innerHTML = item("deleteOccurrence", "calendar", "Delete this occurrence", true) +
+      item("remove", "repeat", "Delete whole series", true) + item("endSeries", "range", "End series here");
+    // 8px below the trash button, right-aligned with it: one layout read, then writes.
+    const top = remove.offsetTop + remove.offsetHeight + 8;
+    const right = form.clientWidth - remove.offsetLeft - remove.offsetWidth;
+    deleteMenu.style.top = `${top}px`;
+    deleteMenu.style.right = `${right}px`;
+    deleteMenu.hidden = false;
+    remove.setAttribute("aria-expanded", "true");
+    /** @type {HTMLElement} */ (deleteMenu.firstElementChild).focus();
+  }
+
+  /** @param {boolean} [refocus] puts the focus back on the trash button */
+  function closeDeleteMenu(refocus = false) {
+    if (deleteMenu.hidden) return;
+    deleteMenu.hidden = true;
+    deleteMenu.innerHTML = "";
+    remove.setAttribute("aria-expanded", "false");
+    if (refocus) remove.focus();
   }
 
   function close() {
@@ -642,7 +710,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   // ---------- Events ----------
 
-  title.addEventListener("input", () => { apply.disabled = !title.value.trim(); });
+  title.addEventListener("input", allowSave);
 
   tokens.addEventListener("click", event => {
     const button = event.target instanceof Element ? /** @type {HTMLElement | null} */ (event.target.closest("[data-pop]")) : null;
@@ -813,8 +881,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   });
 
   /**
-   * Tab and Shift+Tab step through title, tokens and Apply. A token opens its popover; what the popover being left holds
-   * is kept, and an invalid typed value keeps the focus where it is. Past Apply the focus moves on as usual.
+   * Tab and Shift+Tab step through the usable buttons above the title, the title, the tokens and Apply. A token opens its
+   * popover; what the popover being left holds is kept, and an invalid typed value keeps the focus where it is. Past Apply
+   * the focus moves on as usual.
    * @param {KeyboardEvent} event
    */
   function tab(event) {
@@ -823,11 +892,12 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       event.preventDefault();
       return;
     }
-    const stops = /** @type {HTMLElement[]} */ ([title, ...tokens.querySelectorAll('[data-pop]:not([aria-disabled="true"])'), apply]);
+    const usable = (/** @type {HTMLButtonElement[]} */ buttons) => buttons.filter(button => !button.hidden && !button.disabled);
+    const stops = /** @type {HTMLElement[]} */ ([...usable([duplicate, remove, closeButton]), title, ...tokens.querySelectorAll('[data-pop]:not([aria-disabled="true"])'), ...usable([apply])]);
     const target = /** @type {HTMLElement} */ (event.target);
     const index = state.open && pop.contains(target) ? stops.findIndex(stop => stop.dataset.pop === state.open) : stops.indexOf(target);
     const next = stops[index + (event.shiftKey ? -1 : 1)];
-    if (index < 0 || !next || (target === apply && !event.shiftKey)) return;
+    if (index < 0 || !next) return;
     event.preventDefault();
     if (!commitPop()) return;
     if (next.dataset.pop) {
@@ -836,7 +906,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     }
     state.open = "";
     render();
-    (next === apply && apply.disabled ? title : next).focus();
+    next.focus();
   }
 
   /** Arrow keys move between the choices of a popover; up and down move by weeks in its calendar. @param {KeyboardEvent} event */
@@ -872,37 +942,71 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   // Enter applies from everywhere, also from a popover, and takes what it holds first. Shift+Enter starts a new line of
-  // the note; in the footer Enter presses its button.
+  // the note; in the delete menu Enter picks its item and the arrows move between the items.
   dialog.addEventListener("keydown", event => {
+    if (event.target instanceof Node && deleteMenu.contains(event.target)) {
+      const items = /** @type {HTMLElement[]} */ ([...deleteMenu.querySelectorAll(".menu__item")]);
+      const index = items.indexOf(/** @type {HTMLElement} */ (event.target));
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        items[(index + (event.key === "ArrowDown" ? 1 : items.length - 1)) % items.length].focus();
+      } else if (event.key === "Tab") closeDeleteMenu();
+      return;
+    }
     if (event.key === "Tab") tab(event);
     else if (event.key.startsWith("Arrow")) arrow(event);
     else if (event.key === "Enter" && event.shiftKey && event.target instanceof HTMLTextAreaElement) {
       if (continueList(event.target)) event.preventDefault();
-    } else if (event.key === "Enter" && !event.isComposing && !(event.target instanceof Node && actions.contains(event.target))) {
+    } else if (event.key === "Enter" && !event.isComposing && event.target !== closeButton && event.target !== duplicate && event.target !== remove) {
       event.preventDefault();
       if (commitPop()) form.requestSubmit();
     }
   });
 
-  // A press outside the popover and its token closes the popover and keeps what it holds.
-  form.addEventListener("pointerdown", event => {
-    if (!state.open || !(event.target instanceof Node) || pop.contains(event.target)) return;
-    const owner = event.target instanceof Element ? event.target.closest("[data-pop]") : null;
-    if (!owner) closePop(true);
+  remove.addEventListener("click", () => {
+    const current = handlers;
+    if (!current) return;
+    if (!remove.hasAttribute("aria-expanded")) {
+      close();
+      current.remove();
+      return;
+    }
+    if (deleteMenu.hidden) openDeleteMenu();
+    else closeDeleteMenu(true);
   });
 
-  actions.addEventListener("click", event => {
+  closeButton.addEventListener("click", close);
+
+  // Duplicate turns the dialog into a new item with what it holds, starting today (a range keeps its length; a repeat
+  // follows the new day). Nothing is created yet: Apply creates it, closing drops it; the original stays as it was.
+  duplicate.addEventListener("click", () => {
+    const current = handlers;
+    if (!current || !request || !commitPop() || !title.value.trim()) return;
+    // A backlog entry stays in the backlog.
+    if (state.start) {
+      const length = isRange() ? Math.round((Date.parse(state.end) - Date.parse(state.start)) / 864e5) : 0;
+      state.start = today();
+      state.end = app.calendar.addDays(state.start, length);
+    }
+    state.repeatTouched = true;
+    request = { ...request, isNew: true };
+    handlers = { ...current, apply: current.create };
+    renderActions();
+    title.focus();
+    showPop("date", false);
+    app.notifications.show("info", state.repeat ? "Series duplicated" : "Entry duplicated",
+      app.notifications.text`${title.value.trim()}`);
+  });
+
+  // A press outside the delete menu and its trash button closes the menu.
+  form.addEventListener("pointerdown", event => {
+    if (event.target instanceof Node && !deleteMenu.contains(event.target) && !remove.contains(event.target)) closeDeleteMenu();
+  });
+
+  deleteMenu.addEventListener("click", event => {
     const button = event.target instanceof Element ? /** @type {HTMLElement | null} */ (event.target.closest("button")) : null;
     const current = handlers;
     if (!button || !current) return;
-    if (button.hasAttribute("data-menu")) {
-      // The three choices of a series, once asked for.
-      actions.innerHTML = `<button class="btn btn--danger" type="button" data-action="deleteOccurrence">This occurrence</button>` +
-        `<button class="btn btn--danger" type="button" data-action="remove">Whole series</button>` +
-        `<button class="btn btn--ghost" type="button" data-action="endSeries">End series here</button>`;
-      /** @type {HTMLElement} */ (actions.firstElementChild).focus();
-      return;
-    }
     const action = /** @type {"remove" | "deleteOccurrence" | "endSeries" | undefined} */ (button.dataset.action);
     if (!action) return;
     close();
@@ -925,15 +1029,17 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   // Escape closes an open popover first, then the dialog. It is handled on the key itself: Chrome lets a page cancel the
   // dialog's close request only now and then, so a third Escape would close the whole dialog.
   dialog.addEventListener("keydown", event => {
-    if (event.key !== "Escape" || !state.open) return;
+    if (event.key !== "Escape" || (!state.open && deleteMenu.hidden)) return;
     event.preventDefault();
     event.stopPropagation();
-    closePop();
+    if (!deleteMenu.hidden) closeDeleteMenu(true);
+    else closePop();
   }, true);
   dialog.addEventListener("cancel", event => {
-    if (!state.open) return;
+    if (!state.open && deleteMenu.hidden) return;
     event.preventDefault();
-    closePop();
+    if (!deleteMenu.hidden) closeDeleteMenu(true);
+    else closePop();
   });
   dialog.addEventListener("close", () => {
     dropNotices();

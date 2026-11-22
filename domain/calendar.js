@@ -47,13 +47,206 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   /** @param {MDCCalendar} calendar @param {string} key */
-  function dayList(calendar, key) {
-    let day = calendar.days.get(key);
-    if (!day) {
-      day = { key, entries: [], extra: [] };
-      calendar.days.set(key, day);
+  function day(calendar, key) {
+    let found = calendar.days.get(key);
+    if (!found) {
+      found = { key, entries: [], pins: [], extra: [] };
+      calendar.days.set(key, found);
     }
-    return day.entries;
+    return found;
+  }
+
+  /** @param {MDCCalendar} calendar @param {string} key */
+  function dayList(calendar, key) {
+    return day(calendar, key).entries;
+  }
+
+  // ---------- Placed occurrences (docs/Domain.md#day-list-order) ----------
+  // A pin places an occurrence of a series in a day: `at` normal entries come before it. Pin lists are replaced, never
+  // changed in place, so that an undo can keep the list it saw.
+
+  /** @param {MDCCalendar} calendar @param {string} key @returns {readonly MDCPin[]} */
+  function pins(calendar, key) {
+    return calendar.days.get(key)?.pins || [];
+  }
+
+  /** @type {WeakMap<MDCCalendar, {revision: number, ids: Map<string, number>}>} */
+  const idCaches = new WeakMap();
+
+  /** Series index by ID; on a duplicate ID the first series wins. @param {MDCCalendar} calendar */
+  function seriesIds(calendar) {
+    let cache = idCaches.get(calendar);
+    if (!cache || cache.revision !== calendar.seriesRevision) {
+      /** @type {Map<string, number>} */
+      const ids = new Map();
+      calendar.series.forEach((series, index) => {
+        if (!("raw" in series) && series.id && !ids.has(series.id)) ids.set(series.id, index);
+      });
+      cache = { revision: calendar.seriesRevision, ids };
+      idCaches.set(calendar, cache);
+    }
+    return cache.ids;
+  }
+
+  /** Whether a pin still places an occurrence on its day. @param {MDCCalendar} calendar @param {string} key @param {string} id */
+  function pinHolds(calendar, key, id) {
+    const index = seriesIds(calendar).get(id);
+    const series = index === undefined ? null : calendar.series[index];
+    return Boolean(series && !("raw" in series) && !series.except.includes(key) && app.recurrence.occursOn(series.rule, series.start, key));
+  }
+
+  /** The placed occurrences of a day in display order: series index → number of normal entries before it. @param {MDCCalendar} calendar @param {string} key */
+  function placedAt(calendar, key) {
+    const ids = seriesIds(calendar);
+    /** @type {Map<number, number>} */
+    const placed = new Map();
+    for (const pin of pins(calendar, key)) {
+      const index = ids.get(pin.id);
+      if (index !== undefined) placed.set(index, pin.at);
+    }
+    return placed;
+  }
+
+  /**
+   * The pins of a day after its entries changed from `before` to `after`: each pin stays directly before the entry that
+   * followed it, or the next one that is still there and did not move; without one at the end. `replaced` maps entries
+   * that changed in place to their new version.
+   * @param {readonly MDCEntry[]} before @param {readonly MDCEntry[]} after @param {readonly MDCPin[]} list
+   * @param {Set<MDCEntry>} [moved] @param {Map<MDCEntry, MDCEntry>} [replaced]
+   * @returns {MDCPin[]}
+   */
+  function repin(before, after, list, moved = new Set(), replaced = new Map()) {
+    const next = list.map(pin => {
+      for (let index = pin.at; index < before.length; index += 1) {
+        const entry = replaced.get(before[index]) || before[index];
+        if (moved.has(before[index]) || moved.has(entry)) continue;
+        const at = after.indexOf(entry);
+        if (at >= 0) return { id: pin.id, at };
+      }
+      return { id: pin.id, at: after.length };
+    });
+    // Stable: pins in one gap keep their order.
+    return next.map((pin, order) => ({ pin, order })).sort((left, right) => left.pin.at - right.pin.at || left.order - right.order).map(item => item.pin);
+  }
+
+  /**
+   * Runs `change` on the days of `keys` and keeps their pins in place; `placed` sets the pins of one day as dropped.
+   * Returns the pins before, for `restorePins`.
+   * @param {MDCCalendar} calendar @param {string[]} keys @param {() => void} change
+   * @param {{moved?: Set<MDCEntry>, replaced?: Map<MDCEntry, MDCEntry>, placed?: {key: string, pins: MDCPin[]} | null}} [options]
+   * @returns {Array<{key: string, pins: readonly MDCPin[]}>}
+   */
+  function keepPins(calendar, keys, change, options = {}) {
+    const states = keys.map(key => ({ key, entries: [...entries(calendar, key)], pins: pins(calendar, key) }));
+    change();
+    for (const state of states) {
+      const target = day(calendar, state.key);
+      if (options.placed && options.placed.key === state.key) target.pins = options.placed.pins;
+      else if (state.pins.length) target.pins = repin(state.entries, target.entries, state.pins, options.moved, options.replaced);
+    }
+    return states;
+  }
+
+  /** @param {MDCCalendar} calendar @param {Array<{key: string, pins: readonly MDCPin[]}>} states */
+  function restorePins(calendar, states) {
+    for (const state of states) day(calendar, state.key).pins = [...state.pins];
+  }
+
+  /**
+   * A readable series ID from a title (docs/DataFormat.md#calendar): lowercase ASCII, umlauts transliterated, other
+   * characters as hyphens; a number is appended while the ID is taken.
+   * @param {string} title @param {ReadonlySet<string>} taken
+   */
+  function slug(title, taken) {
+    const base = title.toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss")
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "series";
+    let id = base;
+    for (let number = 2; taken.has(id); number += 1) id = `${base}-${number}`;
+    return id;
+  }
+
+  /**
+   * The pins of a day from placements of series that already have an ID. Pins of occurrences the drop did not show
+   * (hidden behind “+N” in the month) are kept.
+   * @param {MDCCalendar} calendar @param {string} key @param {MDCPlacement[]} placed @returns {MDCPin[]}
+   */
+  function toPins(calendar, key, placed) {
+    return withHidden(calendar, key, placed.map(({ series, at }) => ({ id: seriesAt(calendar, series).id, at })));
+  }
+
+  /** `given` pins plus the day's other pins, ordered by position; in one gap the given ones first. @param {MDCCalendar} calendar @param {string} key @param {MDCPin[]} given */
+  function withHidden(calendar, key, given) {
+    const ids = new Set(given.map(pin => pin.id));
+    const all = [...given, ...pins(calendar, key).filter(pin => !ids.has(pin.id))];
+    return all.map((pin, order) => ({ pin, order })).sort((left, right) => left.pin.at - right.pin.at || left.order - right.order).map(item => item.pin);
+  }
+
+  /**
+   * Sets the pins of a day as one action.
+   * @param {MDCCalendar} calendar @param {string} key @param {string} label @param {MDCPin[]} next @returns {MDCDayAction}
+   */
+  function pinAction(calendar, key, label, next) {
+    /** @type {readonly MDCPin[]} */
+    let previous = [];
+    return {
+      label, days: [key], size: 64,
+      redo() { previous = pins(calendar, key); day(calendar, key).pins = next; },
+      undo() { day(calendar, key).pins = [...previous]; }
+    };
+  }
+
+  /**
+   * Places the occurrences of a day as dropped (docs/Domain.md#day-list-order): every occurrence of the day gets a pin,
+   * a series without an ID gets one. `placed` lists the dropped series in display order with the number of normal entries
+   * before each; occurrences the drop did not show (hidden behind “+N” in the month) are placed where they are shown now.
+   * Returns null when nothing changes.
+   * @param {MDCCalendar} calendar @param {string} key @param {MDCPlacement[]} placed @param {string} label
+   * @returns {MDCDayAction | null}
+   */
+  function placeOccurrences(calendar, key, placed, label) {
+    const taken = new Set(calendar.series.map(series => "raw" in series ? "" : series.id));
+    const dropped = new Set(placed.map(item => item.series));
+    /** @type {MDCPlacement[]} */
+    const hidden = [];
+    let before = 0;
+    for (const item of app.recurrence.dayOrder(app.recurrence.occurrences(calendar, key), entries(calendar, key), placedAt(calendar, key))) {
+      if ("entry" in item) before += 1;
+      else if (!dropped.has(item.occurrence.index)) hidden.push({ series: item.occurrence.index, at: before });
+    }
+    /** @type {MDCDayAction[]} */
+    const actions = [];
+    /** @type {MDCPin[]} */
+    const next = [...placed, ...hidden].map(({ series: index, at }) => {
+      const series = seriesAt(calendar, index);
+      if (series.id && seriesIds(calendar).get(series.id) === index) return { id: series.id, at };
+      const id = slug(series.title, taken);
+      taken.add(id);
+      actions.push(/** @type {MDCDayAction} */ (updateSeries(calendar, index, { ...series, id })));
+      return { id, at };
+    });
+    // In one gap the dropped ones first: the hidden ones were shown after them.
+    const ordered = next.map((pin, order) => ({ pin, order })).sort((left, right) => left.pin.at - right.pin.at || left.order - right.order).map(item => item.pin);
+    if (!actions.length && JSON.stringify(ordered) === JSON.stringify(pins(calendar, key))) return null;
+    return combine(label, [...actions, pinAction(calendar, key, label, ordered)]);
+  }
+
+  /**
+   * Drops the pins whose occurrence no longer exists after a series change (docs/Domain.md#day-list-order). Returns the
+   * days with their pins before, for `restorePins`.
+   * @param {MDCCalendar} calendar @param {string[]} ids
+   */
+  function prunePins(calendar, ids) {
+    /** @type {Array<{key: string, pins: readonly MDCPin[]}>} */
+    const states = [];
+    if (!ids.length) return states;
+    for (const [key, item] of calendar.days) {
+      if (!item.pins.some(pin => ids.includes(pin.id))) continue;
+      const kept = item.pins.filter(pin => !ids.includes(pin.id) || pinHolds(calendar, key, pin.id));
+      if (kept.length === item.pins.length) continue;
+      states.push({ key, pins: item.pins });
+      item.pins = kept;
+    }
+    return states;
   }
 
   /** @param {MDCCalendar} calendar @param {MDCEntryRef} ref */
@@ -83,13 +276,29 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       if (inserted) dayList(calendar, inserted.ref.key).splice(inserted.ref.index, 0, inserted.entry);
     }
     const days = [...new Set([from?.ref.key, to?.ref.key].filter(key => key !== undefined))];
+    const options = pinOptions(from, to);
+    /** @type {Array<{key: string, pins: readonly MDCPin[]}>} */
+    let saved = [];
     return {
       label,
       days,
       size: (from ? sizeOf(from.entry) : 0) + (to ? sizeOf(to.entry) : 0),
-      redo() { apply(from, to); },
-      undo() { apply(to, from); }
+      redo() { saved = keepPins(calendar, days, () => apply(from, to), options); },
+      undo() {
+        apply(to, from);
+        restorePins(calendar, saved);
+      }
     };
+  }
+
+  /**
+   * How pins follow a change of one entry: an entry changed in its place keeps the pins around it; one that moved does
+   * not take them along.
+   * @param {{ref: MDCEntryRef, entry: MDCEntry} | null} from @param {{ref: MDCEntryRef, entry: MDCEntry} | null} to
+   */
+  function pinOptions(from, to) {
+    const inPlace = from && to && from.ref.key === to.ref.key && from.ref.group === to.ref.group && from.ref.index === to.ref.index;
+    return inPlace ? { replaced: new Map([[from.entry, to.entry]]) } : { moved: new Set([from?.entry, to?.entry].filter(entry => entry !== undefined)) };
   }
 
   /**
@@ -183,8 +392,23 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       if (inserted) list.splice(inserted.index, 0, inserted.item);
       if (list === /** @type {unknown} */ (calendar.series)) calendar.seriesRevision += 1;
     }
+    // A series change drops the pins of occurrences it removed, in the same step (docs/Domain.md#day-list-order).
+    const ids = list === /** @type {unknown} */ (calendar.series)
+      ? [...new Set([from, to].map(change => /** @type {MDCSeries | undefined} */ (change?.item)?.id || "").filter(Boolean))] : [];
+    /** @type {Array<{key: string, pins: readonly MDCPin[]}>} */
+    let pruned = [];
     const size = [from, to].reduce((total, change) => total + (change ? itemSize(/** @type {any} */ (change.item)) : 0), 0);
-    return { label, days, size, layout: true, redo() { apply(from, to); }, undo() { apply(to, from); } };
+    return {
+      label, days, size, layout: true,
+      redo() {
+        apply(from, to);
+        pruned = prunePins(calendar, ids);
+      },
+      undo() {
+        restorePins(calendar, pruned);
+        apply(to, from);
+      }
+    };
   }
 
   /** Combines actions that touch different lists into one undo step. @param {string} label @param {MDCDayAction[]} actions @returns {MDCDayAction} */
@@ -365,7 +589,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         const id = `s|${event.start}|${event.title}`;
         if (known.has(id)) { result.duplicates += 1; continue; }
         known.add(id);
-        newSeries.push({ ...base, start: event.start, startTime: event.startTime, endTime: event.endTime, rule: event.rule, except: event.except, done: [] });
+        newSeries.push({ ...base, id: "", start: event.start, startTime: event.startTime, endTime: event.endTime, rule: event.rule, except: event.except, done: [] });
         result.series += 1;
       } else if (event.end > event.start) {
         const id = `m|${event.start}|${event.end}|${event.title}`;
@@ -393,9 +617,15 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     }, [...before[index]]));
     const seriesBefore = [...calendar.series];
     const multiBefore = [...calendar.multiDay];
-    /** @param {MDCEntry[][]} days @param {Array<MDCSeries | MDCRawBlock>} series @param {Array<MDCMultiDay | MDCRawBlock>} multi */
-    const set = (days, series, multi) => {
-      keys.forEach((key, index) => dayList(calendar, key).splice(0, Infinity, ...days[index]));
+    const pinsBefore = keys.map(key => pins(calendar, key));
+    // Imported entries are new: the pins keep their place among the entries that were there.
+    const pinsAfter = keys.map((key, index) => pinsBefore[index].length ? repin(before[index], after[index], pinsBefore[index]) : pinsBefore[index]);
+    /** @param {MDCEntry[][]} days @param {Array<MDCSeries | MDCRawBlock>} series @param {Array<MDCMultiDay | MDCRawBlock>} multi @param {ReadonlyArray<readonly MDCPin[]>} placed */
+    const set = (days, series, multi, placed) => {
+      keys.forEach((key, index) => {
+        dayList(calendar, key).splice(0, Infinity, ...days[index]);
+        day(calendar, key).pins = [...placed[index]];
+      });
       calendar.series.splice(0, Infinity, ...series);
       calendar.multiDay.splice(0, Infinity, ...multi);
       calendar.seriesRevision += 1;
@@ -405,8 +635,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     result.action = {
       label: "ICS import", days: keys, layout: true,
       size: after.flat().reduce((total, entry) => total + sizeOf(entry), 0) + [...newSeries, ...newMultiDay].reduce((total, item) => total + itemSize(item), 0),
-      redo() { set(after, seriesAfter, multiAfter); },
-      undo() { set(before, seriesBefore, multiBefore); }
+      redo() { set(after, seriesAfter, multiAfter, pinsAfter); },
+      undo() { set(before, seriesBefore, multiBefore, pinsBefore); }
     };
     return result;
   }
@@ -436,11 +666,33 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return [...periods, ...singles].sort((left, right) => left.start.localeCompare(right.start));
   }
 
+  /**
+   * Periods as a tree for display (docs/ui/Views.md#holiday-overview): a period that lies within another one (a trip
+   * during a vacation) follows it one level deeper. Periods that only overlap, or cover the same days, stay side by side.
+   * @param {readonly MDCPeriod[]} periods @returns {Array<{period: MDCPeriod, depth: number}>}
+   */
+  function nestPeriods(periods) {
+    const ordered = [...periods].sort((left, right) => left.start.localeCompare(right.start) || right.end.localeCompare(left.end));
+    /** @type {MDCPeriod[]} Containers of the current period, outermost first. */
+    const open = [];
+    return ordered.map(period => {
+      while (open.length) {
+        const outer = open[open.length - 1];
+        const within = outer.start <= period.start && period.end <= outer.end && (outer.start !== period.start || outer.end !== period.end);
+        if (within) break;
+        open.pop();
+      }
+      const depth = open.length;
+      open.push(period);
+      return { period, depth };
+    });
+  }
+
   app.calendar = {
     parseDate, formatDate: dates.format, formatDay, parseTime, todayKey: dates.today, addDays: dates.addDays, addMonths: dates.monthStart,
     weekStart: dates.weekStart, weekDays, isoWeek: dates.isoWeek,
-    entries, dayList, timeSlot, createEntry, updateEntry, deleteEntry, toggleDone, moveEntry, isOverdue,
+    entries, dayList, pins, placedAt, repin, keepPins, restorePins, pinOptions, toPins, slug, placeOccurrences, timeSlot, createEntry, updateEntry, deleteEntry, toggleDone, moveEntry, isOverdue,
     combine, createSeries, updateSeries, deleteSeries, toggleOccurrence, deleteOccurrence, endSeries,
-    createMultiDay, updateMultiDay, deleteMultiDay, segments, taggedPeriods, changeOccurrences, importEvents
+    createMultiDay, updateMultiDay, deleteMultiDay, segments, taggedPeriods, nestPeriods, changeOccurrences, importEvents
   };
 })(window.MDCalendar);

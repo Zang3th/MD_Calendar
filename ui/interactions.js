@@ -132,8 +132,13 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   // Capture phase: runs before the menus and panels close on this pointerdown.
   /** Where the last press began, so that a drag preview keeps the grabbed point under the pointer. */
   let press = { x: 0, y: 0 };
+  /** The day badge whose list is open, as `key kind`, and whether the current press began on it; that click only closes the list. */
+  let openOccasions = "";
+  let pressOnOpenOccasions = false;
   document.addEventListener("pointerdown", event => {
     clickClears = selection.size > 0 || floating.some(element => !element.hidden);
+    const badge = event.target instanceof Element ? /** @type {HTMLElement | null} */ (event.target.closest("[data-occasions]")) : null;
+    pressOnOpenOccasions = Boolean(badge && app.occasionsPanel.isOpen() && openOccasions === `${badge.dataset.occasions} ${badge.dataset.kind}`);
     press = { x: event.clientX, y: event.clientY };
   }, true);
 
@@ -225,6 +230,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     else if (button.dataset.more) app.month.toggle(button.dataset.more);
     else if (button.dataset.multi) current.openMultiDay(Number(button.dataset.multi));
     else if (button.dataset.occasions) {
+      if (pressOnOpenOccasions) return;
+      openOccasions = `${button.dataset.occasions} ${button.dataset.kind}`;
       const bounds = button.getBoundingClientRect();
       current.showOccasions(button.dataset.occasions, /** @type {MDCBadgeKind} */ (button.dataset.kind), bounds.left, bounds.right, bounds.bottom + 6);
     }
@@ -344,9 +351,26 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return sortable.position(item, sibling => sibling.classList.contains("ev") && !sibling.classList.contains("ev--series") && !skip.has(/** @type {HTMLElement} */ (sibling)));
   }
 
+  /**
+   * The occurrences of a list as dropped, each with the number of normal entries before it (docs/Domain.md#day-list-order):
+   * all of them after an occurrence was dropped, otherwise the placed ones.
+   * @param {HTMLElement} list @param {boolean} all @returns {MDCPlacement[]}
+   */
+  function placements(list, all) {
+    /** @type {MDCPlacement[]} */
+    const result = [];
+    let before = 0;
+    for (const tile of list.children) {
+      if (!(tile instanceof HTMLElement) || !tile.classList.contains("ev")) continue;
+      if (!tile.classList.contains("ev--series")) before += 1;
+      else if (all || tile.hasAttribute("data-pinned")) result.push({ series: Number(tile.dataset.series), at: before });
+    }
+    return result;
+  }
+
   /** The other selected tiles that move along with a dragged selected tile; occurrences stay. @param {HTMLElement} item */
   function movingAlong(item) {
-    if (!selection.has(idOf(pickOf(item)))) return [];
+    if (item.classList.contains("ev--series") || !selection.has(idOf(pickOf(item)))) return [];
     return tiles().filter(tile => tile !== item && selection.has(idOf(pickOf(tile))) && !tile.classList.contains("ev--series"));
   }
 
@@ -401,7 +425,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       delay: 180,
       delayOnTouchOnly: true,
       fallbackTolerance: 3,
-      filter: ".ev__check, .ev--series",
+      filter: ".ev__check",
+      onMove: keepOccurrenceHome,
       ghostClass: "ev--ghost",
       dragClass: "ev--drag",
       // While an entry is dragged, the backlog title shows where ungrouped entries can be dropped.
@@ -417,15 +442,16 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         // The other moving tiles fade like the dragged one's placeholder until the drop (docs/ui/Interaction.md#selection-copy-and-paste).
         for (const tile of movingAlong(event.item)) tile.classList.add("ev--along");
       },
-      /** @param {{from: HTMLElement, to: HTMLElement, item: HTMLElement, oldIndex: number}} event */
+      /** @param {{from: HTMLElement, to: HTMLElement, item: HTMLElement, oldIndex: number, newIndex: number}} event */
       onEnd(event) {
         document.body.classList.remove("is-sorting");
         for (const tile of document.querySelectorAll(".ev--along")) tile.classList.remove("ev--along");
+        if (dropOccurrence(event)) return;
         const from = place(event.from, Number(event.item.dataset.index));
         const id = idOf({ ref: from, key: from.key });
         const others = selection.has(id) ? tiles().filter(tile => tile !== event.item && selection.has(idOf(pickOf(tile))) && !tile.classList.contains("ev--series")) : [];
         if (!others.length) {
-          handlers?.move(from, place(event.to, entryPosition(event.item, new Set())));
+          handlers?.move(from, place(event.to, entryPosition(event.item, new Set())), event.to === event.from ? placements(event.to, false) : null);
           return;
         }
         // A selected tile drags the whole selection along (docs/ui/Interaction.md#selection-copy-and-paste).
@@ -450,14 +476,15 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       delay: 180,
       delayOnTouchOnly: true,
       fallbackTolerance: 3,
-      filter: ".ev__check, .ev--series",
+      filter: ".ev__check",
       ghostClass: "ev--ghost",
       dragClass: "ev--drag",
       onStart() { document.body.classList.add("is-sorting"); },
-      /** @param {{from: HTMLElement, to: HTMLElement, item: HTMLElement}} event */
+      /** @param {{from: HTMLElement, to: HTMLElement, item: HTMLElement, oldIndex: number, newIndex: number}} event */
       onEnd(event) {
         document.body.classList.remove("is-sorting");
-        handlers?.move(place(event.from, Number(event.item.dataset.index)), place(event.to, entryPosition(event.item, new Set())));
+        if (dropOccurrence(event)) return;
+        handlers?.move(place(event.from, Number(event.item.dataset.index)), place(event.to, entryPosition(event.item, new Set())), placements(event.to, false));
       }
     } }) : null;
   }
@@ -546,22 +573,34 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   document.addEventListener("pointerup", endLasso);
   document.addEventListener("pointercancel", endLasso);
 
-  // ---------- Occurrences cannot be moved: dragging one explains why ----------
+  // ---------- Occurrences are placed within their own day (docs/Domain.md#day-list-order) ----------
 
-  /** @type {{x: number, y: number, shown: boolean} | null} */
-  let seriesDrag = null;
-  document.addEventListener("pointerdown", event => {
-    const tile = event.target instanceof Element ? event.target.closest(".ev--series") : null;
-    seriesDrag = tile && event.button === 0 && !(event.target instanceof Element && event.target.closest(".ev__check")) ? { x: event.clientX, y: event.clientY, shown: false } : null;
-  });
-  document.addEventListener("pointermove", event => {
-    if (!seriesDrag || seriesDrag.shown || Math.hypot(event.clientX - seriesDrag.x, event.clientY - seriesDrag.y) < 12) return;
-    seriesDrag.shown = true;
-    suppressClick = true;
-    window.setTimeout(() => { suppressClick = false; }, 0);
-    handlers?.notice("Occurrence not moved", "Edit the series instead.");
-  });
-  document.addEventListener("pointerup", () => { seriesDrag = null; });
+  /** Set once per drag when an occurrence was held over another list, so that the notice shows once. */
+  let occurrenceRefused = false;
+
+  /**
+   * SortableJS move check: an occurrence stays in its own day; held over another one it explains why.
+   * @param {{from: HTMLElement, to: HTMLElement, dragged: HTMLElement}} event
+   */
+  function keepOccurrenceHome(event) {
+    if (!event.dragged.classList.contains("ev--series") || event.to === event.from) return true;
+    if (!occurrenceRefused) handlers?.notice("Occurrence not moved", "Only within its day; edit the series to move it.");
+    occurrenceRefused = true;
+    return false;
+  }
+
+  /**
+   * After a drop: places a dropped occurrence among its day's items and returns true; false for a normal entry. Dropped
+   * on its own spot it changes nothing.
+   * @param {{from: HTMLElement, to: HTMLElement, item: HTMLElement, oldIndex: number, newIndex: number}} event
+   */
+  function dropOccurrence(event) {
+    occurrenceRefused = false;
+    if (!event.item.classList.contains("ev--series")) return false;
+    if (event.oldIndex === event.newIndex) return true;
+    handlers?.placeOccurrences(event.item.dataset.key || "", placements(event.from, true), Number(event.item.dataset.series));
+    return true;
+  }
 
   // ---------- Mouse wheel: one week or month per gesture ----------
 

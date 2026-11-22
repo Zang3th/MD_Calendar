@@ -121,7 +121,7 @@ test("the time wheels of the entry dialog pick start and end with the pointer", 
   expect(await calendar.readFile("Calendar.md")).toBe("# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] 11:30 - 12:15 Dentist\n");
 });
 
-test("the entry dialog picks days and ranges in its calendar and moves an entry to the backlog by date", async ({ page, calendar }) => {
+test("the entry dialog picks days and ranges in its calendar, moves an entry to the backlog by date and deletes with its trash button", async ({ page, calendar }) => {
   await calendar.openApp({ "Calendar.md": "# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] Call Lena #Work\n" });
   const day = (/** @type {string} */ key) => page.locator(`[data-calday="${key}"]`);
   await page.locator('.day[data-day="2026-11-13"]').click({ position: { x: 60, y: 400 } });
@@ -143,12 +143,45 @@ test("the entry dialog picks days and ranges in its calendar and moves an entry 
   await expect(page.locator(".wk .bar")).toHaveText(/Trip/);
 
   // “Backlog” as the date moves a day entry to the backlog, into the group of its tag.
+  // An item without a note opens with its calendar, for viewing: no cursor in the title; Tab starts at the buttons above it.
   await page.locator(".ev__open", { hasText: "Call Lena" }).click();
-  await page.locator("#dialogDate").click();
+  await expect(page.locator("#dialog")).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(page.locator("#dialogDuplicate")).toBeFocused();
   await page.locator("[data-pick=backlog]").click();
   await page.keyboard.press("Enter");
   await page.keyboard.press("Control+s");
   await expect(page.locator("#save")).not.toHaveClass(/is-dirty/);
   expect(await calendar.readFile("Backlog.md")).toBe("# Backlog\n\n## Work\n- [ ] Call Lena #Work\n");
   expect(await calendar.readFile("Calendar.md")).toBe("# Calendar\n\n## Multi-day\n\n### Trip\n#Start\n- 14.11.2026\n#End\n- 15.11.2026\n");
+
+  // A duplicated backlog entry stays in the backlog.
+  await page.keyboard.press("b");
+  await page.locator(".bl__list .ev__open", { hasText: "Call Lena" }).click();
+  await page.locator("#dialogDuplicate").click();
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Control+s");
+  await expect(page.locator("#save")).not.toHaveClass(/is-dirty/);
+  expect(await calendar.readFile("Backlog.md")).toBe("# Backlog\n\n## Work\n- [ ] Call Lena #Work\n- [ ] Call Lena #Work\n");
+  await page.keyboard.press("b");
+
+  // An item with a note opens with its note; the trash button above the title deletes it.
+  await page.locator(".wk .bar", { hasText: "Trip" }).click();
+  await page.locator("#dialogNoteToken").click();
+  // Fourteen lines fit the notes popover without a scrollbar; a fifteenth scrolls.
+  const lines = Array.from({ length: 15 }, (_, index) => `- Line ${index + 1}`);
+  const overflow = () => page.locator("#dialogNote").evaluate(element => element.scrollHeight - element.clientHeight);
+  await page.locator("#dialogNote").fill(lines.slice(0, 14).join("\n"));
+  expect(await overflow()).toBe(0);
+  await page.locator("#dialogNote").fill(lines.join("\n"));
+  expect(await overflow()).toBeGreaterThan(0);
+  await page.locator("#dialogNote").fill("Pack boots");
+  await page.locator("#dialogApply").click();
+  await page.locator(".wk .bar", { hasText: "Trip" }).click();
+  await expect(page.locator("#dialogNoteToken")).toHaveAttribute("aria-expanded", "true");
+  // A set note shows only its lit icon.
+  await expect(page.locator("#dialogNoteToken")).toHaveClass(/is-set/);
+  await expect(page.locator("#dialogNoteToken")).toHaveText("");
+  await page.locator("#dialogDelete").click();
+  await expect(page.locator(".wk .bar")).toHaveCount(0);
 });

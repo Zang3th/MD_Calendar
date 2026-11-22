@@ -47,7 +47,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     /** @type {HTMLElement} */ (cell.querySelector(".mcell__badges")).innerHTML = app.tiles.badges(key, 3, true);
     const more = /** @type {HTMLButtonElement} */ (cell.querySelector(".more"));
     more.hidden = !open && !hidden;
-    more.textContent = open ? "Less" : `+${hidden}`;
+    more.textContent = open ? "" : `+${hidden}`;
+    more.classList.toggle("more--less", open);
     more.setAttribute("aria-expanded", String(open));
     more.setAttribute("aria-label", open ? "Show fewer entries" : `${hidden} more entries, show all`);
     cell.classList.toggle("is-expanded", open);

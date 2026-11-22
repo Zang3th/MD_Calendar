@@ -71,7 +71,7 @@ Rules in [Domain](../Domain.md#selection-copy-and-paste).
 
 ## Drag and drop
 
-- Reorder normal entries within a day. Occurrences of recurring entries do not move; trying to drag one shows a notification that series occurrences cannot be moved.
+- Reorder normal entries and occurrences within a day; an occurrence stays where it is dropped (see [Domain](../Domain.md#day-list-order)). An occurrence does not leave its day: held over another day or the backlog it shows the notification “Occurrence not moved” once per drag and returns when dropped.
 - Move an entry to another day. A timed entry dragged in from another day or the backlog goes into its time slot of that day, wherever it is dropped (see [Domain](../Domain.md#day-list-order)); within a day the drop position counts.
 - Move a multi-day bar; drag one of its ends to change the start or end date. The duration stays when the bar is moved.
 - Move a backlog entry onto a day, and an entry from a day into any backlog group.

@@ -11,6 +11,7 @@ test("contacts are edited inline with undo, focus moves on, and saving writes Co
   await page.locator("#occasionsPanel .occ__row", { hasText: "Max Example" }).click();
   await expect(page.locator("#contacts")).toBeVisible();
   await expect(page.locator('[data-key="name"]')).toHaveValue("Max Example");
+  await expect(page.locator(".cx-next__day")).toHaveText(["12.11, Thu"]);
 
   await page.locator('[data-key="name"]').fill("Maxi  Muster ");
   await page.keyboard.press("Tab");
@@ -22,7 +23,7 @@ test("contacts are edited inline with undo, focus moves on, and saving writes Co
   await expect(page.locator('[data-key="phones:0"]')).toBeFocused();
   await page.keyboard.type("+49 170 1");
   await page.keyboard.press("Enter");
-  await page.locator('[data-key="birthday"]').fill("31.02.");
+  await page.locator('[data-key="birthday"]').fill("31.02");
   await page.keyboard.press("Enter");
   await expect(page.locator(".notification", { hasText: "Invalid birthday" })).toBeVisible();
   await expect(page.locator('[data-key="birthday"]')).toHaveValue("12.11.1990");
@@ -35,6 +36,11 @@ test("contacts are edited inline with undo, focus moves on, and saving writes Co
   await expect(page.locator("#save")).not.toHaveClass(/is-dirty/);
   expect(await calendar.readFile("Contacts.md")).toBe("# Contacts\n\n## Contacts\n\n### Maxi Muster\n#FirstName\n- Maxi\n#LastName\n- Muster\n" +
     "#Birthday\n- 12.11.1990\n#Phone\n- Mobile: +49 170 1\n");
+
+  // The notes field grows with its text instead of scrolling.
+  const notes = page.getByRole("textbox", { name: "Notes" });
+  await notes.fill(Array.from({ length: 8 }, (_, index) => `Line ${index + 1}`).join("\n"));
+  expect(await notes.evaluate(element => element.scrollHeight - element.clientHeight)).toBe(0);
 });
 
 test("a vCard import merges a duplicate and adds a new contact as one undoable step", async ({ page, calendar }) => {
@@ -58,11 +64,17 @@ test("day badges: written out while they fit, otherwise one icon badge per kind;
   });
   // Thursday: a birthday and a holiday fit written out, the birthday first.
   await expect(page.locator('.day[data-day="2026-11-12"] .day__badges .badge')).toHaveText(["Tom38", "Some holiday"]);
+  // Before a contact was opened, the contacts view shows the one whose birthday comes next.
+  await page.keyboard.press("c");
+  await expect(page.locator('[data-key="name"]')).toHaveValue("Tom");
+  await page.keyboard.press("w");
   // A single birthday opens its list too.
   await page.locator('.day[data-day="2026-11-12"] .badge--birthday').click();
   await expect(page.locator("#occasionsPanel .occ__title")).toHaveText("Birthday");
   await expect(page.locator("#occasionsPanel .occ__row")).toHaveText(["Tomturns 38"]);
-  await page.keyboard.press("Escape");
+  // A second click on the same badge closes the list again.
+  await page.locator('.day[data-day="2026-11-12"] .badge--birthday').click();
+  await expect(page.locator("#occasionsPanel")).toBeHidden();
   // Friday: anniversary, two birthdays and a holiday do not fit; heart, gift with count and calendar star, in that order.
   const friday = page.locator('.day[data-day="2026-11-13"] .day__badges .badge');
   await expect(friday).toHaveCount(3);
@@ -82,4 +94,8 @@ test("day badges: written out while they fit, otherwise one icon badge per kind;
   await page.locator('.mcell[data-day="2026-11-12"] .badge--holiday').click();
   await expect(page.locator("#occasionsPanel")).toHaveClass(/occ--holiday/);
   await expect(page.locator("#occasionsPanel .occ__row")).toHaveText(["Some holiday"]);
+  // Afterwards it shows the contact opened last.
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("c");
+  await expect(page.locator('[data-key="name"]')).toHaveValue("Max");
 });

@@ -12,7 +12,7 @@ function entry(title) {
 function fixture() {
   const calendar = {
     newline: "\n", head: [], multiDay: [], series: [], multiDayHead: [], seriesHead: [], seriesRevision: 0,
-    days: new Map([["2026-11-12", { key: "2026-11-12", extra: [], entries: [entry("Day A")] }]])
+    days: new Map([["2026-11-12", { key: "2026-11-12", extra: [], pins: [], entries: [entry("Day A")] }]])
   };
   const backlog = { newline: "\n", head: [], ungrouped: [entry("Loose A")], groups: [{ name: "Home", extra: [], entries: [entry("Home A")] }, { name: "Later", extra: [], entries: [entry("Later A"), entry("Later B")] }] };
   return { calendar, backlog };
@@ -74,8 +74,8 @@ test("a timed entry dragged in from elsewhere goes into its time slot; within it
   const { calendar, backlog } = state;
   /** @param {string} title @param {string} start */
   const timed = (title, start) => ({ ...entry(title), start });
-  calendar.days.set("2026-11-12", { key: "2026-11-12", extra: [], entries: [entry("Todo"), timed("Eight", "08:00"), timed("Ten", "10:00")] });
-  calendar.days.set("2026-11-13", { key: "2026-11-13", extra: [], entries: [timed("Nine", "09:00"), entry("Loose"), timed("Eleven", "11:00")] });
+  calendar.days.set("2026-11-12", { key: "2026-11-12", extra: [], pins: [], entries: [entry("Todo"), timed("Eight", "08:00"), timed("Ten", "10:00")] });
+  calendar.days.set("2026-11-13", { key: "2026-11-13", extra: [], pins: [], entries: [timed("Nine", "09:00"), entry("Loose"), timed("Eleven", "11:00")] });
   /** @param {string} key */
   const titles = key => /** @type {any} */ (calendar.days.get(key)).entries.map((/** @type {any} */ item) => item.title);
 
@@ -137,7 +137,7 @@ test("the tag decides the group of an entry from outside; inside the backlog a m
   const { calendar, backlog } = state;
   /** @param {string} title @param {string} tag */
   const tagged = (title, tag) => ({ ...entry(title), tag });
-  calendar.days.set("2026-11-13", { key: "2026-11-13", extra: [], entries: [tagged("Late", "Later"), tagged("Job", "Work"), entry("Plain")] });
+  calendar.days.set("2026-11-13", { key: "2026-11-13", extra: [], pins: [], entries: [tagged("Late", "Later"), tagged("Job", "Work"), entry("Plain")] });
   /** Group names with their entries as "title #tag". */
   const shape = () => JSON.parse(JSON.stringify(backlog.groups.map((/** @type {any} */ group) => [group.name, group.entries.map((/** @type {any} */ item) => `${item.title} #${item.tag}`)])));
   const loose = () => JSON.parse(JSON.stringify(backlog.ungrouped.map((/** @type {any} */ item) => `${item.title} #${item.tag}`)));

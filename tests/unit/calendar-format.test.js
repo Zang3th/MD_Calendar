@@ -34,7 +34,7 @@ test("golden entries carry done state, time, title, tag, location and note", () 
   ]);
   const review = plain(calendar.series[5]);
   assert.deepEqual(review, {
-    title: "Sprint review", tag: "Work", start: "2026-11-16", startTime: "14:00", endTime: "15:00",
+    id: "", title: "Sprint review", tag: "Work", start: "2026-11-16", startTime: "14:00", endTime: "15:00",
     rule: { freq: "WEEKLY", interval: 2, byDay: ["MO"], byMonthDay: 0, until: "" },
     except: ["2026-12-28"], done: ["2026-11-16", "2026-11-30"], location: "Meeting room 2",
     note: ["Demo the new calendar.", "Collect feedback."], extra: []

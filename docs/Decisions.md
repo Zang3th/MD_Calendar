@@ -122,7 +122,7 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 
 ## D22 · Date format DD.MM.YYYY
 
-**Decision:** Dates are `DD.MM.YYYY` everywhere: data files, UI and inputs; a date without a year is `DD.MM.`. Only `UNTIL` inside an `RRULE` keeps the RFC 5545 form. → [Domain](Domain.md#time)
+**Decision:** Dates are `DD.MM.YYYY` everywhere: data files, UI and inputs; a date without a year is `DD.MM.` in the files and `DD.MM` in the UI. The holiday overview writes `DD.MM.YY`. Only `UNTIL` inside an `RRULE` keeps the RFC 5545 form. → [Domain](Domain.md#time)
 **Rejected:** ISO dates (`YYYY-MM-DD`) in the files.
 
 ## D23 · Tags carry an icon
@@ -240,7 +240,7 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 
 ## D45 · Timed entries arrive in their time slot
 
-**Decision:** Occurrences of recurring entries always sit in their time slot among the normal entries of a day. A normal entry with a time goes into its time slot when it lands on a day (created, pasted, imported, moved to another day in the dialog or by dragging) and when its start time changes; afterwards it stays freely sortable. → [Domain](Domain.md#day-list-order)
+**Decision:** Occurrences of recurring entries sit in their time slot among the normal entries of a day unless placed by hand (D57). A normal entry with a time goes into its time slot when it lands on a day (created, pasted, imported, moved to another day in the dialog or by dragging) and when its start time changes; afterwards it stays freely sortable. → [Domain](Domain.md#day-list-order)
 **Reasons:** a series at 19:00 above a 09:00 entry misread the day, and so did a new timed entry at the end of the day; placing entries only when they arrive keeps the user's own order intact.
 **Rejected:** occurrences always on top; new entries always at the end; sorting all entries by time, which would take the free order away.
 
@@ -294,7 +294,7 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 
 ## D54 · A lean entry dialog
 
-**Decision:** The entry dialog shows the title and one strip of tokens (date, time, repeat, tag, location, note) ending in Apply. Unset tokens are icons; each token opens a popover of one common width with ready choices, for the time four scroll wheels (start and end, hour and minute). `Tab` walks the tokens and keeps each popover's value; `Enter` applies from everywhere. Several days are a range picked in the date's calendar, the backlog is a choice of the date, tags appear only in their popover, past locations are offered, and the note has room for five lines. There is no heading, no close button and no key icon on Apply. → [Shell](ui/Shell.md#entry-dialog)
+**Decision:** The entry dialog shows the title and below the title one strip of tokens (date, time, repeat, tag, location, note) ended by Apply; duplicate, delete and close are icon buttons above the title at the right. Unset tokens are icons; each token opens a popover of one common width with ready choices, for the time four scroll wheels (start and end, hour and minute). `Tab` walks the tokens and keeps each popover's value; `Enter` applies from everywhere. Several days are a range picked in the date's calendar, the backlog is a choice of the date, tags appear only in their popover, past locations are offered, and the note has room for five lines. There is no heading. → [Shell](ui/Shell.md#entry-dialog)
 **Reasons:** most entries need only a title and the preselected date; everything else was always visible and cost space and attention. Ready choices and a typed field make the common cases one click or one line of typing.
 **Rejected:** labeled fields for everything (the previous dialog); natural-language parsing of the title (a second way to the same result, for now); a calendar always open in the dialog; all tags visible at once; a 24-hour clock dial for the time (below the visual standard, and a 24-hour dial does not match how people think of the time of day), a day timeline, hour chips, a duration ring and rolling digits (the other mockups).
 
@@ -323,3 +323,9 @@ Open-source projects that were evaluated and what they contributed:
 | calendar.txt | One line per day becomes unwieldy; one entry per line under day headings is better. |
 | Obsidian Full Calendar | Recurrence is the weak point of Markdown calendars; justifies the restricted rule set. |
 | FluidCalendar, Analog, Keeper.sh | Reference for Google sync code; Keeper.sh is an option for a later calendar sync. |
+
+## D57 · Occurrences can be placed within their day
+
+**Decision:** Dragging an occurrence within its day places every occurrence of that day exactly as dropped; it stays part of its series. A series gets a readable `#Id` the first time one of its occurrences is placed, and a day holds a reference line `- @<id>` at the position of each placed occurrence; title, time, done state and the rest stay in the series. Placements are dropped in the same undo step as the change that removes their occurrence. → [Domain](Domain.md#day-list-order), [DataFormat](DataFormat.md#calendar)
+**Reasons:** an evening series sat on top of every day whose entries have no time; the user needs full freedom to order a day. A position line keeps one source for every field and survives renaming.
+**Rejected:** detaching the occurrence into a normal entry (it leaves the series); a reference by title (ambiguous, breaks on rename); a position index stored in the series (rewritten whenever the day changes); a fixed placement per series (no freedom per day); a changed global sort rule (implicit); random IDs (unreadable by hand); placing only the dragged occurrence (a drop between unplaced occurrences would not stay where it was dropped).

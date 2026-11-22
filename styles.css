@@ -290,8 +290,11 @@ body.is-sorting .backlog__title { outline: 1px dashed var(--edge); outline-offse
 .hp__list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; }
 .hp__row { display: flex; align-items: baseline; gap: 8px; padding: 6px; border-radius: 9px; }
 .hp__row.is-past { opacity: var(--o-past); }
-.hp__date { flex: none; width: 48px; font-weight: 700; font-variant-numeric: tabular-nums; color: color-mix(in srgb, var(--accent-2) var(--light), #fff); }
-.hp__date--range { width: 108px; }
+/* A vacation within another one: indented per level, with a guide line that joins it to the one above. */
+.hp__row--sub { position: relative; margin-left: calc(var(--depth) * 16px); }
+.hp__row--sub::before { content: ""; position: absolute; left: -8px; top: -2px; bottom: 0; width: 2px; border-radius: 1px; background: color-mix(in srgb, var(--accent-2) var(--ring), transparent); }
+.hp__date { flex: none; width: 64px; font-weight: 700; font-variant-numeric: tabular-nums; color: color-mix(in srgb, var(--accent-2) var(--light), #fff); }
+.hp__date--range { width: 140px; }
 .hp__day { flex: none; width: 30px; color: var(--muted); font-size: 12px; }
 .hp__name { min-width: 0; }
 .hp__empty { padding: 6px; color: var(--faint); }
@@ -476,6 +479,8 @@ body.is-sorting .backlog__title { outline: 1px dashed var(--edge); outline-offse
 .mcell.is-past .ev:not(.is-overdue) { opacity: var(--o-past); }
 .mcell.is-past .ev:not(.is-overdue):hover { opacity: var(--o-hover); }
 .more { flex: none; align-self: flex-start; height: 20px; margin-top: 4px; font-size: 11px; font-weight: 700; padding: 0 8px; border-radius: 999px; background: color-mix(in srgb, var(--accent) var(--active), transparent); color: color-mix(in srgb, var(--accent) var(--light), #fff); }
+.more--less { display: inline-flex; align-items: center; justify-content: center; width: 28px; padding: 0; }
+.more--less::before { content: ""; width: 7px; height: 2px; border-radius: 1px; background: currentColor; }
 .more:hover { background: color-mix(in srgb, var(--accent) var(--glow), transparent); }
 /* Enlarged cell: lies over the cells below it (or, with .is-up, above it) in its own grid column. Growing down, its row's
    bars stay on top of it; growing up, its head no longer lines up with them, so it covers them and drops the lanes. */
@@ -554,6 +559,8 @@ body.is-sorting .backlog__title { outline: 1px dashed var(--edge); outline-offse
 }
 /* Popovers may reach beyond the dialog, like menus; a modal dialog would otherwise clip and scroll them. */
 .dlg { overflow: visible; }
+/* An existing item opens with the focus on the dialog itself, which needs no ring. */
+.dlg:focus { outline: none; }
 .dlg::backdrop { background: color-mix(in srgb, var(--base) 40%, transparent); backdrop-filter: blur(10px); }
 /* The dialog rises without scaling and keeps its own layer while open: a scale or the end of the layer makes the browser
    paint it anew when the rise ends, and every icon snaps to another pixel. */
@@ -565,16 +572,26 @@ body.is-sorting .backlog__title { outline: 1px dashed var(--edge); outline-offse
   background: color-mix(in srgb, var(--base) 40%, transparent); border: 1px solid var(--edge); }
 .dlg__title:focus { border-color: color-mix(in srgb, var(--accent) var(--ring), transparent); }
 .dlg__title::placeholder, .dlg__note::placeholder { color: var(--faint); }
-/* Apply ends the strip of tokens. */
-.dlg__bar { display: flex; align-items: flex-start; gap: 12px; }
-.dlg__bar .btn { flex: none; height: 32px; padding: 0 16px; }
-.dlg__toks { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+/* Duplicate, delete and close sit above the title at the right, duplicate lit in the accent; Apply ends the strip of tokens. */
+.dlg__head { display: flex; justify-content: flex-end; gap: 4px; margin: -8px -8px -4px 0; }
+.dlg__bar { display: flex; align-items: center; gap: 12px; }
+.dlg__bar > .dlg__toks { flex: 1; }
+.dlg__bar > .btn { flex: none; height: 32px; padding: 0 16px; }
+.dlg__dup { color: var(--accent); }
+.dlg__dup:hover:not(:disabled) { color: var(--accent); background: color-mix(in srgb, var(--accent) var(--hover), transparent); }
+/* The tokens stay on one line; when it is full, tokens drop their value and keep only their icon, tag first. */
+.dlg__toks { min-width: 0; display: flex; gap: 6px; align-items: center; }
 /* A set token shows its value; an unset one is only its icon. */
 .dlg__tok { --h: 0; display: inline-flex; align-items: center; gap: 6px; height: 32px; max-width: 220px; padding: 0 10px; border-radius: 10px; font-size: 13px; font-weight: 700; white-space: nowrap; color: var(--muted); background: var(--item); transition: background .15s, color .15s; }
+.dlg__tok { flex: none; }
+.dlg__tok.is-compact { width: 32px; padding: 0; justify-content: center; }
+.dlg__tok.is-compact span { display: none; }
 .dlg__tok span { overflow: hidden; text-overflow: ellipsis; }
 .dlg__tok:hover { color: var(--text); background: var(--glass-2); }
-.dlg__tok.is-off { width: 32px; padding: 0; justify-content: center; color: var(--faint); background: none; }
+.dlg__tok.is-off { flex: none; width: 32px; padding: 0; justify-content: center; color: var(--faint); background: none; }
 .dlg__tok.is-off:hover { color: var(--text); background: var(--glass-2); }
+/* Location and note show no value; a set one is only its icon, lit in the accent on the token background. */
+.dlg__tok.is-set { color: var(--accent); background: var(--item); }
 /* A token the current choices rule out stays visible, dimmed and inert to the pointer; its tooltip says why. */
 .dlg__tok[aria-disabled="true"], .dlg__pill[aria-disabled="true"] { opacity: var(--o-disabled); cursor: not-allowed; }
 .dlg__tok[aria-disabled="true"]:hover { color: var(--faint); background: none; }
@@ -582,16 +599,22 @@ body.is-sorting .backlog__title { outline: 1px dashed var(--edge); outline-offse
 .dlg__tok[aria-expanded="true"], .dlg__tok[aria-pressed="true"] { color: var(--text); background: color-mix(in srgb, var(--accent) var(--hover), transparent); }
 .dlg__tok.has-tag { color: var(--text); background: hsl(var(--h) var(--tag-s) 58% / .32); }
 .dlg__tagicon { width: 16px; height: 16px; color: hsl(var(--h) var(--tag-s) 80%); }
-/* The note has room for five lines; every line is a list item in the file. */
-.dlg__note { --line: 24px; min-height: calc(5 * var(--line) + 20px); resize: none; padding: 10px 14px; line-height: var(--line); font-weight: 500; border-radius: 10px; outline: none;
-  background: var(--item); border: 1px solid var(--edge); }
-.dlg__note:focus { border-color: color-mix(in srgb, var(--accent) var(--ring), transparent); }
-.dlg__actions { display: flex; flex-wrap: wrap; gap: 4px; }
-.dlg__actions .btn { padding: 8px 12px; }
+/* The note is written straight into its popover, which is as tall as the calendar; every line is a list item in the file. */
+.dlg__pop.dlg__pop--note { height: var(--pop-max); padding: 0; grid-template-rows: 1fr; }
+.dlg__pop.dlg__pop--note:focus-within { border-color: color-mix(in srgb, var(--accent) var(--ring), transparent); }
+.dlg__note { --line: 24px; min-height: 0; height: 100%; resize: none; padding: 17px 16px; line-height: var(--line); font-weight: 500; border-radius: inherit; outline: none; background: none; border: 0; }
+.dlg__delete { color: var(--danger); }
+.dlg__delete:hover:not(:disabled) { color: var(--danger); background: color-mix(in srgb, var(--danger) var(--hover), transparent); }
+/* The delete choices of a series: a menu like the context menu, 8px below the trash button and right-aligned with it;
+   the script sets its place. */
+.dlg__menu { position: absolute; z-index: 6; display: flex; flex-direction: column; border-radius: 16px;
+  background: var(--panel); border: 1px solid var(--edge); box-shadow: 0 16px 50px rgba(0,0,0,.5); }
+.dlg__menu[hidden] { display: none; }
+.dlg__delete[aria-expanded="true"] { background: color-mix(in srgb, var(--danger) var(--hover), transparent); }
 
-/* Popovers below their token. */
-/* Popovers below their token, all of one width. */
-.dlg__pop { position: absolute; z-index: 5; width: 360px; max-width: calc(100% - 40px); padding: 10px; display: grid; gap: 10px; border-radius: 16px; outline: none;
+/* Popovers below the strip of tokens, centered in the dialog, all of one width. */
+/* The date popover with its calendar is the tallest; no popover grows beyond it, longer lists scroll. */
+.dlg__pop { --pop-max: 372px; max-height: var(--pop-max); overflow-y: auto; position: absolute; z-index: 5; width: 360px; max-width: calc(100% - 40px); padding: 10px; display: grid; gap: 10px; border-radius: 16px; outline: none;
   background: var(--panel); border: 1px solid var(--edge); box-shadow: 0 16px 50px rgba(0,0,0,.5); }
 .dlg__search { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px; border-radius: 10px; color: var(--faint);
   background: color-mix(in srgb, var(--base) 40%, transparent); border: 1px solid var(--edge); }
@@ -905,7 +928,7 @@ button.occ__row:hover, button.occ__row:focus-visible { background: color-mix(in 
 .cx-next__tile--anniversary { --tone: var(--heart); }
 .cx-next__tile:hover { filter: brightness(1.15); }
 .cx-next__tile.is-today { color: var(--on-accent); background: var(--tone); border-color: var(--tone); }
-.cx-next__day { flex: none; width: 52px; font-size: 12px; font-weight: 800; }
+.cx-next__day { flex: none; width: 76px; font-size: 12px; font-weight: 800; white-space: nowrap; }
 .cx-next__name { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cx-next__detail { flex: none; font-size: 12px; font-weight: 700; color: color-mix(in srgb, var(--tone) var(--light), #fff); }
 .cx-next__tile.is-today .cx-next__detail { color: var(--on-accent); }
@@ -931,7 +954,10 @@ button.occ__row:hover, button.occ__row:focus-visible { background: color-mix(in 
 .cx-in:hover { background: var(--item); }
 .cx-in:focus { background: color-mix(in srgb, var(--base) 40%, transparent); border-color: color-mix(in srgb, var(--accent) var(--ring), transparent); }
 .cx-in--name { align-self: flex-start; font-size: 28px; font-weight: 800; letter-spacing: -.03em; padding: 2px 10px; margin-left: -10px; field-sizing: content; min-width: 4ch; max-width: 100%; }
-.cx-in--note { width: 100%; min-height: 96px; resize: none; font: inherit; line-height: 1.5; padding: 10px 12px; background: var(--item); border-color: var(--item-edge); }
+/* The note is written straight into its section, without a frame of its own, and grows with its text instead of
+   scrolling; the section shows the focus. */
+.cx-in--note, .cx-in--note:hover, .cx-in--note:focus { width: 100%; min-height: 96px; field-sizing: content; overflow: hidden; resize: none; font: inherit; line-height: 1.5; padding: 0; border: 0; border-radius: 0; background: none; }
+.cx-sec--note:focus-within { border-color: color-mix(in srgb, var(--accent) var(--ring), transparent); }
 .cx-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .cx-sec { padding: 14px; border-radius: 18px; background: var(--card); border: 1px solid var(--card-edge); display: flex; flex-direction: column; gap: 4px; }
 .cx-sec--wide { grid-column: 1 / -1; }

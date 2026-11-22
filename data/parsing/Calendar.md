@@ -8,6 +8,7 @@
 ## November 2026
 
 ### 12.11.2026
+- @gym
 - [ ] Sort tax documents
 - [ ] 09:30 - 10:15 Dentist #Private
   - Location: Dr. Example's practice
@@ -88,6 +89,8 @@ Booth B12.
 - FREQ=DAILY
 
 ### Gym #Private
+#Id
+- gym
 #Start
 - 03.11.2026 18:30 - 20:00
 #Repeat

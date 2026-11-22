@@ -44,14 +44,16 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
    * @param {string} attributes data attributes identifying the item
    * @param {boolean} overdue @param {boolean} series @param {boolean} compact
    * @param {boolean} [details] also shows location and note lines (focus mode, docs/ui/Views.md#focus-mode)
+   * @param {boolean} [undated] a backlog entry: no check box and no done state, since only a day can be done
    */
-  function tile(item, attributes, overdue, series, compact, details = false) {
-    const classes = ["ev", series && "ev--series", item.done && "is-done", overdue && "is-overdue"].filter(Boolean).join(" ");
+  function tile(item, attributes, overdue, series, compact, details = false, undated = false) {
+    const done = item.done && !undated;
+    const classes = ["ev", series && "ev--series", done && "is-done", overdue && "is-overdue"].filter(Boolean).join(" ");
     const tagged = tint(item.tag);
     const time = item.start ? `${item.start}${item.end && !compact ? `–${item.end}` : ""}` : "";
-    const description = [item.title, time, item.tag, series ? "recurring" : "", item.done ? "done" : overdue ? "overdue" : ""].filter(Boolean).join(", ");
+    const description = [item.title, time, item.tag, series ? "recurring" : "", done ? "done" : overdue ? "overdue" : ""].filter(Boolean).join(", ");
     return `<div class="${classes}${tagged.className}"${tagged.style} ${attributes}>` +
-      `<button class="ev__check" type="button" role="checkbox" aria-checked="${item.done}" aria-label="Done: ${escape(item.title)}">${icon("check")}</button>` +
+      (undated ? "" : `<button class="ev__check" type="button" role="checkbox" aria-checked="${item.done}" aria-label="Done: ${escape(item.title)}">${icon("check")}</button>`) +
       `<button class="ev__open" type="button" aria-label="${escape(description)}"><span class="ev__line">` +
       (time ? `<span class="ev__time">${time}</span>` : "") +
       tagIcon(item.tag, "ev__tag") +
@@ -85,11 +87,14 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const compact = Boolean(options.compact);
     const details = Boolean(options.details);
     const html = [];
-    for (const item of app.recurrence.dayOrder(occurrences, entries).slice(0, limit)) {
+    const placed = app.calendar.placedAt(calendar, key);
+    for (const item of app.recurrence.dayOrder(occurrences, entries, placed).slice(0, limit)) {
       if ("occurrence" in item) {
         const { series, index, done } = item.occurrence;
-        // Occurrences of recurring entries are never overdue (docs/Domain.md#entry).
-        html.push(tile({ title: series.title, done, start: series.startTime, end: series.endTime, tag: series.tag, location: series.location, note: series.note }, `data-series="${index}" data-key="${key}"`, false, true, compact, details));
+        // Occurrences of recurring entries are never overdue (docs/Domain.md#entry). A placed one is marked, so that a
+        // drop can read the placed occurrences of its day (docs/Domain.md#day-list-order).
+        html.push(tile({ title: series.title, done, start: series.startTime, end: series.endTime, tag: series.tag, location: series.location, note: series.note },
+          `data-series="${index}" data-key="${key}"${placed.has(index) ? " data-pinned" : ""}`, false, true, compact, details));
       } else html.push(tile(item.entry, `data-index="${item.index}"`, app.calendar.isOverdue(item.entry, key, today), false, compact, details));
     }
     return { html: html.join(""), hidden: Math.max(0, occurrences.length + entries.length - limit) };
@@ -97,7 +102,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   /** Tiles of a backlog group; backlog entries have no date and are never overdue. @param {readonly MDCEntry[]} entries */
   function backlogTiles(entries) {
-    return entries.map((entry, index) => tile(entry, `data-index="${index}"`, false, false, false)).join("");
+    return entries.map((entry, index) => tile(entry, `data-index="${index}"`, false, false, false, false, true)).join("");
   }
 
   /** @param {MDCSegment} segment @param {string} today @param {boolean} withRange */
@@ -215,24 +220,29 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   /**
-   * Scrolls a day, entry or bar into view and highlights it once (docs/ui/DesignSystem.md#motion): an accent ring closes
-   * in around it and fades. An outline instead of a scale keeps text and icons sharp and moves nothing; it starts after
-   * the slide of a new period. A day column draws its card in ::before, so the ring goes there. An entry sits in a
-   * scrolling list with 4px of room, so its ring stays close and only fades in and out.
+   * Scrolls a day, entry or bar into view and highlights it once (docs/ui/DesignSystem.md#motion): its own frame lights
+   * up in the accent with a glow in one long pulse and returns to its own look. No ring of its own and no scale, so nothing
+   * moves and text and icons stay sharp; it starts after the slide of a new period. The first and last keyframes are left
+   * out, so that the animation starts from and returns to the element's own border and shadow (also the glow of today).
+   * A day column draws its card in ::before, so the light goes there. An entry sits in a scrolling list with 4px of room,
+   * so its glow stays inside.
    * @param {HTMLElement} element
    */
   function highlight(element) {
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
     element.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "nearest", inline: "nearest" });
-    const ring = "color-mix(in srgb, var(--accent) var(--strong), transparent)";
-    const close = element.classList.contains("ev") ? "2px" : "3px";
-    const from = reduced ? close : element.classList.contains("ev") ? "2px" : "8px";
-    element.animate([
-      { outlineStyle: "solid", outlineWidth: "2px", outlineColor: "transparent", outlineOffset: from, zIndex: 2 },
-      { outlineStyle: "solid", outlineWidth: "2px", outlineColor: ring, outlineOffset: close, zIndex: 2, offset: 0.25 },
-      { outlineStyle: "solid", outlineWidth: "2px", outlineColor: ring, outlineOffset: close, zIndex: 2, offset: 0.65 },
-      { outlineStyle: "solid", outlineWidth: "2px", outlineColor: "transparent", outlineOffset: close, zIndex: 2 }
-    ], { duration: 1400, delay: 180, easing: "ease-out", pseudoElement: element.classList.contains("day") ? "::before" : undefined });
+    const mix = (/** @type {string} */ amount) => `color-mix(in srgb, var(--accent) ${amount}, transparent)`;
+    const entry = element.classList.contains("ev");
+    const lit = {
+      easing: "ease-in-out",
+      borderColor: "var(--accent)",
+      boxShadow: entry ? `inset 0 0 0 2px var(--accent), inset 0 0 18px ${mix("var(--strong)")}, 0 0 0 0 transparent`
+        : `inset 0 0 0 2px var(--accent), 0 0 18px ${mix("var(--strong)")}, 0 0 44px ${mix("var(--ring)")}`
+    };
+    // One pulse: it lights up quickly, holds and fades back to its own look.
+    // The first keyframe only sets the easing of the rise; its values are the element's own.
+    element.animate([{ offset: 0, easing: "ease-out" }, { ...lit, offset: 0.2 }, { ...lit, offset: 0.6 }],
+    { duration: 1300, delay: 120, pseudoElement: element.classList.contains("day") ? "::before" : undefined });
   }
 
   app.tiles = { escape, icon, tint, tagIcon, tagIconIds, dayTiles, backlogTiles, bar, badges, describeOccasion, dayOccasions, setTags, setContacts, setHolidays, highlight, slide };
