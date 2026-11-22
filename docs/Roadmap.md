@@ -149,6 +149,7 @@ Ab hier ersetzt MD_Calendar den Google-Kalender als Daily-Driver.
 - [x] ~Serien löschen verbessern~
 - [ ] Enter und CTRL + Enter in Notes
 - [ ] Rechtschreibkorrektur in Notes ausschalten
+- [ ] Focus-View verbessern
 
 ### Release
 
