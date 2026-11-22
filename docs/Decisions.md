@@ -87,7 +87,7 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 
 ## D16 · Logo "Orbit C"
 
-**Decision:** The logo is "Orbit C" and is used everywhere: application header, favicons, PWA icons. → [Design System](ui/DesignSystem.md#logo-orbit-c)
+**Decision:** The logo is "Orbit C" and is used everywhere: application header and favicons. → [Design System](ui/DesignSystem.md#logo-orbit-c)
 **Reasons:** minimal, strong silhouette that stays legible at 16px; the gold dot echoes "today".
 **Rejected:** calendar sheet with "12", glass sheet with "C", "CAL" badge (illegible at favicon size), "C" with check mark.
 
@@ -217,7 +217,7 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 
 ## D41 · Logo without tile in the browser
 
-**Decision:** Favicons and the regular PWA icons show the mark without tile; only the iOS home screen icon and the maskable icon keep the tile. → [Design System](ui/DesignSystem.md#logo-orbit-c)
+**Decision:** Favicons show the mark without tile; only the iOS home screen icon keeps the tile. → [Design System](ui/DesignSystem.md#logo-orbit-c)
 **Reasons:** the user wants the logo without a frame wherever possible.
 
 ## D42 · English UI

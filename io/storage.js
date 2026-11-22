@@ -34,7 +34,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
    * @returns {Promise<MDCOpenResult>}
    */
   async function open(handle, options) {
-    const access = await storage.probe(handle, "readwrite", options);
+    const access = await storage.probe(handle, "readwrite", { ...options, window });
     if (access !== "granted") return access;
     const opened = adapter(handle);
     if (await opened.stat(stateFile) === null) return "uninitialized";
@@ -81,7 +81,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
    */
   async function refreshInfo(id, summarize) {
     const record = (await rememberedFolders().list()).find(entry => entry.id === id);
-    if (!record || await storage.probe(/** @type {any} */ (record.handle), "read", { prompt: false }) !== "granted") return null;
+    if (!record || await storage.probe(/** @type {any} */ (record.handle), "read", { window, prompt: false }) !== "granted") return null;
     const stored = await adapter(record.handle).read(stateFile);
     const info = stored ? summarize(stored.text) : null;
     if (info) await rememberedFolders().update(id, () => ({ info }));

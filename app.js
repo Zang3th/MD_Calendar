@@ -459,7 +459,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     function reportOpenError(error, code, title = "Folder not opened") {
       if (error instanceof DOMException && error.name === "AbortError") return;
       const details = error instanceof Error ? error.message : String(error);
-      app.notifications.show("error", title, "", { details, code });
+      app.notifications.show("error", title, "Choose the folder again.", { details, code });
     }
 
     /** Updates what an action changed. @param {MDCUndoAction} action */

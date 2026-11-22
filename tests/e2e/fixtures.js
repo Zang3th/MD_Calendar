@@ -7,7 +7,7 @@ const path = require("node:path");
 // serve the application over http://127.0.0.1 and let the directory picker return an OPFS folder.
 const root = path.resolve(__dirname, "../..");
 /** @type {Record<string, string>} */
-const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".ico": "image/x-icon", ".png": "image/png", ".webmanifest": "application/manifest+json" };
+const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".ico": "image/x-icon", ".png": "image/png" };
 
 /** Every calendar folder needs MD_Calendar.json; `openApp` writes this one unless the files bring their own. */
 const folderState = "MD_Calendar.json";

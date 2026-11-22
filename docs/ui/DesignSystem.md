@@ -185,7 +185,7 @@ Scale: 2, 4, 6, 8, 10, 12, 14, 16, 22 px. Every padding, margin and gap uses a v
 ## Logo: Orbit C
 
 - A bold "C" drawn as an open ring in the brand gradient (`--accent` → `--accent-2` → `--warm`), with a gold `--warm` dot in the opening that stands for "today".
-- The mark is used without a tile everywhere it is shown on its own: in the header, on the start card, as favicon in the browser tab and as PWA icon. Only the iOS home screen icon and the maskable PWA icon keep the rounded tile in `--base` with soft background lights, because those platforms need an opaque square.
+- The mark is used without a tile everywhere it is shown on its own: in the header, on the start card and as favicon in the browser tab. Only the iOS home screen icon keeps the rounded tile in `--base` with soft background lights, because that platform needs an opaque square.
 - All shapes are paths; no font is involved. The assets must not be redrawn or recolored.
 - The complete web icon set lives in `res/logo/`:
 
@@ -195,10 +195,7 @@ Scale: 2, 4, 6, 8, 10, 12, 14, 16, 22 px. Every padding, margin and gap uses a v
 | `mark.svg` | Mark without tile, tightly cropped; header logo (32px) |
 | `icon.svg`, `favicon.ico`, `favicon-16/32/48.png` | Favicons, mark without tile on a square canvas |
 | `apple-touch-icon.png` | iOS home screen, with tile |
-| `icon-192.png`, `icon-512.png` | PWA icons, mark without tile |
-| `maskable-512.png` | Maskable PWA icon, with tile |
 | `mask-icon.svg` | Monochrome contexts |
-| `site.webmanifest` | Web app manifest; scope and start URL point to the application root |
 | `head.html` | `<head>` tags for `MD_Calendar.html`, with paths relative to the application root |
 
 ## Icons
