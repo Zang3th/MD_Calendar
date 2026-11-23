@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 36 36"
+     fill="none">
+    <path d="M6 10H30V30H6ZM6 16H30M12 4V10M24 4V10"
+          stroke="currentColor"
+          stroke-width="4"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    <path fill="currentColor"
+          d="M18 19.06L19.33 21.72L22.18 22.1L20.09 24.09L20.66 26.94L18 25.52L15.34 26.94L15.91 24.09L13.82 22.1L16.67 21.72Z"/>
+</svg>

@@ -31,7 +31,7 @@
   --tag-l: 68%;
   --text: #f1eefc;
   --muted: rgba(241,238,252,.70);
-  --faint: rgba(241,238,252,.55);
+  --faint: rgba(241,238,252,.66);
   --deco: rgba(241,238,252,.30);
   --glass: rgba(255,255,255,.08);
   --glass-2: rgba(255,255,255,.11);
@@ -130,25 +130,26 @@ html[data-build="missing"] .build-missing { display: block; max-width: 40rem; ma
 .hdr { min-height: 58px; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 14px; padding: 8px 12px; border-radius: 22px; }
 .hdr__left, .hdr__right { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .hdr__right { grid-column: 3; justify-content: flex-end; gap: 4px; }
-.logo { width: 32px; height: 32px; flex: none; display: grid; place-items: center; margin-right: 2px; border-radius: 9px; filter: drop-shadow(0 0 12px color-mix(in srgb, var(--accent) var(--glow), transparent)); transition: filter .15s, transform .15s; }
+.logo { width: 32px; height: 32px; flex: none; display: grid; place-items: center; margin-right: 2px; border-radius: 9px; filter: drop-shadow(0 0 12px color-mix(in srgb, var(--accent) var(--glow), transparent)); transition: transform .15s; }
 .logo img { display: block; width: 32px; height: 32px; }
-.logo:hover { filter: drop-shadow(0 0 14px color-mix(in srgb, var(--accent) var(--ring), transparent)) brightness(1.1); }
+.logo:hover { filter: drop-shadow(0 0 14px color-mix(in srgb, var(--accent) var(--ring), transparent)); }
 .logo:active { transform: scale(.94); }
-.version { flex: none; display: grid; place-items: center; height: 26px; padding: 0 9px; border-radius: 9px; background: var(--glass-2); color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .03em; font-variant-numeric: tabular-nums; }
+.version { flex: none; display: grid; place-items: center; height: 26px; padding: 0 10px; border-radius: 9px; background: var(--glass-2); color: var(--text); font-size: 12px; font-weight: 700; letter-spacing: .03em; font-variant-numeric: tabular-nums; }
 .version[hidden] { display: none; }
 .hdr__title {
   margin: 0; font-size: 21px; font-weight: 800; letter-spacing: -.03em; white-space: nowrap; border-radius: 8px;
-  background: linear-gradient(90deg, #fff, color-mix(in srgb, var(--accent) var(--light), #fff) 60%, var(--accent-2));
-  -webkit-background-clip: text; background-clip: text; color: transparent; transition: filter .2s;
+  background: linear-gradient(90deg, var(--text), color-mix(in srgb, var(--accent) var(--light), #fff) 60%, var(--accent-2));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
 }
-.hdr__title:hover:not(:disabled) { filter: brightness(1.25); }
+/* Hover lightens the gradient instead of a brightness filter (DesignSystem.md#motion). */
+.hdr__title:hover:not(:disabled) { background-image: linear-gradient(90deg, var(--text), color-mix(in srgb, var(--accent) var(--light), #fff) 40%, color-mix(in srgb, var(--accent-2) var(--light), #fff)); }
 .hdr__title { display: inline-grid; text-align: left; }
 .hdr__titletext, .hdr__sizer, .hdr__sizer > span { grid-area: 1 / 1; }
 .hdr__sizer { display: grid; visibility: hidden; height: 0; overflow: hidden; }
 /* “+”, undo, redo and save sit right of the title as one group, as in MD_Manager. */
 .edit { display: flex; align-items: center; }
 .edit .primary--icon { margin-right: 4px; }
-#backlogToggle[aria-pressed="true"] { color: #fff; background: color-mix(in srgb, var(--accent) var(--active), transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) var(--ring), transparent); }
+#backlogToggle[aria-pressed="true"] { color: var(--text); background: color-mix(in srgb, var(--accent) var(--active), transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) var(--ring), transparent); }
 /* An open panel or menu keeps its button marked: holidays, options (and help below). */
 :is(#holidaysButton, #optionsButton)[aria-expanded="true"] { color: var(--text); background: var(--glass-2); }
 /* While its menu is open, “+” turns into “×” (a quarter turn of the plus would look the same, so it turns 45°)
@@ -169,11 +170,11 @@ html[data-build="missing"] .build-missing { display: block; max-width: 40rem; ma
 .seg { position: relative; display: grid; grid-template-columns: repeat(3, var(--seg-w, 118px)); padding: 4px; border-radius: 14px; background: color-mix(in srgb, var(--base) 40%, transparent); border: 1px solid var(--edge); }
 .seg button { position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 16px; border-radius: 10px; color: var(--muted); font-weight: 700; font-size: 13px; transition: color .2s; }
 .seg button:hover:not(:disabled) { color: var(--text); }
-.seg button[aria-pressed="true"] { color: #fff; }
+.seg button[aria-pressed="true"] { color: var(--text); }
 .seg button:disabled { color: var(--deco); }
 .seg--tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 8px; }
 .seg--tabs button { height: 30px; padding: 0 6px; font-size: 12.5px; white-space: nowrap; }
-.seg--tabs button[aria-selected="true"] { color: #fff; }
+.seg--tabs button[aria-selected="true"] { color: var(--text); }
 #holidaysPanel { width: 384px; }
 .hp__content--tabs { height: 372px; }
 .seg__thumb {
@@ -187,7 +188,7 @@ html[data-build="missing"] .build-missing { display: block; max-width: 40rem; ma
 /* Save control (docs/ui/Shell.md#save-control): one fixed width in every state, so that nothing beside it moves. The
    saved state is the default: a green pill “✓ Saved”; unsaved is yellow “● Save N”, saving is the accent with a spinner. */
 .save {
-  margin-left: 6px; width: 100px; height: 36px; padding: 0 8px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  margin-left: 6px; width: 100px; height: 36px; padding: 0 8px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   font-size: 12px; font-weight: 700; white-space: nowrap; color: var(--ok);
   background: color-mix(in srgb, var(--ok) var(--hover), transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ok) var(--ring), transparent);
   transition: background .25s, color .25s, box-shadow .25s;
@@ -197,14 +198,16 @@ html[data-build="missing"] .build-missing { display: block; max-width: 40rem; ma
 .save__icon { position: relative; display: grid; place-items: center; }
 .save__ok { transition: opacity .2s, transform .3s; }
 .save__dot { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: var(--warn); opacity: 0; transform: scale(.4); transition: opacity .2s, transform .3s; }
-.save__count { max-width: 0; overflow: hidden; opacity: 0; font-size: 10.5px; font-weight: 800; border-radius: 999px; font-variant-numeric: tabular-nums; transition: max-width .3s cubic-bezier(.2,.8,.2,1), opacity .2s; }
+.save__count { max-width: 0; overflow: hidden; opacity: 0; font-size: 11px; font-weight: 800; border-radius: 999px; font-variant-numeric: tabular-nums; transition: opacity .2s; }
+/* An empty counter (saved, saving) takes no part in the gap, so that icon and label stay centered. */
+.save__count:empty { display: none; }
 /* Just saved: the check mark pops once. */
 .save.is-flash .save__ok { animation: pop .4s cubic-bezier(.2,1.6,.4,1); }
 .save.is-dirty { color: var(--warn); background: color-mix(in srgb, var(--warn) var(--hover), transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warn) var(--ring), transparent); }
-.save.is-dirty:hover:not(:disabled) { background: color-mix(in srgb, var(--warn) var(--active), transparent); color: #fff3c4; }
+.save.is-dirty:hover:not(:disabled) { background: color-mix(in srgb, var(--warn) var(--active), transparent); color: color-mix(in srgb, var(--warn) var(--light), #fff); }
 .save.is-dirty .save__ok { opacity: 0; transform: scale(.4); }
 .save.is-dirty .save__dot { opacity: 1; transform: none; animation: pulse 2s ease-in-out infinite; }
-.save.is-dirty .save__count { max-width: 40px; opacity: 1; padding: 2px 5px; background: color-mix(in srgb, var(--warn) var(--glow), transparent); color: #fff3c4; }
+.save.is-dirty .save__count { max-width: 40px; opacity: 1; padding: 2px 6px; background: color-mix(in srgb, var(--warn) var(--glow), transparent); color: color-mix(in srgb, var(--warn) var(--light), #fff); }
 /* Saving: a spinning arc masks the wait for the network and the write cycles of the storage; it turns with a transform. */
 .save__spin { position: absolute; opacity: 0; transform: scale(.4); transition: opacity .2s, transform .3s; }
 .save.is-saving { color: var(--accent); background: color-mix(in srgb, var(--accent) var(--hover), transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) var(--ring), transparent); cursor: progress; }
@@ -212,18 +215,26 @@ html[data-build="missing"] .build-missing { display: block; max-width: 40rem; ma
 .save.is-saving .save__ok, .save.is-saving .save__dot { opacity: 0; transform: scale(.4); animation: none; }
 .save.is-saving .save__spin { opacity: 1; transform: none; animation: save-spin .8s linear infinite; }
 .save.is-saving .save__count { max-width: 0; padding: 0; opacity: 0; }
+/* Windows up to 1300px wide and portrait: the view switcher and the save control show their icons only, so that the
+   header groups keep apart (docs/ui/Shell.md#header). The labels stay in the accessible names. */
+@media (orientation: portrait), (max-width: 1300px) {
+  .hdr .seg { --seg-w: 44px; }
+  .hdr .seg button { padding: 0 12px; }
+  .hdr .seg button span { display: none; }
+  .save { width: 36px; padding: 0; }
+  .save__text, .save__count { display: none; }
+}
 @keyframes save-spin { from { rotate: 0turn; } to { rotate: 1turn; } }
 @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--warn) var(--strong), transparent); } 50% { box-shadow: 0 0 0 5px transparent; } }
 @keyframes pop { from { transform: scale(.3); } to { transform: scale(1); } }
 
 /* Buttons */
-.primary { height: 36px; padding: 0 14px 0 10px; border-radius: 12px; display: inline-flex; align-items: center; gap: 6px; font-weight: 800; color: var(--on-accent); background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) var(--glow), transparent); transition: filter .15s; }
-.primary:hover:not(:disabled) { filter: brightness(1.08); }
+.primary { height: 36px; padding: 0 14px 0 10px; border-radius: 12px; display: inline-flex; align-items: center; gap: 6px; font-weight: 800; color: var(--on-accent); background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) var(--glow), transparent); transition: box-shadow .15s; }
+.primary:hover:not(:disabled) { box-shadow: 0 6px 20px color-mix(in srgb, var(--accent) var(--glow), transparent), inset 0 0 0 100px var(--glass-2); }
 .primary:disabled { opacity: var(--o-disabled); box-shadow: none; }
 .primary--icon { width: 36px; padding: 0; justify-content: center; }
-/* A file type inside a menu label, e.g. “.ics”: monospace on a tinted chip, like a file extension. The leading dot sits
-   in the middle of a full monospace cell, so the left padding is smaller to look even. */
-.menu__code { margin: 0 6px; padding: 1px 5px 1px 2px; border-radius: 5px; font: 700 11.5px/1.3 ui-monospace, "Cascadia Mono", Consolas, monospace; color: var(--accent);
+/* A file type inside a menu label, e.g. “.ics”: monospace on a tinted chip, like a file extension. */
+.menu__code { margin: 0 6px; padding: 1px 5px; border-radius: 5px; font: 700 11.5px/1.3 ui-monospace, "Cascadia Mono", Consolas, monospace; color: var(--accent);
   background: color-mix(in srgb, var(--accent) var(--hover), transparent); border: 1px solid color-mix(in srgb, var(--accent) var(--ring), transparent); }
 /* Switch inside a menu item (options menu). */
 .menu__item--switch { justify-content: space-between; gap: 16px; }
@@ -233,18 +244,12 @@ html[data-build="missing"] .build-missing { display: block; max-width: 40rem; ma
 [aria-checked="true"] > .switch::after { transform: translateX(12px); background: var(--on-accent); }
 /* Options menu: “Hide icons” removes the tag icons of entries and bars. Series icons and day badges always keep theirs. */
 body.hide-icons :is(.ev__tag, .bar__tag) { display: none; }
-.btn { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; padding: 8px 16px; border-radius: 999px; font-weight: 700; transition: background .15s, filter .15s; }
-.btn--ghost { background: var(--glass-2); color: var(--muted); }
-.btn--ghost:hover { color: var(--text); background: color-mix(in srgb, var(--accent) var(--hover), var(--glass-2)); }
-.btn--danger { color: var(--danger); }
-.btn--danger:hover { background: color-mix(in srgb, var(--danger) var(--hover), transparent); }
+.btn { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; padding: 8px 16px; border-radius: 999px; font-weight: 700; transition: background .15s, box-shadow .15s; }
 .btn--primary { background: linear-gradient(90deg, var(--accent), var(--accent-2)); color: var(--on-accent); }
-.btn--primary:hover { filter: brightness(1.08); }
-.btn kbd { font-size: 12px; }
+.btn--primary:hover { box-shadow: inset 0 0 0 100px var(--glass-2); }
 
 /* ---------- Backlog panel ---------- */
 .app { position: relative; }
-.main { transition: margin .35s cubic-bezier(.2,.8,.2,1); }
 .backlog {
   position: fixed; z-index: 20; top: calc(14px + 58px + 14px); right: 14px; bottom: 14px; width: 340px; padding: 16px 14px;
   display: flex; flex-direction: column; background: color-mix(in srgb, var(--panel) 60%, transparent);
@@ -302,7 +307,7 @@ body.is-sorting .backlog__title { outline: 1px dashed var(--edge); outline-offse
 /* ---------- Start card ---------- */
 .start { margin: auto; width: min(460px, 100%); display: flex; flex-direction: column; align-items: center; gap: 0; padding: 22px 24px 24px; text-align: center; border-radius: 22px; background: var(--card); border: 1px solid var(--card-edge); }
 .start__actions { margin-top: 20px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
-.start__button { height: 40px; padding: 0 18px 0 14px; border-radius: 12px; display: inline-flex; align-items: center; gap: 6px; font-weight: 800; }
+.start__button { height: 40px; padding: 0 16px 0 14px; border-radius: 12px; display: inline-flex; align-items: center; gap: 6px; font-weight: 800; }
 .start__new { color: var(--text); background: var(--glass-2); transition: background .15s; }
 .start__new:hover { background: color-mix(in srgb, var(--accent) var(--hover), var(--glass-2)); }
 .recent { width: 100%; text-align: left; }
@@ -362,7 +367,7 @@ body.is-sorting .backlog__title { outline: 1px dashed var(--edge); outline-offse
 .mcell__badges .badge { padding: 2px 6px; }
 .day__dow { font-size: 12px; font-weight: 600; color: var(--muted); }
 .day__num { font-size: 26px; font-weight: 800; letter-spacing: -.04em; line-height: 1.05; }
-.day.is-today .day__dow { color: var(--accent); }
+.day.is-today .day__dow { color: color-mix(in srgb, var(--accent) var(--light), #fff); }
 .day.is-past .day__dow { color: var(--faint); }
 .day.is-past .day__num { color: var(--muted); }
 .day__list { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 6px; padding: 4px 10px 10px; --pad: 10px; }
@@ -374,15 +379,18 @@ body.is-sorting .backlog__title { outline: 1px dashed var(--edge); outline-offse
 }
 .ev:hover { transform: translateY(-1px); background-color: var(--glass-2); }
 .ev__check {
-  --edge-color: rgba(255,255,255,.45); flex: none; width: 17px; height: 17px; margin-top: 1px; border-radius: 6px;
+  --edge-color: rgba(255,255,255,.45); flex: none; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 6px;
   box-shadow: inset 0 0 0 1.5px var(--edge-color); color: transparent;
 }
-/* The check mark is part of the box, not an icon of the size steps: it fills the whole box (the frame is an inset
-   shadow, not a border), so the 32px canvas maps onto the box and the mark is centered and scales with it. */
-.ev__check .ui-icon { width: 100%; height: 100%; }
+/* The check mark is a 16px icon centered in the 18px box, 1px from each side, so its strokes stay on whole pixels; the
+   frame is an inset shadow, not a border. The month's 12px box takes the small mark, drawn in the middle of the same
+   16px canvas, which overhangs the box by exactly 2px on each side and so keeps the canvas on whole pixels. */
+.ev__check .ui-icon { width: 16px; height: 16px; }
 .ev__open { flex: 1; min-width: 0; display: flex; flex-direction: column; text-align: left; border-radius: 6px; }
 .ev__line { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 6px; row-gap: 2px; min-width: 0; }
-.ev__time { flex: none; order: -1; width: 100%; font-size: 11px; font-weight: 700; color: var(--accent); white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* Start and end are separate items on one line; when the range does not fit, the end wraps to a second line that the
+   height cuts off, so only the start time shows and nothing runs under the repeat icon. */
+.ev__time { flex: none; order: -1; width: 100%; display: flex; flex-wrap: wrap; max-height: 1lh; overflow: hidden; font-size: 11px; font-weight: 700; color: var(--accent); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .ev__title { flex: 1 1 0; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ev.has-tag {
   background: linear-gradient(135deg, hsl(var(--h) var(--tag-s) var(--tag-l) / var(--tint-a)), hsl(var(--h) var(--tag-s) var(--tag-l) / var(--tint-b)));
@@ -390,11 +398,11 @@ body.is-sorting .backlog__title { outline: 1px dashed var(--edge); outline-offse
 }
 .ev.has-tag .ev__time { color: hsl(var(--h) var(--tag-s) 88%); }
 .ev.is-done { opacity: var(--o-past); }
-.ev.is-done .ev__check { --edge-color: #fff; background: #fff; color: var(--base); }
+.ev.is-done .ev__check { --edge-color: var(--text); background: var(--text); color: var(--base); }
 .ev.is-done .ev__title { text-decoration: line-through; }
-.ev.is-overdue { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) var(--ring), transparent); }
+.ev.is-overdue { border-color: color-mix(in srgb, var(--danger) var(--ring), transparent); }
 .ev.is-overdue .ev__check { --edge-color: var(--danger); }
-/* Border beam of an overdue tile: 24 pieces of one rounded outline over border and red outline (2px wide, radius of
+/* Border beam of an overdue tile: 24 pieces of one rounded outline over its red border (2px wide, radius of
    the tile minus 1px). Each piece is 1.5 % of the outline, a step behind the one before and fainter (linear fade),
    so that the light has a long tail that bends around the corners; all move at a constant speed, one lap in 4s. */
 .ev__beam { position: absolute; top: -1px; left: -1px; width: calc(100% + 2px); height: calc(100% + 2px); overflow: visible; pointer-events: none;
@@ -424,23 +432,24 @@ body.is-sorting .backlog__title { outline: 1px dashed var(--edge); outline-offse
   --bar-inset: 15px; position: absolute; pointer-events: auto; display: flex; align-items: center; gap: 8px; overflow: hidden; white-space: nowrap;
   left: calc(var(--col) * 100% / var(--days, 7) + var(--bar-inset)); width: calc(var(--span) * 100% / var(--days, 7) - 2 * var(--bar-inset));
   top: calc(var(--hdr) + var(--lane) * var(--barh)); height: calc(var(--barh) - 4px); padding: 0 12px; border-radius: 11px;
-  font-weight: 700; font-size: 12px; color: #fff; text-align: left;
+  font-weight: 700; font-size: 12px; color: var(--text); text-align: left;
   background: linear-gradient(90deg, color-mix(in srgb, var(--accent) var(--ring), transparent), color-mix(in srgb, var(--accent-2) var(--glow), transparent));
-  border: 1px solid color-mix(in srgb, var(--accent) var(--ring), transparent); backdrop-filter: blur(10px); transition: filter .15s, transform .15s;
+  border: 1px solid color-mix(in srgb, var(--accent) var(--ring), transparent); backdrop-filter: blur(10px); transition: box-shadow .15s, transform .15s;
 }
 .bar.has-tag {
-  background: linear-gradient(90deg, hsl(var(--h) var(--tag-s) 58% / .55), hsl(calc(var(--h) + 40) var(--tag-s) 58% / .35));
+  /* The tag hue at a fixed perceptual lightness, so that the title keeps its contrast for every hue. */
+  background: linear-gradient(90deg, oklch(from hsl(var(--h) var(--tag-s) 58%) .5 c h / .55), oklch(from hsl(calc(var(--h) + 40) var(--tag-s) 58%) .5 c h / .35));
   border-color: hsl(var(--h) var(--tag-s) 75% / .4);
 }
 .bar { touch-action: none; cursor: grab; }
 .bar.is-dragging { cursor: grabbing; opacity: var(--o-dim); }
 .day.is-drop-target::before, .mcell.is-drop-target { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) var(--strong), transparent); }
-.bar:hover { filter: brightness(1.15); transform: translateY(-1px); }
+.bar:hover { box-shadow: inset 0 0 0 100px var(--glass-2); transform: translateY(-1px); }
 .bar.cont-l { border-top-left-radius: 3px; border-bottom-left-radius: 3px; }
 .bar.cont-r { border-top-right-radius: 3px; border-bottom-right-radius: 3px; }
-.bar.is-past { opacity: var(--o-past); filter: saturate(.6); }
+.bar.is-past { opacity: var(--o-dim); }
 .bar__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.bar__range { flex: none; font-weight: 600; font-size: 11px; color: rgba(255,255,255,.95); }
+.bar__range { flex: none; font-weight: 600; font-size: 11px; color: color-mix(in srgb, var(--text) 95%, transparent); }
 
 /* ---------- Month ---------- */
 .month { --mhdr: 32px; --mbarh: 22px; --mevh: 22px; --kww: 20px; margin-right: -4px; flex: 1; min-height: 0; display: flex; flex-direction: column; }
@@ -449,7 +458,7 @@ body.is-sorting .backlog__title { outline: 1px dashed var(--edge); outline-offse
 .mhead { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
 .mhead span { padding: 0 14px 10px; font-size: 12px; font-weight: 700; color: var(--muted); }
 .mbody { flex: 1; min-height: 0; display: grid; grid-template-rows: repeat(var(--rows), minmax(0, 1fr)); gap: 8px; }
-.mweek__kw { align-self: start; justify-self: center; margin-top: 8px; padding: 2px 0; width: 19px; text-align: center; border-radius: 7px; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--faint); }
+.mweek__kw { align-self: start; justify-self: center; margin-top: 8px; padding: 2px 0; width: 20px; text-align: center; border-radius: 7px; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--faint); }
 .mweek.is-current .mweek__kw { color: color-mix(in srgb, var(--accent) var(--light), #fff); background: color-mix(in srgb, var(--accent) var(--hover), transparent); }
 .mrow { --hdr: var(--mhdr); --barh: var(--mbarh); position: relative; min-height: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
 .mrow .bar { --bar-inset: 11px; height: calc(var(--mbarh) - 4px); border-radius: 7px; font-size: 11px; padding: 0 8px; }
@@ -463,16 +472,20 @@ body.is-sorting .backlog__title { outline: 1px dashed var(--edge); outline-offse
 .mcell__head { flex: none; height: var(--mhdr); display: flex; align-items: center; gap: 6px; padding: 0 6px; }
 .mcell__num { font-weight: 800; font-size: 14px; }
 .mcell.is-past .mcell__num { color: var(--muted); }
+/* Days outside the month are dimmed once, as a whole: their entries keep full opacity inside, their date is --text. */
+.mcell.is-other .ev, .mcell.is-other.is-past .ev:not(.is-overdue) { opacity: 1; }
+.mcell.is-other .mcell__num { color: var(--text); }
 .mcell__spacer { flex: none; height: calc(var(--lanes, 0) * var(--mbarh)); }
 .mcell__list { flex: none; min-height: 12px; display: flex; flex-direction: column; gap: 4px; padding: 0; overflow: visible; }
 .mcell .ev { height: var(--mevh); padding: 0 8px; border-radius: 8px; font-size: 11.5px; gap: 6px; align-items: center; }
-.mcell .ev__check { width: 12px; height: 12px; margin-top: 0; border-radius: 4px; }
+.mcell .ev__check { display: block; width: 12px; height: 12px; margin-top: 0; border-radius: 4px; }
+.mcell .ev__check .ui-icon { margin: -2px; }
 .mcell .ev__line { flex-wrap: nowrap; }
 /* Single-line tiles center the text on its capitals: the line box is trimmed to cap height and baseline, so the font's
    uneven ascent and descent no longer shift it, at any pixel density. Equal padding keeps room for descenders and
    accents, which the title's overflow would otherwise clip. */
 .mcell :is(.ev__title, .ev__time) { text-box: trim-both cap alphabetic; padding-block: 4px; }
-.mcell .ev__time { width: auto; order: 0; }
+.mcell .ev__time { width: auto; order: 0; max-height: none; }
 .mcell { container-type: inline-size; }
 /* Narrow cells (portrait) keep the title readable. */
 @container (max-width: 150px) { .mcell .ev__time, .mcell .ev__repeat { display: none; } }
@@ -507,9 +520,6 @@ body.is-sorting .backlog__title { outline: 1px dashed var(--edge); outline-offse
   .hdr { gap: 8px; }
   .hdr__right { gap: 8px; }
   .hdr__title { font-size: 20px; }
-  .seg { --seg-w: 44px; }
-  .seg button { padding: 0 12px; }
-  .seg button span { display: none; }
 
   .wk { --headw: 150px; margin: 0; grid-template-columns: minmax(0, 1fr); grid-template-rows: repeat(7, minmax(0, 1fr)); }
   .day { flex-direction: row; padding: 4px 0; }
@@ -528,7 +538,7 @@ body.is-sorting .backlog__title { outline: 1px dashed var(--edge); outline-offse
   .day .day__list .ev__check { margin-top: 0; }
   .day .day__list .ev__line { flex-wrap: nowrap; }
   .day .day__list :is(.ev__title, .ev__time) { text-box: trim-both cap alphabetic; padding-block: 4px; }
-  .day .day__list .ev__time { width: auto; order: 0; }
+  .day .day__list .ev__time { width: auto; order: 0; max-height: none; }
   .wk { --barw: 30px; }
   .day__spacer { height: auto; width: calc(var(--lanes, 0) * var(--barw)); }
   /* Bars start and end where the entries do: card inset 4px + list padding 14px. */
@@ -539,7 +549,7 @@ body.is-sorting .backlog__title { outline: 1px dashed var(--edge); outline-offse
     writing-mode: vertical-rl; transform: rotate(180deg); padding: 12px 0; justify-content: flex-start;
     background: linear-gradient(0deg, color-mix(in srgb, var(--accent) var(--ring), transparent), color-mix(in srgb, var(--accent-2) var(--glow), transparent));
   }
-  .wk .bar.has-tag { background: linear-gradient(0deg, hsl(var(--h) var(--tag-s) 58% / .55), hsl(calc(var(--h) + 40) var(--tag-s) 58% / .35)); }
+  .wk .bar.has-tag { background: linear-gradient(0deg, oklch(from hsl(var(--h) var(--tag-s) 58%) .5 c h / .55), oklch(from hsl(calc(var(--h) + 40) var(--tag-s) 58%) .5 c h / .35)); }
   .wk .bar.cont-l { border-radius: 11px 11px 3px 3px; }
   .wk .bar.cont-r { border-radius: 3px 3px 11px 11px; }
   /* The bar is turned by 180°, so lifting it means moving it along its own +y. */
@@ -582,13 +592,13 @@ body.is-sorting .backlog__title { outline: 1px dashed var(--edge); outline-offse
 /* The tokens stay on one line; when it is full, tokens drop their value and keep only their icon, tag first. */
 .dlg__toks { min-width: 0; display: flex; gap: 6px; align-items: center; }
 /* A set token shows its value; an unset one is only its icon. */
-.dlg__tok { --h: 0; display: inline-flex; align-items: center; gap: 6px; height: 32px; max-width: 220px; padding: 0 10px; border-radius: 10px; font-size: 13px; font-weight: 700; white-space: nowrap; color: var(--muted); background: var(--item); transition: background .15s, color .15s; }
+.dlg__tok { --h: 0; display: inline-flex; align-items: center; gap: 6px; height: 32px; max-width: 220px; padding: 0 10px; border-radius: 10px; font-size: 13px; font-weight: 700; white-space: nowrap; color: var(--text); background: var(--item); transition: background .15s, color .15s; }
 .dlg__tok { flex: none; }
 .dlg__tok.is-compact { width: 32px; padding: 0; justify-content: center; }
 .dlg__tok.is-compact span { display: none; }
 .dlg__tok span { overflow: hidden; text-overflow: ellipsis; }
 .dlg__tok:hover { color: var(--text); background: var(--glass-2); }
-.dlg__tok.is-off { flex: none; width: 32px; padding: 0; justify-content: center; color: var(--faint); background: none; }
+.dlg__tok.is-off { flex: none; width: 32px; padding: 0; justify-content: center; color: var(--muted); background: none; }
 .dlg__tok.is-off:hover { color: var(--text); background: var(--glass-2); }
 /* Location and note show no value; a set one is only its icon, lit in the accent on the token background. */
 .dlg__tok.is-set { color: var(--accent); background: var(--item); }
@@ -642,10 +652,10 @@ body.is-sorting .backlog__title { outline: 1px dashed var(--edge); outline-offse
   background: color-mix(in srgb, var(--base) 40%, transparent); border: 1px solid var(--edge); }
 .dlg__wheels::before { content: ""; position: absolute; left: 6px; right: 6px; top: 72px; height: 36px; border-radius: 9px; pointer-events: none;
   background: color-mix(in srgb, var(--accent) var(--hover), transparent); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); }
-.dlg__wheels::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .85; background: linear-gradient(var(--panel), transparent 30%, transparent 70%, var(--panel)); }
+.dlg__wheels::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(color-mix(in srgb, var(--panel) 88%, transparent), transparent 30%, transparent 70%, color-mix(in srgb, var(--panel) 88%, transparent)); }
 .dlg__wheel { height: 180px; overflow-y: scroll; scroll-snap-type: y mandatory; scrollbar-width: none; perspective: 400px; outline: none; cursor: grab; user-select: none; }
 .dlg__wheel::-webkit-scrollbar { display: none; }
-.dlg__wheel:focus-visible { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.dlg__wheel:focus-visible { background: color-mix(in srgb, var(--accent) var(--hover), transparent); }
 .dlg__wheelpad { height: 72px; }
 /* The rows snap; only their faces turn, since a turned row would move its snap position. */
 .dlg__wheel span { display: block; height: 36px; scroll-snap-align: center; color: var(--muted); transform-style: preserve-3d; }
@@ -662,17 +672,18 @@ body.is-sorting .backlog__title { outline: 1px dashed var(--edge); outline-offse
 .dlg__dow { height: 22px; display: grid; place-items: center; font-size: 11px; font-weight: 800; color: var(--faint); }
 .dlg__calday { height: 32px; border-radius: 9px; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--muted); }
 .dlg__calday:hover { color: var(--text); background: var(--glass-2); }
-.dlg__calday.is-other { color: var(--deco); }
+.dlg__calday.is-other { color: var(--faint); }
 .dlg__calday.is-today { color: var(--accent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) var(--strong), transparent); }
 .dlg__calday.in-range { border-radius: 0; color: var(--text); background: color-mix(in srgb, var(--accent) var(--active), transparent); }
 .dlg__calday.is-start, .dlg__calday.is-end { color: var(--on-accent); background: var(--accent); }
 .dlg__calday.is-start.in-range { border-radius: 9px 0 0 9px; }
 .dlg__calday.is-end.in-range { border-radius: 0 9px 9px 0; }
 .dlg__calday.is-start.is-end { border-radius: 9px; }
-.dlg__seg { display: flex; flex-wrap: wrap; gap: 4px; }
-.dlg__seg button { flex: 1; padding: 6px 8px; border-radius: 9px; font-size: 13px; font-weight: 700; color: var(--muted); background: var(--card); }
+/* Repeat options are pills like the date pills (DesignSystem.md#spacing); 0 6px keeps five of them in one row. */
+.dlg__seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.dlg__seg button { flex: 1; height: 30px; padding: 0 6px; border-radius: 999px; font-size: 13px; font-weight: 700; white-space: nowrap; color: var(--muted); background: var(--card); border: 1px solid var(--edge); }
 .dlg__seg button:hover { color: var(--text); background: var(--glass-2); }
-.dlg__seg button[aria-pressed="true"] { color: var(--on-accent); background: var(--accent); }
+.dlg__seg button[aria-pressed="true"] { color: var(--text); background: color-mix(in srgb, var(--accent) var(--active), transparent); border-color: color-mix(in srgb, var(--accent) var(--ring), transparent); }
 .dlg__weekdays { display: flex; flex-wrap: wrap; gap: 6px; }
 .dlg__weekday { min-width: 36px; height: 30px; padding: 0 8px; border-radius: 999px; font-size: 12px; font-weight: 800; color: var(--muted); background: var(--card); border: 1px solid var(--edge); }
 .dlg__weekday:hover { color: var(--text); }
@@ -681,8 +692,8 @@ body.is-sorting .backlog__title { outline: 1px dashed var(--edge); outline-offse
 .dlg__num { width: 3.5ch; padding: 2px 4px; text-align: center; font-weight: 700; color: var(--text); border-radius: 7px; background: var(--item); border: 0; outline: none; font-variant-numeric: tabular-nums; }
 .dlg__hint { font-size: 12px; color: var(--faint); }
 .dlg__tags { display: flex; flex-wrap: wrap; gap: 6px; }
-.dlg__tagchip { --h: 0; display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 11px; border-radius: 999px; font-size: 13px; font-weight: 700; color: var(--muted); background: var(--card); border: 1px solid var(--edge); }
-.dlg__tagchip.has-tag { padding-left: 9px; }
+.dlg__tagchip { --h: 0; display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 999px; font-size: 13px; font-weight: 700; color: var(--muted); background: var(--card); border: 1px solid var(--edge); }
+.dlg__tagchip.has-tag { padding-left: 10px; }
 .dlg__tagchip .dlg__tagicon { width: 14px; height: 14px; color: hsl(var(--h) var(--tag-s) 75%); }
 .dlg__tagchip:hover { color: var(--text); background: var(--glass-2); }
 .dlg__tagchip[aria-checked="true"] { color: var(--text); background: var(--glass-2); border-color: color-mix(in srgb, var(--text) 30%, transparent); }
@@ -722,13 +733,13 @@ body.is-sorting .backlog__title { outline: 1px dashed var(--edge); outline-offse
 .notification-keys { display: inline-flex; align-items: baseline; gap: 2px; font: inherit; color: var(--faint); white-space: nowrap; }
 .notification-keys kbd { min-width: 15px; text-align: center; }
 .notification-buttons { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; margin-top: 10px; }
-.notification-button { display: inline-flex; align-items: center; white-space: nowrap; padding: 6px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 700; background: var(--glass-2); color: var(--muted); transition: background .15s, filter .15s; }
+.notification-button { display: inline-flex; align-items: center; white-space: nowrap; padding: 6px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 700; background: var(--glass-2); color: var(--muted); transition: background .15s, box-shadow .15s; }
 .notification-button:hover { color: var(--text); background: color-mix(in srgb, var(--accent) var(--hover), var(--glass-2)); }
 .notification-button-primary { background: linear-gradient(90deg, var(--accent), var(--accent-2)); color: var(--on-accent); }
-.notification-button-primary:hover { color: var(--on-accent); background: linear-gradient(90deg, var(--accent), var(--accent-2)); filter: brightness(1.08); }
+.notification-button-primary:hover { color: var(--on-accent); background: linear-gradient(90deg, var(--accent), var(--accent-2)); box-shadow: inset 0 0 0 100px var(--glass-2); }
 /* A button that overrides something (Overwrite): the yellow of unsaved changes, like the save control. */
 .notification-button-warning { color: var(--warn); background: color-mix(in srgb, var(--warn) var(--hover), transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warn) var(--ring), transparent); }
-.notification-button-warning:hover { color: #fff3c4; background: color-mix(in srgb, var(--warn) var(--active), transparent); }
+.notification-button-warning:hover { color: color-mix(in srgb, var(--warn) var(--light), #fff); background: color-mix(in srgb, var(--warn) var(--active), transparent); }
 /* A safe choice (Reload): the green of the saved state. */
 .notification-button-success { color: var(--ok); background: color-mix(in srgb, var(--ok) var(--hover), transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ok) var(--ring), transparent); }
 .notification-button-success:hover { color: var(--ok); background: color-mix(in srgb, var(--ok) var(--active), transparent); }
@@ -750,10 +761,11 @@ body.is-sorting .backlog__title { outline: 1px dashed var(--edge); outline-offse
 .mrow .bar__tag { width: 12px; height: 12px; }
 
 /* ---------- Anniversary, birthday and holiday badges: heart in --heart, gift in --warm, calendar star in --accent-2 ---------- */
-.badge--occasion { --tone: var(--warm); flex: none; background: color-mix(in srgb, var(--tone) var(--active), transparent); color: var(--tone); }
+.badge--occasion { --tone: var(--warm); flex: none; background: color-mix(in srgb, var(--tone) var(--active), transparent); color: color-mix(in srgb, var(--tone) var(--light), #fff); }
+.badge--occasion .ui-icon { color: var(--tone); }
 .badge--anniversary { --tone: var(--heart); }
-button.badge { cursor: pointer; transition: filter .15s; }
-button.badge:hover { filter: brightness(1.25); }
+button.badge { cursor: pointer; transition: box-shadow .15s; }
+button.badge:hover { box-shadow: inset 0 0 0 100px var(--glass-2); }
 .badge .ui-icon { width: 12px; height: 12px; }
 .badge__age { color: color-mix(in srgb, var(--tone) var(--light), #fff); font-weight: 600; }
 /* The list behind a day badge, in the color of its kind (docs/ui/Views.md#day-header). */
@@ -765,7 +777,7 @@ button.badge:hover { filter: brightness(1.25); }
   background: linear-gradient(135deg, color-mix(in srgb, var(--tone) var(--active), transparent), transparent 70%); }
 .occ__icon { flex: none; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 10px; color: var(--tone); background: color-mix(in srgb, var(--tone) var(--active), transparent); }
 .occ__icon .ui-icon { width: 16px; height: 16px; }
-.occ__heading { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.occ__heading { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .occ__title { font-weight: 800; color: var(--text); }
 .occ__date { font-size: 11.5px; font-weight: 600; color: var(--muted); }
 .occ__list { margin: 0; padding: 6px; list-style: none; display: flex; flex-direction: column; gap: 2px; }
@@ -847,6 +859,8 @@ button.occ__row:hover, button.occ__row:focus-visible { background: color-mix(in 
 :is(.keys, .help__general) kbd { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 6px; font-size: 11.5px; font-weight: 700; color: var(--text);
   background: color-mix(in srgb, var(--base) 40%, transparent); border: 1px solid var(--edge); border-bottom-width: 2px; }
 .keys__arrow { padding: 0; }
+/* “2×” before the click icon of a double-click, in the join cell next to it. */
+.keys__times { font-size: 11.5px; font-weight: 700; white-space: nowrap; color: var(--muted); }
 .keys__arrow .ui-icon { width: 12px; height: 12px; }
 .help__general { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 22px; margin: 0; padding: 0 6px 2px; }
 .help__hint > span:last-child { margin-left: 4px; font-size: 13px; color: var(--muted); }
@@ -863,7 +877,7 @@ button.occ__row:hover, button.occ__row:focus-visible { background: color-mix(in 
 }
 /* Today: the accent light of today's day card, from the top. */
 .focus__card.is-today { border-color: color-mix(in srgb, var(--accent) var(--ring), transparent); background-image: linear-gradient(180deg, color-mix(in srgb, var(--accent) var(--active), transparent), transparent 240px); }
-.focus__head { flex: none; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 16px; padding: 20px 18px 16px 26px; border-bottom: 1px solid var(--edge); }
+.focus__head { flex: none; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 16px; padding: 20px 16px 16px 24px; border-bottom: 1px solid var(--edge); }
 .focus__heading { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .focus__dow { font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .focus__date { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; }
@@ -884,12 +898,12 @@ button.occ__row:hover, button.occ__row:focus-visible { background: color-mix(in 
 /* The check box sits centered on the first line of the title (its line box at the title's font size), the repeat icon
    centered on the whole tile, also when location and notes make it tall. */
 .focus__list .ev { align-items: flex-start; padding: 10px 14px; }
-.focus__list .ev__check { font-size: 14px; margin-top: calc((1lh - 17px) / 2); }
+.focus__list .ev__check { font-size: 14px; margin-top: calc((1lh - 18px) / 2); }
 .focus__list .ev__title { white-space: normal; overflow: visible; overflow-wrap: anywhere; font-size: 14px; }
 .focus__list .ev__repeat { align-self: center; }
 .focus__empty { margin: auto; color: var(--faint); }
 /* Location and note lines of an entry (shown only here). */
-.ev__details { display: flex; flex-direction: column; gap: 5px; margin-top: 7px; font-size: 12.5px; line-height: 1.45; font-weight: 500; color: var(--muted); }
+.ev__details { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; font-size: 12.5px; line-height: 1.45; font-weight: 500; color: var(--muted); }
 .ev__location { display: flex; align-items: flex-start; gap: 6px; }
 .ev__location .ui-icon { width: 14px; height: 14px; margin-top: 2px; color: var(--faint); }
 .ev__notes { display: flex; flex-direction: column; gap: 2px; }
@@ -910,7 +924,7 @@ button.occ__row:hover, button.occ__row:focus-visible { background: color-mix(in 
 .cx-sort { display: flex; padding: 2px; border-radius: 10px; background: color-mix(in srgb, var(--base) 40%, transparent); }
 .cx-sort button { white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--muted); }
 .cx-sort button .ui-icon { width: 14px; height: 14px; }
-.cx-sort button[aria-pressed="true"] { color: #fff; background: var(--glass-2); }
+.cx-sort button[aria-pressed="true"] { color: var(--text); background: var(--glass-2); }
 .cx-tools { display: flex; gap: 2px; }
 .cx-import { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px; border-radius: 9px; font-size: 12px; font-weight: 700; color: var(--muted); cursor: pointer; }
 .cx-import .ui-icon { width: 14px; height: 14px; }
@@ -919,18 +933,19 @@ button.occ__row:hover, button.occ__row:focus-visible { background: color-mix(in 
 .cx-sec-h { padding: 12px 8px 4px; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
 .cx-row { width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 13px; text-align: left; transition: background .15s; }
 .cx-row:hover { background: var(--item); }
+.cx-row.is-sel small { color: var(--text); }
 .cx-row.is-sel { background: color-mix(in srgb, var(--accent) var(--active), transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) var(--ring), transparent); }
 .cx-row__main { display: flex; flex-direction: column; min-width: 0; flex: 1; }
 .cx-row__main b { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cx-row__main small { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* Next up above the list: tiles tinted like entries, gift color for birthdays, heart color for anniversaries, filled on the day itself. */
-.cx-next { display: flex; flex-direction: column; gap: 5px; padding-bottom: 10px; border-bottom: 1px solid var(--edge); }
+.cx-next { display: flex; flex-direction: column; gap: 6px; padding-bottom: 10px; border-bottom: 1px solid var(--edge); }
 .cx-next .cx-sec-h { padding-top: 0; }
-.cx-next__tile { --tone: var(--warm); width: 100%; display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 12px; text-align: left; transition: filter .15s;
+.cx-next__tile { --tone: var(--warm); width: 100%; display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 12px; text-align: left; transition: box-shadow .15s;
   background: linear-gradient(135deg, color-mix(in srgb, var(--tone) calc(var(--tint-a) * 100%), transparent), color-mix(in srgb, var(--tone) calc(var(--tint-b) * 100%), transparent));
   border: 1px solid color-mix(in srgb, var(--tone) calc(var(--tint-edge) * 100%), transparent); }
 .cx-next__tile--anniversary { --tone: var(--heart); }
-.cx-next__tile:hover { filter: brightness(1.15); }
+.cx-next__tile:hover { box-shadow: inset 0 0 0 100px var(--glass-2); }
 .cx-next__tile.is-today { color: var(--on-accent); background: var(--tone); border-color: var(--tone); }
 .cx-next__day { flex: none; width: 76px; font-size: 12px; font-weight: 800; white-space: nowrap; }
 .cx-next__name { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -939,7 +954,7 @@ button.occ__row:hover, button.occ__row:focus-visible { background: color-mix(in 
 .cx-row__soon { display: inline-flex; align-items: center; gap: 4px; color: var(--warm); font-weight: 600; }
 .cx-empty { padding: 22px 8px; color: var(--faint); text-align: center; }
 .cx-count { font-size: 11px; color: var(--faint); padding: 0 4px; }
-.cx-av { flex: none; display: grid; place-items: center; font-weight: 800; color: #fff; background: linear-gradient(135deg, hsl(var(--h) var(--tag-s) 46%), hsl(calc(var(--h) + 50) var(--tag-s) 36%)); box-shadow: inset 0 1px 0 rgba(255,255,255,.25); }
+.cx-av { flex: none; display: grid; place-items: center; font-weight: 800; color: var(--text); background: linear-gradient(135deg, oklch(from hsl(var(--h) var(--tag-s) 46%) .5 c h), oklch(from hsl(calc(var(--h) + 50) var(--tag-s) 36%) .42 c h)); box-shadow: inset 0 1px 0 rgba(255,255,255,.25); }
 .cx-av--sm { width: 36px; height: 36px; border-radius: 12px; font-size: 13px; }
 .cx-av--lg { width: 88px; height: 88px; border-radius: 28px; font-size: 30px; }
 .cx-detail { flex: 1; min-height: 0; overflow: auto; padding: 22px; border-radius: 20px; background: var(--card); border: 1px solid var(--card-edge); --pad: 22px; }
@@ -998,7 +1013,7 @@ button.cx-go:disabled { color: var(--deco); }
 .notefield { position: relative; }
 .notefield > textarea { position: relative; display: block; width: 100%; }
 .notefield > .notefield__mirror { position: absolute; inset: 0; width: auto; height: auto; min-height: 0; overflow: hidden; pointer-events: none; white-space: pre-wrap; overflow-wrap: break-word; color: transparent; }
-.notefield__link { border-radius: 4px; background: color-mix(in srgb, var(--accent) 14%, transparent); text-decoration: underline 1px var(--accent); text-underline-offset: 3px; }
+.notefield__link { border-radius: 4px; background: color-mix(in srgb, var(--accent) var(--hover), transparent); text-decoration: underline 1px var(--accent); text-underline-offset: 3px; }
 /* Entry dialog: while the note is not edited, a view over the field shows it as the focus card does (ui/dialog.js). */
 .notefield > .notefield__view { position: absolute; inset: 0; z-index: 1; overflow-y: auto; white-space: pre-wrap; overflow-wrap: break-word; cursor: text; }
 .notefield:focus-within > .notefield__view, .notefield > .notefield__view:empty { display: none; }

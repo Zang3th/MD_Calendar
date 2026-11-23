@@ -57,6 +57,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     days.forEach((key, index) => /** @type {HTMLElement} */ (sections.get(key)).style.setProperty("--lanes", String(layout.dayLanes[index])));
     bars.innerHTML = layout.segments.map(segment => app.tiles.bar(segment, today, true)).join("");
     for (const key of days) fill(/** @type {HTMLElement} */ (sections.get(key)), calendar, key, today);
+    fitBadges(days);
     board.hidden = false;
     return rebuilt;
   }
@@ -67,7 +68,33 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       const element = sections.get(key);
       if (element) fill(element, calendar, key, today);
     }
+    fitBadges(keys.filter(key => sections.has(key)));
   }
+
+  /**
+   * Written-out badges show names only while they fit (docs/ui/Views.md#day-header): a day whose badge would cut a name
+   * shows the compact badges instead. All days are read first, then the cut ones are written.
+   * @param {string[]} keys
+   */
+  function fitBadges(keys) {
+    const cut = keys.filter(key => Array.from(/** @type {HTMLElement} */ (sections.get(key)).querySelectorAll(".day__badges .badge__name"))
+      .some(name => name.scrollWidth > name.clientWidth));
+    for (const key of cut) /** @type {HTMLElement} */ (/** @type {HTMLElement} */ (sections.get(key)).querySelector(".day__badges")).innerHTML = app.tiles.badges(key, 3, true);
+  }
+
+  // A new width can make written-out badges fit or cut them: write them again and check, at most once per frame.
+  let resizeFrame = 0;
+  new ResizeObserver(() => {
+    if (resizeFrame || board.hidden) return;
+    resizeFrame = requestAnimationFrame(() => {
+      resizeFrame = 0;
+      for (const key of shownDays) {
+        const element = sections.get(key);
+        if (element) /** @type {HTMLElement} */ (element.querySelector(".day__badges")).innerHTML = app.tiles.badges(key, portrait.matches ? 5 : 2);
+      }
+      fitBadges(shownDays.filter(key => sections.has(key)));
+    });
+  }).observe(board);
 
   function lists() {
     return /** @type {HTMLElement[]} */ (Array.from(board.querySelectorAll(".day__list")));

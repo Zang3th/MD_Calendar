@@ -34,7 +34,7 @@ The visual language of MD_Calendar. The values below are authoritative.
 |---|---|---|
 | `--text` | `#f1eefc` | Primary text |
 | `--muted` | `rgba(241,238,252,.70)` | Secondary text |
-| `--faint` | `rgba(241,238,252,.55)` | Tertiary text, placeholders |
+| `--faint` | `rgba(241,238,252,.66)` | Tertiary text, placeholders |
 | `--deco` | `rgba(241,238,252,.30)` | Decorative strokes only, never text |
 | `--glass` | `rgba(255,255,255,.08)` | Glass panels |
 | `--glass-2` | `rgba(255,255,255,.11)` | Hover and pressed surfaces |
@@ -78,7 +78,7 @@ Surfaces stack in a fixed order, and every nested surface is one step **lighter*
 
 Search fields and segmented controls are the only exception: they are recessed wells, slightly darker than their surroundings. The same kind of element always uses the same level, in every view.
 
-Tag colors come from the configuration. The UI derives tints from the tag hue with `--tag-s`, `--tag-l` and the tint tokens.
+Tag colors come from the configuration. The UI derives tints from the tag hue with `--tag-s`, `--tag-l` and the tint tokens. Colored surfaces behind light text, the tag-tinted bars and the contact avatars, take the hue at a fixed perceptual lightness (OKLCH lightness .5, the avatar's second stop .42), so that their text reaches its contrast for every hue.
 
 ### Transparency
 
@@ -87,13 +87,13 @@ Every alpha value belongs to one group and uses one of its steps; there are no v
 | Group | Steps |
 |---|---|
 | White surfaces | `.05` cards (`--card`), `.08` glass and items (`--glass`, `--item`), `.11` hover (`--glass-2`); edges `.09` (`--card-edge`, `--item-edge`) and `.12` (`--edge`) |
-| Text | `.70` `--muted`, `.55` `--faint`, `.30` `--deco` |
+| Text | `.70` `--muted`, `.66` `--faint`, `.30` `--deco` |
 | Shadows (black) | `.35` header pill and main panel, `.5` popovers, menus, tooltips, notifications and the enlarged month cell, `.6` dialog |
 | Color tints (accent, accent-2, status colors, `--tone`; mixed with transparent) | `--hover` 12 % hover and subtle fills, `--active` 24 % selected, pressed and badge fills, `--glow` 30 % glows, halos and nested fills, `--ring` 45 % borders, focus and inset rings, `--strong` 70 % today outline, selection, lasso, drop target, pulse |
 | Lightened accent (mixed with white, for text) | `--light` 60 % |
 | Floating panels (`--panel` mixed with transparent) | 60 % backlog panel, 88 % dialog, popovers, search bar, notifications, occasion list |
 | Recessed wells (`--base` mixed with transparent) | 40 % segmented controls, search fields, inputs, key caps, dialog backdrop |
-| Opacity of whole elements | `--o-disabled` .35 disabled controls, drag placeholder, blocked startup; `--o-past` .55 done and past entries, ended bars, days outside the month, past holiday rows; `--o-dim` .7 past badges, dragged bar; `--o-hover` .95 hovered past entries |
+| Opacity of whole elements | `--o-disabled` .35 disabled controls, drag placeholder, blocked startup; `--o-past` .55 done and past entries, days outside the month (as a whole, their entries are not dimmed again), past holiday rows; `--o-dim` .7 ended bars, past badges, dragged bar; `--o-hover` .95 hovered past entries |
 
 Kept apart, because they are not alpha steps of a surface: the background lights (`--g1`, `--g2`), the tag tints (`--tint-a`, `--tint-b`, `--tint-edge` on entries, `.55`/`.35` with a `.4` border on bars), the past card fill (`--card` at 45 %), and three strokes on colored ground: the check box frame `.45`, the avatar highlight `.25` and the date range on bars `.95`.
 
@@ -127,7 +127,7 @@ Past days are dimmed:
 
 - the day card fill is reduced; the weekday uses `--faint`, the date `--muted`,
 - entries on past days drop to `--o-past` and return to `--o-hover` on hover,
-- multi-day bars that have ended drop to `--o-past` and lose some saturation,
+- multi-day bars that have ended drop to `--o-dim`,
 - birthday and holiday badges on past days drop to `--o-dim`.
 
 The values keep past content at the de-emphasized contrast minimum (see [Contrast](#contrast)).
@@ -142,17 +142,16 @@ Overdue entries are excluded and keep full visibility.
 
 ## Spacing
 
-Scale: 2, 4, 6, 8, 10, 12, 14, 16, 22 px. Every padding, margin and gap uses a value of the scale. The only exceptions are derived values and optical corrections:
+Scale: 2, 4, 6, 8, 10, 12, 14, 16, 20, 22, 24 px. Every padding, margin and gap uses a value of the scale. The only exceptions are derived values and optical corrections:
 
 - Day cards are laid out with 5px on each side, half of the 10px gap between cards, so that multi-day bars can use equal columns. A bar starts and ends where the entries of its days do: 15px inside the column in the week (5px + the list padding of 10px), 11px in the month (cell margin 4px, border 1px, padding 6px), and 18px from the top and bottom of the day rows in the portrait week (card inset 4px + list padding 14px). On hover a bar lifts by 1px like an entry.
-- The check box of an entry sits 1px lower to align with the first text line.
 - Single-line tiles (month, portrait week) center their text on its capitals: title and time trim their line box to cap height and baseline (`text-box: trim-both cap alphabetic`) with 4px padding above and below, so the font's uneven ascent and descent cannot shift it at any pixel density.
 - Positions computed from other values: the backlog panel starts below the header pill (14px + header height + 14px), the main panel makes room for it (panel width + 14px), and notifications sit 28px from the bottom and right window edges (twice the page spacing).
 
 | Area | Spacing |
 |---|---|
 | Page | 14px around the header pill, main panel and backlog panel; 14px between them |
-| Header pill | padding 8px 12px; 14px between the three groups; 10px between title and **+**, 4px after **+**, no gap between undo, redo and save; 4px between the right zone buttons; 6px between icon and label in the view switcher; save control 100px wide in every state, padding 0 8px, 5px between icon, label and counter |
+| Header pill | padding 8px 12px; 14px between the three groups; 10px between title and **+**, 4px after **+**, no gap between undo and redo, 6px before the save control; 4px between the right zone buttons; 6px between icon and label in the view switcher; save control 100px wide in every state, padding 0 8px, 6px between icon, label and counter (36px without padding, icon only, in portrait and up to 1300px window width) |
 | Main panel | padding 12px, the sides of the header pill, so that cards start below the logo and end below Options; the week cancels the 5px card spacing and the month the 4px cell margin at the outer edges, the month's ISO week column stays left of the cells |
 | Week | 10px between day cards; day header padding 0 14px 0 16px, 4px between weekday and date, 4px between badges; day list padding 4px 10px 10px |
 | Entries in a day | 6px between entries; entry padding 8px 10px; 8px between check box and text |
@@ -162,7 +161,7 @@ Scale: 2, 4, 6, 8, 10, 12, 14, 16, 22 px. Every padding, margin and gap uses a v
 | Entry dialog | centered in the upper 60 % of the window (20 % above the center); padding 20px; duplicate, delete and close as 34px icon buttons 4px apart above the title at the right, reaching 8px into the padding, duplicate in `--accent`, delete in `--danger`; 12px between title and tokens; Apply 32px high, padding 0 16px, 12px after the tokens at the bottom right; title field padding 10px 16px, radius 16px, 22px/800; tokens 32px high, padding 0 10px, radius 10px, 6px apart, an unset token 32px square; popovers 360px wide, at most 372px high (the date popover), padding 10px, 10px gaps, radius 16px, 8px below the tokens, horizontally centered in the dialog; pills 30px high, fully rounded, 6px apart, sharing the width; time wheels 180px high in a recessed well (radius 12px), columns 1fr 1fr 18px 1fr 1fr, rows 36px at 18px/700 tabular, a middle band 36px high in `--accent` at `--hover` with a 30 % accent edge, the panel color fading over the top and bottom 30 %; note popover 372px high without padding, the note filling it with lines of 24px, padding 17px 16px so that exactly 14 lines fit before it scrolls, no frame of its own, not resizable; series delete menu as the context menu, radius 16px, 8px below the trash button, right-aligned with it |
 | Menus and search bar | menus padding 6px; items 8px 10px; 10px between icon and label. The search bar is two separate glass surfaces without an enclosing panel: the field (44px high, padding 0 14px, radius 16px) 28px above the window edge and, 8px above it, the hit list (padding 6px, radius 16px), each with one 1px `--edge` frame |
 | Start card | width 460px, padding 22px 24px 24px; heading (18px, 800) to list 16px, list to buttons 20px; buttons 40px high, gap 10px, “Open folder” primary, “New calendar” on `--glass-2`; rows padding 11px 12px, gap 6px; name 13.5px 700 with the detail line 2px below (11.5px, 600, `--faint`); day 12px 700 `--muted` above the time 11.5px 600 `--faint`, right-aligned |
-| Contacts | 14px between list and detail; list padding 12px; detail padding 22px; “Next up” tiles padding 6px 10px, 5px apart, radius 12px, 10px above a divider to the sort |
+| Contacts | 14px between list and detail; list padding 12px; detail padding 22px; “Next up” tiles padding 6px 10px, 6px apart, radius 12px, 10px above a divider to the sort |
 | Chips and badges | chips 6px 12px; badges 2px 8px (month 2px 6px, portrait week 4px 8px), at least 20px high, so that icon-only badges match badges with text; their 12px icon sits centered; “+X” 0 6px; 6px between chips |
 | Tooltip | padding 6px 10px |
 | “+” menu | as in “Menus”, 8px below **+**, left-aligned to it; a file type as code chip (11.5px monospace, 700, `--accent` on `--hover` accent with a `--ring` accent border, radius 5px, padding 1px 5px) |
@@ -208,14 +207,14 @@ Line icons as inline SVG with a 2px stroke and round caps and joins. No emoji an
   - **16px**, the default: icon buttons (✕ included) and buttons, rows and fields with text of 13px and more.
   - **14px**: next to 11–12px text (chips, sort, “Import”, “Add”, dialog labels, contact hints), tag icons and chevrons in lists.
   - **12px**: dense places only, namely badges and, in the month, the repeat icon and tag icons.
-- The check mark of an entry is part of its check box, not a sized icon: it fills the whole box (17px, 12px in the month), so it stays centered and scales with the box. The box frame is therefore an inset 1.5px shadow, not a border.
+- The check box of an entry is 18px with the 16px check mark centered in it, 1px from each side, so that the mark keeps its strokes on whole pixels; the month's 12px box takes the small check mark (`icon-check-small`), drawn in the middle of the same 16px canvas, which overhangs the box by exactly 2px on each side, so that its 2px strokes also stay on whole pixels. The box frame is an inset 1.5px shadow, not a border. Both legs of the check mark run at exactly 45°, as in MD_Manager, which keeps their edges as even steps; its corners lie on the same pixel phase as there, and its outline is centered on the canvas (`M5 15L13 23L27 9`, slightly larger than MD_Manager's, whose outline sits half a pixel high).
 - An icon button is about twice as large as its icon (16px in 28–36px) and at least 24px in each direction.
-- Header exception: the nine buttons of the header pill (**+**, undo, redo, save and the five buttons on the right) are 36×36px with 18px icons, in landscape and portrait; the save control is 100px wide in every state, with its icon and label centered. The view switcher keeps 16px icons.
+- Header exception: the nine buttons of the header pill (**+**, undo, redo, save and the five buttons on the right) are 36×36px with 18px icons, in landscape and portrait; the save control is 100px wide in every state, with its icon and label centered (in portrait and up to 1300px window width 36px wide with its icon only). The view switcher keeps 16px icons. A 32-unit symbol would render with 2.25px strokes at 18px, so the header has its own symbols, `hdr-<name>` in the sprite and `res/header-icons/<name>.svg`, drawn on a 36×36 canvas: strokes of 4 units are exactly 2px, and straight strokes lie on even units, that is on whole pixels. Fine details use 3 units (1.5px). They exist for every header icon (plus, undo, redo, check, spinner, holiday, inbox, help, volume, muted, menu), including those taken over from MD_Manager.
 - Stroke and fill use `currentColor`; the button's state colors the icon.
 - Optical centering and pixel alignment are done with a `translate` group inside the symbol (for example `translate(.5 .5)` or `translate(-.625 0)`), never with CSS offsets.
 - Every symbol also exists as a standalone file `res/icons/<name>.svg` with identical geometry. A unit test checks that file and symbol match.
 - A toggle shows both of its icons in the markup; CSS shows one of them based on the button's `aria-pressed` state. The markup is never swapped.
-- `volume.svg` (speaker with two sound waves), `muted.svg` (speaker with an X) and `help.svg` (question mark) are copied from MD_Manager unchanged.
+- The header icons for sound (speaker with two sound waves, speaker with an X) and help (question mark) follow the drawings of MD_Manager, redrawn on the 36-unit canvas (see the header exception).
 - Tooltips are not used for now; every icon button names its action through `aria-label`. The tooltip system stays in place for tooltips that are added back one by one.
 
 ## Tag icons
@@ -252,7 +251,7 @@ The set, chosen by the user from three designs per tag:
 
 ## Motion
 
-- Short, interruptible, compositor-friendly transitions (transform, opacity).
+- Short, interruptible transitions without layout work: transform and opacity, and paint-only properties (colors, backgrounds, borders, shadows). Never `filter` and never layout properties (size, margin, position); a hover that brightens adds a `--glass-2` surface instead of a brightness filter. When the backlog panel opens, the main panel takes its new width at once while the panel slides in.
 - The view switcher indicator slides between options; panels slide in.
 - A new week or month slides in briefly from the side it comes from (navigation, mouse wheel, jump to today or to a search hit).
 - Jumping to today or to a search hit, and creating an item in the entry dialog, scrolls smoothly and highlights the target once: after the slide, its own frame lights up in one long pulse: the border turns full `--accent` with a 2px inner accent edge and an accent glow (18px at `--strong` and 44px at `--ring` around a day, month cell or bar; inside an entry, which sits in a scrolling list, 18px at `--strong`); it rises over the first 20 %, holds until 60 % and fades back to the target's own look, 1.3s in all after a 120ms pause. There is no extra ring and no scale, so nothing moves and text and icons stay sharp; reduced motion keeps it, as it only fades.

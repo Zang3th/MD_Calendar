@@ -153,6 +153,7 @@ Ab hier ersetzt MD_Calendar den Google-Kalender als Daily-Driver.
 - [x] ~Erneuter Klick auf den +-Button darf nichts bewirken~
 - [x] ~New-Dialog: Markieren darf die Sicht nicht schließen~
 - [x] ~Focus-View verbessern~
+- [x] ~CSS anpassen~
 
 ### Release
 
@@ -169,11 +170,6 @@ Ab hier ersetzt MD_Calendar den Google-Kalender als Daily-Driver.
 ### Statistiken und Analyse
 
 - [ ] Feature ausarbeiten
-
-### Portrait-View
-
-- [ ] Allgemein verbessern
-- [ ] Neue Funktionen nativ unterstützen
 
 ### Bugs und Verbesserungen
 

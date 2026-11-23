@@ -232,3 +232,15 @@ test("links in notes open in a new tab: by click in the focus card and the dialo
   await page.locator("#dialogNote").click({ position: { x: 40, y: 28 }, modifiers: ["Control"] });
   expect(await opened()).toEqual(["https://www.example.org", "https://www.example.org"]);
 });
+
+test("in a narrow day a time range that does not fit shows its start only, clear of the repeat icon", async ({ page, calendar }) => {
+  await calendar.openApp({ "Calendar.md": "# Calendar\n\n## Recurring\n\n### Gym\n#Start\n- 12.11.2026 07:00 - 08:00\n#Repeat\n- FREQ=WEEKLY\n" });
+  const time = page.locator(`${thursday} .ev--series .ev__time`);
+  await expect(time).toHaveText("07:00–08:00");
+  // The backlog panel narrows the days until the range no longer fits beside the repeat icon.
+  await page.keyboard.press("b");
+  await expect(page.locator("#backlog")).toBeVisible();
+  await expect.poll(() => time.evaluate(element => /** @type {HTMLElement} */ (element.lastElementChild).offsetTop > 0)).toBe(true);
+  const [shown, icon] = await Promise.all([time.locator("span").first().boundingBox(), page.locator(`${thursday} .ev__repeat`).boundingBox()]);
+  expect(/** @type {{x: number, width: number}} */ (shown).x + /** @type {{x: number, width: number}} */ (shown).width).toBeLessThanOrEqual(/** @type {{x: number}} */ (icon).x);
+});

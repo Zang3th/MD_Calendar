@@ -53,9 +53,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const time = item.start ? `${item.start}${item.end && !compact ? `–${item.end}` : ""}` : "";
     const description = [item.title, time, item.tag, series ? "recurring" : "", done ? "done" : overdue ? "overdue" : ""].filter(Boolean).join(", ");
     return `<div class="${classes}${tagged.className}"${tagged.style} ${attributes}>` +
-      (undated ? "" : `<button class="ev__check" type="button" role="checkbox" aria-checked="${item.done}" aria-label="Done: ${escape(item.title)}">${icon("check")}</button>`) +
+      (undated ? "" : `<button class="ev__check" type="button" role="checkbox" aria-checked="${item.done}" aria-label="Done: ${escape(item.title)}">${icon(compact ? "check-small" : "check")}</button>`) +
       `<button class="ev__open" type="button" aria-label="${escape(description)}"><span class="ev__line">` +
-      (time ? `<span class="ev__time">${time}</span>` : "") +
+      // The end is its own item: a range that does not fit its line wraps the end out of sight (docs/ui/Views.md#entry-tile).
+      (time ? `<span class="ev__time"><span>${item.start}</span>${item.end && !compact ? `<span>–${item.end}</span>` : ""}</span>` : "") +
       tagIcon(item.tag, "ev__tag") +
       `<span class="ev__title">${escape(item.title)}</span>` +
       `</span>${details ? detailLines(item) : ""}</button>` +

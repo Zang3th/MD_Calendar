@@ -329,3 +329,9 @@ Open-source projects that were evaluated and what they contributed:
 **Decision:** Dragging an occurrence within its day places every occurrence of that day exactly as dropped; it stays part of its series. A series gets a readable `#Id` the first time one of its occurrences is placed, and a day holds a reference line `- @<id>` at the position of each placed occurrence; title, time, done state and the rest stay in the series. Placements are dropped in the same undo step as the change that removes their occurrence. → [Domain](Domain.md#day-list-order), [DataFormat](DataFormat.md#calendar)
 **Reasons:** an evening series sat on top of every day whose entries have no time; the user needs full freedom to order a day. A position line keeps one source for every field and survives renaming.
 **Rejected:** detaching the occurrence into a normal entry (it leaves the series); a reference by title (ambiguous, breaks on rename); a position index stored in the series (rewritten whenever the day changes); a fixed placement per series (no freedom per day); a changed global sort rule (implicit); random IDs (unreadable by hand); placing only the dragged occurrence (a drop between unplaced occurrences would not stay where it was dropped).
+
+## D58 · Header icons on their own 36-unit canvas
+
+**Decision:** The header shows its 18px icons from own symbols (`hdr-<name>`, `res/header-icons/`) drawn on a 36×36 canvas with 2px strokes on whole pixels, also for the icons taken over from MD_Manager; the entry check box is 18px with a centered 16px mark. → [Design System](ui/DesignSystem.md#icons)
+**Reasons:** the 32-unit icons render with 2.25px strokes at 18px and the check box mark with 2.1px strokes, so they were soft at every display scale; the user wants every icon crisp.
+**Rejected:** 16px icons in the header (smaller than wanted); keeping 18px with the 32-unit symbols (soft).

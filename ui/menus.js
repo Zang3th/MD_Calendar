@@ -63,7 +63,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   /** @type {Record<string, [string, string]>} */
   const gestures = {
     click: ["mouse-click", "Click"], right: ["mouse-right-click", "Right-click"], wheel: ["mouse-wheel", "Mouse wheel"], drag: ["lasso", "Drag"],
-    double: ["mouse-double-click", "Double-click on the day header"], middle: ["mouse-middle-drag", "Drag with the middle button"]
+    double: ["mouse-click", "Double-click on the day header"], middle: ["mouse-middle-drag", "Drag with the middle button"]
   };
   /** @type {Record<string, string>} */
   const arrows = { left: app.tiles.icon("chevron-left"), right: app.tiles.icon("chevron-right") };
@@ -85,6 +85,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     if (gesture === "-") return grid(caps(keys), "", "");
     if (!gesture) return grid(caps(keys.slice(0, split)), "+", cap(keys.slice(split + 1)));
     const name = gesture.replace(/^\+/, "");
+    // A double-click reads “2×” and the click icon, which is clearer than a separate double-click icon.
+    if (name === "double") return grid("", `<span class="keys__times" aria-hidden="true">2×</span>`, mouse(name));
     return grid(caps(keys), keys ? (gesture.startsWith("+") ? "+" : "or") : "", mouse(name));
   }
   // Groups sit in two columns side by side, so that the panel never scrolls; the general keys span both.

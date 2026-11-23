@@ -42,7 +42,8 @@ test("holidays show in the day header and tags take their color from Config.md",
   });
   const friday = '.day[data-day="2026-11-13"]';
   const gift = page.locator('.day[data-day="2026-11-14"] .badge--occasion .ui-icon');
-  await expect(page.locator('.day[data-day="2026-11-11"] .badge--holiday')).toHaveText("St. Martin's Day");
+  // At this width the name would be cut, so the holiday shows as a compact badge named by its label.
+  await expect(page.locator('.day[data-day="2026-11-11"] .badge--holiday')).toHaveAttribute("aria-label", /St\. Martin's Day/);
   await expect(page.locator(`${thursday} .ev`).first()).toHaveClass(/has-tag/);
   await expect(page.locator(`${thursday} .ev`).first()).toHaveAttribute("style", "--h:0");
   await expect(page.locator(`${thursday} .ev`).nth(1)).not.toHaveClass(/has-tag/);

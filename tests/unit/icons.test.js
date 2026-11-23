@@ -11,6 +11,10 @@ test("UI icon files match their inline symbols", () => {
   assert.deepEqual(compareIcons({ html, directory: path.join(root, "res/icons"), prefix: "icon-" }), []);
 });
 
+test("header icon files match their inline symbols on the 36-unit canvas", () => {
+  assert.deepEqual(compareIcons({ html, directory: path.join(root, "res/header-icons"), prefix: "hdr-", viewBox: "0 0 36 36" }), []);
+});
+
 test("tag icon files match their inline symbols", () => {
   assert.deepEqual(compareIcons({ html, directory: path.join(root, "res/tag-icons"), prefix: "tag-" }), []);
 });

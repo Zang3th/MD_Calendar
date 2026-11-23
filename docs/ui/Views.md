@@ -15,16 +15,16 @@ Rotating the screen switches to the default view of the new orientation. The bac
 
 - Check box (none in the backlog, see [Domain](../Domain.md#backlog)), optional time, tag icon, title. A recurring entry shows a repeat icon (16px, 12px in the month view) at the right end, vertically centered on the whole tile.
 - The tile is tinted with its tag color and shows the tag icon; without a tag it uses the neutral item surface and has no icon.
-- Time: in the week view (landscape) on its own small line above the title in the tag color; elsewhere inline before the title.
+- Time: in the week view (landscape) on its own small line above the title in the tag color; elsewhere inline before the title. A time range that does not fit its line shows its start time only, so that it never runs under the repeat icon.
 - Done: `--o-past` opacity (55 %), title struck through, check box filled.
-- Overdue: red check box border and a red outline; a border beam travels around the tile at a constant speed without pause, one lap in 4s: a light in full `--danger` with a long tail over about a third of the outline that fades to transparent and bends around the rounded corners, over border and outline. It is hidden with reduced motion.
+- Overdue: red check box border and a red border (`--danger` at `--ring`, in place of the tag border); a border beam travels around the tile at a constant speed without pause, one lap in 4s: a light in full `--danger` with a long tail over about a third of the outline that fades to transparent and bends around the rounded corners, over the border. It is hidden with reduced motion.
 - Hover lifts the tile slightly.
 
 ## Day header
 
 - Weekday and date. Today: weekday in the accent color, a “Today” pill in the accent color next to the date and an accent-tinted day card with an accent outline and glow, so that today stands out wherever it is in the week. In the month view the date of today sits on an accent pill.
 - **Badges** start at the top right of the day card, by priority: anniversaries (heart, `--heart`), then birthdays (gift, `--warm`), then holidays (calendar with a star, `--accent-2`).
-  - **Written out** (week, while they fit: 2 badges in the landscape week, 5 in the portrait week): an anniversary or birthday shows the icon, the name and the age or number of years; several of one kind share one badge with the icon and their count; a holiday shows its name. Badges stack downwards.
+  - **Written out** (week, while they fit: 2 badges in the landscape week, 5 in the portrait week, and only while no name would be cut; a day whose written-out badge would cut a name shows the compact badges): an anniversary or birthday shows the icon, the name and the age or number of years; several of one kind share one badge with the icon and their count; a holiday shows its name. Badges stack downwards.
   - **Compact** (month, and the week when the written-out badges do not fit): one icon badge per kind in a row, with the count when there are several.
   - Every anniversary or birthday badge, also for a single person, and every compact holiday badge opens a list below it, right-aligned to it, or left-aligned when there is no room to its left (badges at the left edge, as in the portrait week), in the color of its kind: a header with the icon on a tinted tile, the title (“2 birthdays”, “Anniversary”, “2 holidays”) and the weekday and date; below it one row per name. Birthdays show “turns 32” as a pill, anniversaries their label (“Wedding”) and “6 years”; rows of people end with a chevron and open the contact, holidays are only listed. A second click on the badge closes the list.
 - School vacations are not shown in the week and month views; they appear only in the [holiday overview](#holiday-overview).
@@ -70,7 +70,7 @@ A double-click on a day header of the week view (landscape or portrait) shows th
 
 ## Month
 
-- Grid of week rows, Monday to Sunday. Days outside the month are faded.
+- Grid of week rows, Monday to Sunday. Days outside the month are faded once as a whole (their entries are not dimmed again), with the date in `--text`.
 - A slim column (20px) on the left shows the ISO week number of each row, without a column heading. The current week's number is highlighted in the accent color.
 - Each cell: date (the first of a month shows the month name), compact badges (see [Day header](#day-header)), compact entry list.
 - Visible entries per cell: as many as the cell's height leaves room for next to its bar lanes. When not all fit, the remaining ones collapse into a “+N” chip, which takes the place of the last entry row.

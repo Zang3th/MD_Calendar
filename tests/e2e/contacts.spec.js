@@ -5,8 +5,15 @@ const contacts = "# Contacts\n\n## Contacts\n\n### Max Example\n#FirstName\n- Ma
 test("contacts are edited inline with undo, focus moves on, and saving writes Contacts.md", async ({ page, calendar }) => {
   await calendar.openApp({ "Contacts.md": contacts });
   const badge = page.locator('.day[data-day="2026-11-12"] .badge--occasion');
+  // A written-out badge shows the name only where it fits; a day too narrow for it shows the compact badge instead.
+  await expect(badge).toHaveClass(/badge--compact/);
+  await expect(badge).toHaveAttribute("aria-label", /Max Example 36/);
+  await page.setViewportSize({ width: 2400, height: 900 });
   await expect(badge).toContainText("Max Example");
   await expect(badge).toContainText("36");
+  await expect(badge.locator(".badge__name")).toHaveJSProperty("scrollWidth", await badge.locator(".badge__name").evaluate(name => name.clientWidth));
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await expect(badge).toHaveClass(/badge--compact/);
   await badge.click();
   await page.locator("#occasionsPanel .occ__row", { hasText: "Max Example" }).click();
   await expect(page.locator("#contacts")).toBeVisible();
@@ -69,7 +76,8 @@ test("day badges: written out while they fit, otherwise one icon badge per kind;
       "### Beckers\n#FirstName\n- Beckers\n#Anniversary\n- Wedding: 13.11.2020\n\n### Tom\n#FirstName\n- Tom\n#Birthday\n- 12.11.1988\n",
     "Holidays.md": "# Holidays\n\n## Holidays\n- 12.11.2026 Some holiday\n- 13.11.2026 Other holiday\n\n## School vacations\n"
   });
-  // Thursday: a birthday and a holiday fit written out, the birthday first.
+  // A wide window leaves room for written-out names. Thursday: a birthday and a holiday fit written out, the birthday first.
+  await page.setViewportSize({ width: 2400, height: 900 });
   await expect(page.locator('.day[data-day="2026-11-12"] .day__badges .badge')).toHaveText(["Tom38", "Some holiday"]);
   // Before a contact was opened, the contacts view shows the one whose birthday comes next.
   await page.keyboard.press("c");

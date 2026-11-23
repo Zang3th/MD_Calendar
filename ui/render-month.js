@@ -132,7 +132,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       const layout = app.calendar.segments(calendar, start, 7);
       const days = app.calendar.weekDays(start);
       return `<div class="mweek${start === currentWeek ? " is-current" : ""}">` +
-        `<span class="mweek__kw" aria-label="Kalenderwoche ${app.calendar.isoWeek(start)}">${app.calendar.isoWeek(start)}</span>` +
+        `<span class="mweek__kw" aria-label="Week ${app.calendar.isoWeek(start)}">${app.calendar.isoWeek(start)}</span>` +
         `<div class="mrow" style="--lanes:${layout.lanes}"><div class="wk__bars">${layout.segments.map(segment => app.tiles.bar(segment, today, false)).join("")}</div>` +
         `${days.map((key, index) => cellMarkup(key, month, layout.dayLanes[index], index + 1)).join("")}</div></div>`;
     }).join("");
