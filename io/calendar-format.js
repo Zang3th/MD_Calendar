@@ -195,7 +195,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         section.lines.push({ line, index });
         return;
       }
-      if (line.trim() === "") return;
+      if (line.trim() === "") {
+        if (entry) subLine(entry, line);
+        return;
+      }
       if (line === "# Calendar" && !hasHeader && !calendar.days.size) {
         hasHeader = true;
         return;
@@ -274,16 +277,28 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     }
   }
 
+  /** Blank lines read after a note line, by entry; they become note lines only when another note line follows. */
+  const pendingBlanks = new WeakMap();
+
   /**
    * Takes an indented line below an entry: “- Location: …” as the first one is the location, every other one is a note
-   * line exactly as written. Returns false for a line that is not indented or follows an unknown line.
+   * line exactly as written. A blank line inside the note is an empty note line; blank lines before or after the note
+   * are not part of it. Returns false for a line that is not indented or follows an unknown line.
    * @param {MDCEntry} entry @param {string} line
    */
   function subLine(entry, line) {
+    if (entry.extra.length) return false;
+    if (line.trim() === "") {
+      if (entry.note.length) pendingBlanks.set(entry, (pendingBlanks.get(entry) || 0) + 1);
+      return true;
+    }
     const match = subLinePattern.exec(line);
-    if (!match || entry.extra.length) return false;
+    if (!match) return false;
     if (match[1].startsWith(`- ${locationPrefix}`) && !entry.location && !entry.note.length) entry.location = match[1].slice(locationPrefix.length + 2);
-    else entry.note.push(match[1]);
+    else {
+      entry.note.push(...Array.from({ length: pendingBlanks.get(entry) || 0 }, () => ""), match[1]);
+      pendingBlanks.delete(entry);
+    }
     return true;
   }
 
@@ -293,7 +308,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const tag = entry.tag ? ` #${entry.tag}` : "";
     const lines = [`- [${entry.done ? "x" : " "}] ${time}${entry.title}${tag}`];
     if (entry.location) lines.push(`  - ${locationPrefix}${entry.location}`);
-    for (const note of entry.note) lines.push(`  ${note}`);
+    for (const note of entry.note) lines.push(note ? `  ${note}` : "");
     return lines.concat(entry.extra);
   }
 

@@ -603,6 +603,7 @@ body.is-sorting .backlog__title { outline: 1px dashed var(--edge); outline-offse
 .dlg__pop.dlg__pop--note { height: var(--pop-max); padding: 0; grid-template-rows: 1fr; }
 .dlg__pop.dlg__pop--note:focus-within { border-color: color-mix(in srgb, var(--accent) var(--ring), transparent); }
 .dlg__note { --line: 24px; min-height: 0; height: 100%; resize: none; padding: 17px 16px; line-height: var(--line); font-weight: 500; border-radius: inherit; outline: none; background: none; border: 0; }
+.dlg__pop--note .notefield { min-height: 0; border-radius: inherit; }
 .dlg__delete { color: var(--danger); }
 .dlg__delete:hover:not(:disabled) { color: var(--danger); background: color-mix(in srgb, var(--danger) var(--hover), transparent); }
 /* The delete choices of a series: a menu like the context menu, 8px below the trash button and right-aligned with it;
@@ -880,9 +881,10 @@ button.occ__row:hover, button.occ__row:focus-visible { background: color-mix(in 
 .focus__bars { flex: none; display: flex; flex-direction: column; gap: 6px; padding: 16px 20px 0; }
 .focus__bars .bar { position: relative; left: auto; top: auto; width: auto; height: 34px; pointer-events: auto; }
 .focus__list.day__list { --pad: 20px; flex: 1; min-height: 120px; gap: 8px; padding: 16px 20px 22px; }
-/* Check box and repeat icon centered on the whole tile, also when location and notes make it tall. */
-.focus__list .ev { align-items: center; padding: 10px 14px; }
-.focus__list .ev__check { margin-top: 0; }
+/* The check box sits centered on the first line of the title (its line box at the title's font size), the repeat icon
+   centered on the whole tile, also when location and notes make it tall. */
+.focus__list .ev { align-items: flex-start; padding: 10px 14px; }
+.focus__list .ev__check { font-size: 14px; margin-top: calc((1lh - 17px) / 2); }
 .focus__list .ev__title { white-space: normal; overflow: visible; overflow-wrap: anywhere; font-size: 14px; }
 .focus__list .ev__repeat { align-self: center; }
 .focus__empty { margin: auto; color: var(--faint); }
@@ -891,8 +893,10 @@ button.occ__row:hover, button.occ__row:focus-visible { background: color-mix(in 
 .ev__location { display: flex; align-items: flex-start; gap: 6px; }
 .ev__location .ui-icon { width: 14px; height: 14px; margin-top: 2px; color: var(--faint); }
 .ev__notes { display: flex; flex-direction: column; gap: 2px; }
-.ev__note { position: relative; padding-left: 14px; overflow-wrap: anywhere; }
-.ev__note::before { content: ""; position: absolute; left: 3px; top: .62em; width: 4px; height: 4px; border-radius: 50%; background: var(--faint); }
+.ev__note { overflow-wrap: anywhere; }
+.ev__note:empty { height: 1lh; }
+.ev__link { color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; cursor: pointer; }
+.ev__link:hover { text-decoration-thickness: 2px; }
 
 /* ---------- Contacts (Views.md#contacts) ---------- */
 .cx { flex: 1; min-height: 0; display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 14px; }
@@ -989,3 +993,13 @@ button.cx-go:disabled { color: var(--deco); }
   .cx-grid { grid-template-columns: minmax(0, 1fr); }
   .cx-hero { flex-wrap: wrap; }
 }
+
+/* Links in a notes field: a mirror behind the field repeats its text invisibly and marks them (MD_Libs ui/linkfield). */
+.notefield { position: relative; }
+.notefield > textarea { position: relative; display: block; width: 100%; }
+.notefield > .notefield__mirror { position: absolute; inset: 0; width: auto; height: auto; min-height: 0; overflow: hidden; pointer-events: none; white-space: pre-wrap; overflow-wrap: break-word; color: transparent; }
+.notefield__link { border-radius: 4px; background: color-mix(in srgb, var(--accent) 14%, transparent); text-decoration: underline 1px var(--accent); text-underline-offset: 3px; }
+/* Entry dialog: while the note is not edited, a view over the field shows it as the focus card does (ui/dialog.js). */
+.notefield > .notefield__view { position: absolute; inset: 0; z-index: 1; overflow-y: auto; white-space: pre-wrap; overflow-wrap: break-word; cursor: text; }
+.notefield:focus-within > .notefield__view, .notefield > .notefield__view:empty { display: none; }
+.notefield:has(> .notefield__view:not(:empty)):not(:focus-within) > :is(textarea, .notefield__mirror) { opacity: 0; }

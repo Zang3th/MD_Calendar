@@ -65,10 +65,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     for (const part of card.children) part.animate([{ transform: `translateX(${direction * 16}px)` }, { transform: "none" }], { duration: 200, easing: "cubic-bezier(.2,.8,.2,1)" });
   }
 
+  // A click on the blurred background closes the card, but only when the press began there too (as the entry dialog).
+  let pressOnBackground = false;
+  root.addEventListener("pointerdown", event => { pressOnBackground = event.target === root; });
   root.addEventListener("click", event => {
-    if (!(event.target instanceof Element)) return;
-    // A click on the blurred background closes the card.
-    if (event.target === root) close();
+    if (event.target === root && pressOnBackground) close();
   });
 
   document.addEventListener("keydown", event => {

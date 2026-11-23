@@ -16,6 +16,7 @@
 - [x] 14:00 Hairdresser
 - [ ] Gift for Lena: book "Momo" & card #Private
   - First note line
+
   - Second note line
 
 ### 20.11.2026

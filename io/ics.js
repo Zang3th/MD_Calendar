@@ -8,6 +8,13 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return value.replace(/\\([nN,;\\])/g, (_, character) => character === "n" || character === "N" ? "\n" : character);
   }
 
+  /** The lines of a description as a note: blank lines inside stay, blank lines around it are dropped. @param {string} text */
+  function noteLines(text) {
+    const lines = text.split("\n").map(line => line.trimEnd());
+    const first = lines.findIndex(Boolean);
+    return first < 0 ? [] : lines.slice(first, lines.findLastIndex(Boolean) + 1);
+  }
+
   /** @param {number} value */
   const two = value => String(value).padStart(2, "0");
 
@@ -138,7 +145,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       events.push({
         uid, title: unescape(first("SUMMARY")?.value || "").trim() || "(No title)",
         location: unescape(first("LOCATION")?.value || "").replace(/\n/g, ", ").trim(),
-        note: unescape(first("DESCRIPTION")?.value || "").split("\n").map(line => line.trimEnd()).filter(Boolean),
+        note: noteLines(unescape(first("DESCRIPTION")?.value || "")),
         start: start.key, end: end.key, startTime: start.time, endTime: end.key === start.key ? end.time : "",
         rule: parsedRule, unsupportedRule: Boolean(ruleText && !recurrenceId && !parsedRule), except
       });

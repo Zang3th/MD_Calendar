@@ -248,6 +248,7 @@ The set, chosen by the user from three designs per tag:
 | `physio` | Physio | Stretching figure |
 | `vacation` | Vacation | Palm tree |
 | `heart` | Relationship | Heart, the same drawing as the UI icon `heart` |
+| `friends` | Friends | Two people, the same drawing as the UI icon `contacts` |
 
 ## Motion
 

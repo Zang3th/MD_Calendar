@@ -64,9 +64,9 @@ A double-click on a day header of the week view (landscape or portrait) shows th
 - The app behind is dimmed and blurred like behind the dialog (`--base` at 40 %, 10px blur). The card is centered, at most 620px wide and as tall as its content, with 48px to the window edges at least; a longer day scrolls inside the card. Surface, frame and shadow are the dialog's; the card fades and rises in like the dialog.
 - Head: weekday in small capitals, the date large (44px, 800) followed by month and year with a “Today” pill on today, centered on the month's text. The day's badges (holidays, birthdays, anniversaries) sit at the top right; the head has no buttons. On today the card carries the accent light of today's day card and an accent frame.
 - Below the head, multi-day entries covering the day as full-width bars with title and range; a click opens them.
-- Then the day list with the usual entry tiles, larger: titles wrap instead of being cut, and below the title the location (with a pin) and every note line (as a dotted list) show. Check box and repeat icon are centered on the whole tile. Done entries keep their dimming. Without entries the list says “No entries”.
+- Then the day list with the usual entry tiles, larger: titles wrap instead of being cut, and below the title the location (with a pin) and the note lines exactly as written (without added bullets, with clickable [links](Interaction.md#links)) show. The check box is centered on the first line of the title, the repeat icon on the whole tile. Done entries keep their dimming. Without entries the list says “No entries”.
 - Checking off, opening, copying, pasting and adding work as in the day (see [Interaction](Interaction.md#pointer)); a click on free space of the card adds an entry to the focused day. Entries can be dragged to another position within the card (occurrences of recurring entries stay, as in the day); they cannot leave it.
-- `←`/`→` show the previous or next day; the card content glides in from that side. `Esc` or a click on the background close it. Changes refresh the card in place and keep its scroll position.
+- `←`/`→` show the previous or next day; the card content glides in from that side. `Esc` or a click on the background close it; a press that begins on the card never does. Changes refresh the card in place and keep its scroll position.
 
 ## Month
 

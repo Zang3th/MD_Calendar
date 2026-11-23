@@ -28,7 +28,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     let extraTarget = backlog.head;
 
     lines.forEach((line, index) => {
-      if (line.trim() === "") return;
+      if (line.trim() === "") {
+        if (entry) format.subLine(entry, line);
+        return;
+      }
       if (line === "# Backlog" && !hasHeader && !backlog.groups.length && !backlog.ungrouped.length) {
         hasHeader = true;
         return;

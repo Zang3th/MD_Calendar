@@ -118,6 +118,11 @@ test("“+” opens a choice; its ICS item imports into the open calendar", asyn
   await expect(page.getByRole("menuitem").first()).toHaveAccessibleName("Create new entry");
   await expect(page.getByRole("menuitem").nth(1)).toHaveAccessibleName("Import .ics event");
   await expect(page.locator("#contextMenu .menu__code")).toHaveText(".ics");
+  // A second click on “+” closes the menu instead of opening it again.
+  await page.locator("#new").click();
+  await expect(page.locator("#new")).toHaveAttribute("aria-expanded", "false");
+  await expect(page.locator("#contextMenu")).toBeHidden();
+  await page.locator("#new").click();
   const chooser = page.waitForEvent("filechooser");
   await page.getByRole("menuitem", { name: "Import .ics event" }).click();
   await chooser;

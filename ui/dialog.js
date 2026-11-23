@@ -1,3 +1,5 @@
+import { linkfield } from "@zang3th/md-libs/ui";
+
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
 // Entry dialog (docs/ui/Shell.md#entry-dialog): duplicate, delete and close above the title at the right, the title, and
@@ -275,7 +277,14 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       pop.innerHTML = `<label class="dlg__search">${icon("pin")}<input id="dialogLocationInput" value="${esc(state.location)}" placeholder="Location" autocomplete="off" aria-label="Location"></label>` +
         `<div class="dlg__list" id="dialogPlaces">${locationList("")}</div>`;
     } else if (name === "note") {
-      pop.innerHTML = `<textarea class="dlg__note" id="dialogNote" placeholder="Notes" aria-label="Notes">${esc(state.note)}</textarea>`;
+      pop.innerHTML = `<div class="notefield"><div class="dlg__note notefield__mirror" aria-hidden="true"></div>` +
+        `<textarea class="dlg__note" id="dialogNote" placeholder="Notes" aria-label="Notes">${esc(state.note)}</textarea>` +
+        `<div class="dlg__note notefield__view" aria-hidden="true"></div></div>`;
+      // While the note is not being edited, the view shows it as the focus card does (docs/ui/Interaction.md#links).
+      linkfield.attach({
+        window, field: /** @type {HTMLTextAreaElement} */ (pop.querySelector("textarea")), mirror: /** @type {HTMLElement} */ (pop.querySelector(".notefield__mirror")),
+        linkClass: "notefield__link", view: /** @type {HTMLElement} */ (pop.querySelector(".notefield__view")), viewLinkClass: "ev__link"
+      });
     }
     pop.className = `dlg__pop dlg__pop--${name}`;
     // Below the strip of tokens, centered in the dialog. Layout offsets, not the boxes on screen, so that the rise of the
@@ -693,11 +702,14 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     }
     const range = isRange();
     const repeated = rule();
+    // Blank lines inside the note stay; blank lines before and after it are dropped.
+    const lines = state.note.split(/\r?\n/).map(line => line.trimEnd());
+    const first = lines.findIndex(Boolean);
     return {
       kind: range ? "multiDay" : repeated ? "series" : "entry",
       title: title.value.trim(),
       location: state.location.trim(),
-      note: state.note.split(/\r?\n/).map(line => line.trimEnd()).filter(Boolean),
+      note: first < 0 ? [] : lines.slice(first, lines.findLastIndex(Boolean) + 1),
       date: state.start,
       end: range ? state.end : "",
       // Several days and the backlog have no time; a time chosen before stays in the state and returns with one day.
@@ -925,8 +937,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   /**
-   * Shift+Enter on a note line that starts with “-” continues the list with “- ” on the next line; on a line that is only
-   * the dash it removes the dash and ends the list. Returns false for any other line, which simply breaks.
+   * Enter on a note line that starts with “-” continues the list with “- ” on the next line; on a line that is only the
+   * dash it removes the dash and ends the list. Returns false for any other line, which simply breaks.
    * @param {HTMLTextAreaElement} area
    */
   function continueList(area) {
@@ -941,8 +953,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return true;
   }
 
-  // Enter applies from everywhere, also from a popover, and takes what it holds first. Shift+Enter starts a new line of
-  // the note; in the delete menu Enter picks its item and the arrows move between the items.
+  // Enter applies from everywhere, also from a popover, and takes what it holds first. In the note Enter starts a new
+  // line and Ctrl+Enter applies; in the delete menu Enter picks its item and the arrows move between the items.
   dialog.addEventListener("keydown", event => {
     if (event.target instanceof Node && deleteMenu.contains(event.target)) {
       const items = /** @type {HTMLElement[]} */ ([...deleteMenu.querySelectorAll(".menu__item")]);
@@ -955,8 +967,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     }
     if (event.key === "Tab") tab(event);
     else if (event.key.startsWith("Arrow")) arrow(event);
-    else if (event.key === "Enter" && event.shiftKey && event.target instanceof HTMLTextAreaElement) {
-      if (continueList(event.target)) event.preventDefault();
+    else if (event.key === "Enter" && event.target instanceof HTMLTextAreaElement && !event.ctrlKey && !event.metaKey) {
+      if (!event.isComposing && continueList(event.target)) event.preventDefault();
     } else if (event.key === "Enter" && !event.isComposing && event.target !== closeButton && event.target !== duplicate && event.target !== remove) {
       event.preventDefault();
       if (commitPop()) form.requestSubmit();
@@ -1022,9 +1034,12 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     current.apply(result);
   });
 
+  // The dialog has no padding, so a click on the dialog element itself is a click on the backdrop. It closes only when
+  // the press began there too: a text selection dragged out of the dialog ends with a click on the dialog element.
+  let pressOnBackdrop = false;
+  dialog.addEventListener("pointerdown", event => { pressOnBackdrop = event.target === dialog; });
   dialog.addEventListener("click", event => {
-    // The dialog has no padding, so a click on the dialog element itself is a click on the backdrop.
-    if (event.target === dialog) close();
+    if (event.target === dialog && pressOnBackdrop) close();
   });
   // Escape closes an open popover first, then the dialog. It is handled on the key itself: Chrome lets a page cancel the
   // dialog's close request only now and then, so a third Escape would close the whole dialog.

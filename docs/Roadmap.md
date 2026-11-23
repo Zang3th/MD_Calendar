@@ -134,11 +134,11 @@ Ab hier ersetzt MD_Calendar den Google-Kalender als Daily-Driver.
 - [x] ~Kalender: Einträge neutralisieren, einordnen und taggen~
 - [x] ~Kontaktdaten exportieren~
 
-### Statistiken und Analyse
+### Synchronisierung
 
 - [ ] Feature ausarbeiten
 
-### Synchronisierung
+### Überstunden
 
 - [ ] Feature ausarbeiten
 
@@ -147,47 +147,33 @@ Ab hier ersetzt MD_Calendar den Google-Kalender als Daily-Driver.
 - [x] ~Farben für die Tags finalisieren~
 - [x] ~Highlight-Animation verbessern~
 - [x] ~Serien löschen verbessern~
-- [ ] Enter und CTRL + Enter in Notes
-- [ ] Rechtschreibkorrektur in Notes ausschalten
-- [ ] Focus-View verbessern
+- [x] ~Rechtschreibkorrektur überall ausschalten~
+- [x] ~Enter und CTRL + Enter in Notes~
+- [x] ~Links und URLs navigierbar machen~
+- [x] ~Erneuter Klick auf den +-Button darf nichts bewirken~
+- [x] ~New-Dialog: Markieren darf die Sicht nicht schließen~
+- [x] ~Focus-View verbessern~
 
 ### Release
 
 - [ ] Docs + README aktualisieren
 
-## Mobile
-
-#Version
-- 0.9.0
-
-#Date
-- TBD
-
-#Info
-Dieselbe App als gehostete PWA auf dem iPhone.
-
-### Plattform
-
-- [ ] Hosting festlegen (NAS oder GitHub Pages)
-- [ ] Service Worker + Installation auf dem Home-Bildschirm
-
-### Speicher
-
-- [ ] Konflikte zwischen Geräten behandeln => neu laden + eigene Änderungen erneut anwenden
-
-### Layout
-
-- [ ] Mobile Skizze erstellen (Tag/Agenda)
-- [ ] Mobiles Layout umsetzen inkl. Backlog + Inbox
-- [ ] Touch-Bedienung prüfen
-
 ## Feintuning
 
 #Version
-- 0.9.1
+- 0.8.1
 
 #Date
 - TBD
+
+### Statistiken und Analyse
+
+- [ ] Feature ausarbeiten
+
+### Portrait-View
+
+- [ ] Allgemein verbessern
+- [ ] Neue Funktionen nativ unterstützen
 
 ### Bugs und Verbesserungen
 

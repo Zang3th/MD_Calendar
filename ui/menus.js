@@ -16,7 +16,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   /** @type {Array<{run(): void}>} */
   let contextItems = [];
   // The context menu handles Escape with its arrow keys below.
-  const contextMenu = popover.create({ window, element: context, dismiss: "pointerdown", escape: false, onClose: () => {
+  // A press on “+” is not outside: its click closes the open menu instead of closing and opening it again.
+  const contextMenu = popover.create({ window, element: context, inside: [newButton], dismiss: "pointerdown", escape: false, onClose: () => {
     contextItems = [];
     newButton.setAttribute("aria-expanded", "false");
   } });

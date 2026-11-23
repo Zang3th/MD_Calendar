@@ -24,7 +24,7 @@ test("golden entries carry done state, time, title, tag, location and note", () 
     { done: false, start: "", end: "", title: "Sort tax documents", tag: "", location: "", note: [], extra: [] },
     { done: false, start: "09:30", end: "10:15", title: "Dentist", tag: "Private", location: "Dr. Example's practice", note: ["- Bring the bonus booklet"], extra: [] },
     { done: true, start: "14:00", end: "", title: "Hairdresser", tag: "", location: "", note: [], extra: [] },
-    { done: false, start: "", end: "", title: "Gift for Lena: book \"Momo\" & card", tag: "Private", location: "", note: ["- First note line", "- Second note line"], extra: [] }
+    { done: false, start: "", end: "", title: "Gift for Lena: book \"Momo\" & card", tag: "Private", location: "", note: ["- First note line", "", "- Second note line"], extra: [] }
   ]);
   assert.deepEqual(plain(calendar.multiDay.map((/** @type {any} */ item) => [item.title, item.tag, item.start, item.end, item.location, item.note])), [
     ["Vacation", "Private", "2026-11-20", "2026-11-24", "", []],
@@ -40,6 +40,14 @@ test("golden entries carry done state, time, title, tag, location and note", () 
     note: ["Demo the new calendar.", "Collect feedback."], extra: []
   });
   assert.equal(calendar.series[1].rule.until, "2026-12-31");
+});
+
+test("a blank line inside a note is an empty note line; blank lines around the note are not part of it", () => {
+  const text = "# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] A\n  - Location: X\n\n  one\n\n\n  two\n\n- [ ] B\n";
+  const { calendar } = calendarFormat.parse(text);
+  const [a, b] = calendar.days.get("2026-11-12").entries;
+  assert.deepEqual([a.location, plain(a.note), plain(b.note)], ["X", ["one", "", "", "two"], []]);
+  assert.equal(calendarFormat.serialize(calendar), "# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] A\n  - Location: X\n  one\n\n\n  two\n- [ ] B\n");
 });
 
 test("an unknown line is reported and written back at its place", () => {

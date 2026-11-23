@@ -5,7 +5,7 @@
 MD_Calendar is an interactive, fully local Markdown calendar built around ordered to-do lists per day.<br>
 Plan your days while keeping your data open, portable, and human-readable.
 
-![MD_Calendar week view with the backlog panel](res/screenshots/week-backlog_v070.png)
+![MD_Calendar week view with the backlog panel](res/screenshots/week-backlog.png)
 
 ## Key features
 
@@ -21,8 +21,8 @@ Plan your days while keeping your data open, portable, and human-readable.
 
 <table>
   <tr>
-    <td width="50%"><img src="res/screenshots/month_v070.png" alt="Month view"></td>
-    <td width="50%"><img src="res/screenshots/contacts_v070.png" alt="Contact editor"></td>
+    <td width="50%"><img src="res/screenshots/month.png" alt="Month view"></td>
+    <td width="50%"><img src="res/screenshots/contacts.png" alt="Contact editor"></td>
   </tr>
   <tr>
     <td align="center">Month view</td>
@@ -145,7 +145,7 @@ The verification pipeline builds the bundle and runs strict TypeScript checking 
     </tr>
   </thead>
   <tbody>
-    <tr><td>master</td><td>22.11.2026</td><td>604</td><td>823</td><td>5,834</td><td>94</td><td>See <a href="https://github.com/Zang3th/MD_Calendar/blob/master/docs/Roadmap.md">roadmap</a></td></tr>
+    <tr><td>master</td><td>23.11.2026</td><td>614</td><td>833</td><td>5,890</td><td>96</td><td>See <a href="https://github.com/Zang3th/MD_Calendar/blob/master/docs/Roadmap.md">roadmap</a></td></tr>
     <tr><td>v0.7.0</td><td>19.11.2026</td><td>591</td><td>805</td><td>5,472</td><td>86</td><td>Reworked entry dialog, contacts and start page</td></tr>
     <tr><td>v0.6.0</td><td>16.11.2026</td><td>517</td><td>606</td><td>4,070</td><td>59</td><td>Project baseline with MD_Libs as application core</td></tr>
   </tbody>

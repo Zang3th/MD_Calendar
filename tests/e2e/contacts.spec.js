@@ -41,6 +41,13 @@ test("contacts are edited inline with undo, focus moves on, and saving writes Co
   const notes = page.getByRole("textbox", { name: "Notes" });
   await notes.fill(Array.from({ length: 8 }, (_, index) => `Line ${index + 1}`).join("\n"));
   expect(await notes.evaluate(element => element.scrollHeight - element.clientHeight)).toBe(0);
+  // Enter starts a new line; Ctrl+Enter commits the note.
+  await notes.press("End");
+  await notes.press("Enter");
+  await expect(page.locator("#save")).not.toHaveClass(/is-dirty/);
+  await notes.press("Control+Enter");
+  await expect(page.locator("#save")).toHaveClass(/is-dirty/);
+  await expect(notes).not.toBeFocused();
 });
 
 test("a vCard import merges a duplicate and adds a new contact as one undoable step", async ({ page, calendar }) => {

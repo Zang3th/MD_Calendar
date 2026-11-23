@@ -32,7 +32,7 @@ Keyboard navigation of controls is not supported, so keyboard focus is never sho
 | `Ctrl+Y`, `Ctrl+Shift+Z` | Redo |
 | `Esc` | Close the popover of the entry dialog, the dialog, a menu, panel or focus card; otherwise clear the selection and shrink an enlarged month cell |
 | `Tab` | In the entry dialog: open the next token's popover and keep what the current one holds |
-| `Enter` | Apply the entry dialog, also from one of its popovers (`Shift+Enter`: new line of the note); in an inline field, finish editing |
+| `Enter` | Apply the entry dialog, also from one of its popovers; in an inline field, finish editing. In a notes field `Enter` starts a new line and `Ctrl+Enter` applies or finishes |
 
 The arrows, `Space`, `Del`, `Ctrl+A` and `Ctrl+X` do nothing in the contacts view. While the [focus card](Views.md#focus-mode) is open, `W`, `M`, `C`, `B`, `F` and `T` do nothing; `A`, `Ctrl+V` and a right-click on its free space use the focused day, and the actions on entries work on its entries. The help (see [Shell](Shell.md#help)) lists all shortcuts and pointer gestures.
 
@@ -87,9 +87,17 @@ Rules in [Domain](../Domain.md#selection-copy-and-paste).
 ## Editing
 
 - Entries are edited in the entry dialog. Contacts are edited inline in the contacts view.
-- An inline change is committed when the field loses focus or on Enter. Focus moves on naturally (Tab keeps working) and is restored after the view re-renders.
+- Browser spell checking is off in every field.
+- An inline change is committed when the field loses focus or on Enter (in the notes on `Ctrl+Enter`). Focus moves on naturally (Tab keeps working) and is restored after the view re-renders.
 - Invalid dates are rejected with a notification; the field returns to its previous value.
 - A birthday is `TT.MM.JJJJ` or `TT.MM.`; an anniversary needs a full date.
+
+## Links
+
+- Notes recognize links: Markdown links `[label](https://…)` and bare addresses starting with `https://`, `http://` or `www.` (opened as `https://`). Punctuation that ends a sentence after a bare address is not part of it.
+- Where note lines are shown, as in the [focus card](Views.md#focus-mode), a link shows its label (a bare address itself) in `--accent`, underlined, and a click opens it in a new browser tab instead of the entry.
+- The note of the entry dialog shows the same way while it is not being edited. A click on a link opens it; a click elsewhere on the note edits it, with the caret at the clicked place; a dragged selection stays a selection.
+- While a notes field is being edited (entry dialog), and always in the contacts view, it shows its text as written: a link is underlined in `--accent` on a faint accent surface while the text keeps its color. A click places the caret; `Ctrl+click` on a link opens it in a new browser tab.
 
 ## Undo and redo
 

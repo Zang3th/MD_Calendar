@@ -128,6 +128,14 @@ test("the entry dialog picks days and ranges in its calendar, moves an entry to 
   // A new entry opens with its calendar open and the focus in the title.
   await expect(page.locator("#dialogTitle")).toBeFocused();
   await page.keyboard.type("Trip");
+  // A text selection dragged out of the dialog onto the backdrop keeps it open.
+  const box = /** @type {{x: number, y: number, width: number, height: number}} */ (await page.locator("#dialogTitle").boundingBox());
+  await page.mouse.move(box.x + box.width - 20, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(5, 5, { steps: 5 });
+  await page.mouse.up();
+  await expect(page.locator("#dialog")).toBeVisible();
+  await expect(page.locator("#dialogTitle")).toHaveValue("Trip");
   // The first click sets the day, a second one the range; a click on its end returns to the start as one day.
   await day("2026-11-14").click();
   await day("2026-11-16").click();
@@ -175,13 +183,52 @@ test("the entry dialog picks days and ranges in its calendar, moves an entry to 
   expect(await overflow()).toBe(0);
   await page.locator("#dialogNote").fill(lines.join("\n"));
   expect(await overflow()).toBeGreaterThan(0);
+  // Enter in the note starts a new line; Ctrl+Enter applies.
   await page.locator("#dialogNote").fill("Pack boots");
-  await page.locator("#dialogApply").click();
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("Socks");
+  await page.keyboard.press("Control+Enter");
+  await expect(page.locator("#dialog")).toBeHidden();
   await page.locator(".wk .bar", { hasText: "Trip" }).click();
   await expect(page.locator("#dialogNoteToken")).toHaveAttribute("aria-expanded", "true");
+  await expect(page.locator("#dialogNote")).toHaveValue("Pack boots\nSocks");
   // A set note shows only its lit icon.
   await expect(page.locator("#dialogNoteToken")).toHaveClass(/is-set/);
   await expect(page.locator("#dialogNoteToken")).toHaveText("");
   await page.locator("#dialogDelete").click();
   await expect(page.locator(".wk .bar")).toHaveCount(0);
+});
+
+test("links in notes open in a new tab: by click in the focus card and the dialog's note, by Ctrl+click while editing it", async ({ page, calendar }) => {
+  await calendar.openApp({ "Calendar.md": "# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] Call Lena #Work\n  www.example.org\n  See [docs](https://e.de) here\n" });
+  await page.evaluate(() => {
+    const opened = /** @type {string[]} */ ([]);
+    Object.assign(window, { opened });
+    window.open = url => { opened.push(String(url)); return null; };
+  });
+  const opened = () => page.evaluate(() => /** @type {string[]} */ (/** @type {any} */ (window).opened));
+  await page.locator(`${thursday} .day__head`).dblclick({ position: { x: 100, y: 10 } });
+  await page.locator(".focus__card .ev__link").first().click();
+  expect(await opened()).toEqual(["https://www.example.org"]);
+  await expect(page.locator("#dialog")).toBeHidden();
+  await page.keyboard.press("Escape");
+
+  // Until the note is edited, the dialog shows it as the focus card does: a Markdown link by its label, and a click opens it.
+  await titles(page, thursday).click();
+  const view = page.locator(".dlg__pop .notefield__view");
+  await expect(view.locator(".ev__link")).toHaveText(["www.example.org", "docs"]);
+  await page.context().route("https://e.de/**", route => route.fulfill({ body: "" }));
+  const popup = page.waitForEvent("popup");
+  await view.locator(".ev__link", { hasText: "docs" }).click();
+  expect((await popup).url()).toBe("https://e.de/");
+  await expect(page.locator("#dialogNote")).not.toBeFocused();
+  // A click on its text edits the note with the caret at that place, behind the Markdown link's text.
+  await view.click({ position: { x: 320, y: 52 } });
+  await expect(page.locator("#dialogNote")).toBeFocused();
+  await expect(view).toBeHidden();
+  expect(await page.locator("#dialogNote").evaluate(element => /** @type {HTMLTextAreaElement} */ (element).selectionStart)).toBe(45);
+  // While editing, the field marks its links and Ctrl+click opens one.
+  await expect(page.locator(".dlg__pop .notefield__link")).toHaveText(["www.example.org", "[docs](https://e.de)"]);
+  await page.locator("#dialogNote").click({ position: { x: 40, y: 28 }, modifiers: ["Control"] });
+  expect(await opened()).toEqual(["https://www.example.org", "https://www.example.org"]);
 });

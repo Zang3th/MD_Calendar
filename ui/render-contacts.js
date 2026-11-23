@@ -1,4 +1,6 @@
 
+import { linkfield } from "@zang3th/md-libs/ui";
+
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
 // Contacts view: list with search and sort on the left, inline editor on the right (docs/ui/Views.md#contacts).
@@ -144,7 +146,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         `${field(`anniversaryDate:${index}`, app.calendar.formatDate(item.date), "DD.MM.YYYY", "")}<span></span>` +
         `<button class="cx-x" type="button" data-remove="anniversaries:${index}" aria-label="Remove anniversary">${icon("close")}</button></div>`).join("") +
       `<button class="cx-add" type="button" data-add="anniversaries">${icon("plus")}Add anniversary</button></section>` +
-      `<section class="cx-sec cx-sec--wide cx-sec--note"><h3>${icon("note")}Notes</h3><textarea class="cx-in cx-in--note" data-key="note" placeholder="Notes …" aria-label="Notes">${escape(contact.note.join("\n"))}</textarea></section>` +
+      `<section class="cx-sec cx-sec--wide cx-sec--note"><h3>${icon("note")}Notes</h3><div class="notefield"><div class="cx-in cx-in--note notefield__mirror" aria-hidden="true"></div><textarea class="cx-in cx-in--note" data-key="note" placeholder="Notes …" aria-label="Notes">${escape(contact.note.join("\n"))}</textarea></div></section>` +
       `</div></section>`;
   }
 
@@ -177,6 +179,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     /** @type {HTMLElement} */ (board.querySelector("#contactsRows")).innerHTML = rows(contacts, today);
     /** @type {HTMLElement} */ (board.querySelector("#contactsCount")).textContent = `${contacts.contacts.length} contact${contacts.contacts.length === 1 ? "" : "s"} · Contacts.md`;
     /** @type {HTMLElement} */ (board.querySelector("#contactsDetail")).innerHTML = detail(contacts, selected, today);
+    const note = /** @type {HTMLTextAreaElement | null} */ (board.querySelector('textarea[data-key="note"]'));
+    if (note) linkfield.attach({ window, field: note, mirror: /** @type {HTMLElement} */ (note.previousElementSibling), linkClass: "notefield__link" });
     const detailElement = /** @type {HTMLElement | null} */ (board.querySelector(".cx-detail"));
     if (detailElement && sameContact) detailElement.scrollTop = scroll;
     if (anchor && sameContact) {
@@ -323,8 +327,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   board.addEventListener("keydown", event => {
     const target = event.target;
-    if (!(target instanceof HTMLInputElement) || event.key !== "Enter") return;
-    if (target.dataset.key) target.blur();
+    if (event.key !== "Enter" || !(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) || !target.dataset.key) return;
+    // Enter finishes a field; in the notes it starts a new line and Ctrl+Enter finishes it.
+    if (target instanceof HTMLInputElement || event.ctrlKey || event.metaKey) target.blur();
   });
 
   /** @param {MDCContactsHandlers} next */

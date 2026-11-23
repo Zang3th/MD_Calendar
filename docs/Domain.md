@@ -148,7 +148,7 @@ An entry, a recurring entry and a multi-day entry can be turned into each other 
 - An event on one day becomes an entry with its time; an event over several days becomes a multi-day entry without time.
 - An event with a rule inside the allowed subset (see [Recurring entry](#recurring-entry)) becomes a series. `COUNT` becomes the date of the last occurrence; `EXDATE` and moved instances (`RECURRENCE-ID`) become exceptions, moved instances are imported as entries. An event with any other rule is imported as one entry on its start date.
 - Entries before today are imported as done, so that the history does not show as overdue.
-- Summary, location and description become title, location and note. Cancelled events are skipped.
+- Summary, location and description become title, location and note (blank lines inside the description stay, those around it are dropped). Cancelled events are skipped.
 - An event that already exists with the same title on the same date (series: start; multi-day entries: range) is skipped, so that importing a file twice adds nothing.
 - Times in UTC are converted to local time; times with a time zone are taken as local time.
 - The import is one undoable action.

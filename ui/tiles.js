@@ -67,13 +67,42 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   /** Location and note lines below the title of a tile; empty without either. @param {{location?: string, note?: readonly string[]}} item */
   function detailLines(item) {
-    const notes = (item.note || []).filter(line => line.trim());
+    const notes = item.note || [];
     if (!item.location && !notes.length) return "";
     return `<span class="ev__details">` +
       (item.location ? `<span class="ev__location">${icon("pin")}<span>${escape(item.location)}</span></span>` : "") +
-      (notes.length ? `<span class="ev__notes">${notes.map(line => `<span class="ev__note">${escape(line)}</span>`).join("")}</span>` : "") +
+      (notes.length ? `<span class="ev__notes">${notes.map(line => `<span class="ev__note">${noteLine(line)}</span>`).join("")}</span>` : "") +
       `</span>`;
   }
+
+  /**
+   * A note line with its links (docs/ui/Interaction.md#links). They are spans, not anchors, since the tile is a button.
+   * @param {string} line
+   */
+  function noteLine(line) {
+    let html = "";
+    let offset = 0;
+    for (const link of markdown.links(line)) {
+      html += `${escape(line.slice(offset, link.start))}<span class="ev__link" data-href="${escape(link.href)}">${escape(link.text)}</span>`;
+      offset = link.end;
+    }
+    return html + escape(line.slice(offset));
+  }
+
+  // A click on a link in a note opens it in a new tab instead of the entry. In a notes field a plain click places the
+  // caret, so there Ctrl+click opens the link at the caret (docs/ui/Interaction.md#links).
+  document.addEventListener("click", event => {
+    const target = event.target;
+    let href = target instanceof Element ? /** @type {HTMLElement | null} */ (target.closest(".ev__link"))?.dataset.href : undefined;
+    if (!href && target instanceof HTMLTextAreaElement && (event.ctrlKey || event.metaKey)) {
+      const at = target.selectionStart;
+      href = markdown.links(target.value).find(link => link.start <= at && at <= link.end)?.href;
+    }
+    if (!href) return;
+    event.preventDefault();
+    event.stopPropagation();
+    window.open(href, "_blank", "noopener,noreferrer");
+  }, true);
 
   /**
    * The day list of one day in display order (occurrences in their time slots between the entries).
