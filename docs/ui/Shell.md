@@ -69,11 +69,12 @@ The help button and `?` toggle a small floating glass panel below the button, bu
 
 | State | Appearance |
 |---|---|
-| Saved | The resting state: green pill “✓ Saved”. After a save the check mark pops once. |
-| Unsaved | Yellow pill “● Save N” with a gently pulsing dot and the number of unsaved changes. |
-| Saving | Accent pill with a spinning arc and “Saving”, while the files are written; it stays at least 600ms, so that a quick save does not flicker and the wait for the network and the storage's write cycles is masked. |
+| Saved | The resting state: green check mark. After a save the check mark pops once. |
+| Unsaved | Yellow, with a gently pulsing dot. |
+| Saving | Accent color with a spinning arc, while the files are written; it stays at least 600ms, so that a quick save does not flicker and the wait for the network and the storage's write cycles is masked. |
+| Failed | Red, with a cross, after a save failed; the tooltip names the error, the accessible name is “Save failed”, and an error notification reports it. The changes stay unsaved. It lasts until the next save starts or the unsaved changes change. |
 
-The control keeps one width in all states, so that nothing beside it moves; its label always shows. In portrait and in windows up to 1300px wide it is a 36px icon button without label and count: the check mark, the pulsing dot or the spinning arc show the state, and the accessible name keeps the label with the number of changes. A failed save ends “Saving” and returns to “Save N”. Clicking the control saves.
+The control is a 36px icon button without label or count in every layout: the icon shows the state, the accessible name carries the label with the number of unsaved changes (“Save 3 unsaved changes (Ctrl+S)”). A failed save ends “Saving” and shows “Failed”, as in MD_Manager. Clicking the control saves.
 
 ## Backlog panel
 

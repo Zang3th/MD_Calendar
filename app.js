@@ -28,7 +28,6 @@ import "./ui/render-month.js";
 import "./ui/render-contacts.js";
 import "./ui/backlog-panel.js";
 import "./ui/holidays-panel.js";
-import "./ui/occasions-panel.js";
 import "./ui/dialog.js";
 import "./ui/menus.js";
 import "./ui/search-panel.js";
@@ -277,6 +276,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       if (name === "Calendar.md") {
         const parsed = app.calendarFormat.parse(text ?? "# Calendar\n");
         calendar = parsed.calendar;
+        app.tiles.setCalendar(calendar);
         warnings = parsed.warnings;
       } else if (name === "Backlog.md") {
         const parsed = app.backlogFormat.parse(text ?? "# Backlog\n");
@@ -577,16 +577,17 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       // The saving state stays at least a moment, so that a quick save does not flicker (docs/ui/Shell.md#save-control).
       const shown = force || fileSession.unsaved > 0;
       if (shown) app.header.saving(true);
+      let failure = "";
       try {
         await Promise.all([fileSession.save(force), shown ? new Promise(resolve => window.setTimeout(resolve, savingMinimum)) : null]);
       } catch (error) {
-        app.notifications.show("error", "Save failed", "Your changes are kept.", {
-          details: error instanceof Error ? error.message : String(error),
-          code: "MDC-201"
-        });
+        failure = (error instanceof Error ? error.message : String(error)) || "Unknown error";
+        app.notifications.show("error", "Save failed", "Your changes are kept.", { details: failure, code: "MDC-201" });
       } finally {
         if (shown) app.header.saving(false);
       }
+      // After the saving state ends, the control shows the failure until the next save or change.
+      if (failure) app.header.failed(failure);
     }
 
     /** One week or month back or forward; dragged days keep their offset. @param {number} direction */
@@ -859,8 +860,14 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       render();
     }
 
-    /** Entries and multi-day entries with this tag are the vacations of the holiday overview (docs/ui/Views.md#holiday-overview). */
-    const vacationTag = "Vacation";
+    /** Vacations and days off of a year for the holiday overview, the days off marked. @param {number} year @returns {MDCPeriod[]} */
+    function personalPeriods(year) {
+      if (!calendar) return [];
+      return [
+        ...app.calendar.taggedPeriods(calendar, app.calendar.vacationTag, year),
+        ...app.calendar.taggedPeriods(calendar, app.calendar.dayOffTag, year).map(period => ({ ...period, dayOff: true }))
+      ];
+    }
 
     /** @param {MDCEntryRef} left @param {MDCEntryRef} right */
     function sameRef(left, right) {
@@ -1146,27 +1153,30 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         render();
       },
       toggleHolidays() {
-        if (calendar) app.holidaysPanel.toggle(holidays, today, year => calendar ? app.calendar.taggedPeriods(calendar, vacationTag, year) : []);
+        if (calendar) app.holidaysPanel.toggle(holidays, today, personalPeriods);
+      },
+      showOverview(tab, key) {
+        if (calendar) app.holidaysPanel.show(holidays, today, personalPeriods, tab, key);
       },
       toggleSearch() {
         if (calendar) app.searchPanel.toggle();
       },
       showHelp() { app.menus.showHelp(); },
-      showOccasions(key, kind, left, right, top) {
+      showContacts(key, kind) {
+        // A birthday or anniversary badge opens the contact view on the first of its people and lights up what was
+        // asked for: the rows of all its people and the date in the opened contact (docs/ui/Views.md#day-header).
         const items = app.tiles.dayOccasions(key)[kind];
-        const words = { anniversary: ["Anniversary", "anniversaries"], birthday: ["Birthday", "birthdays"], holiday: ["Holiday", "holidays"] }[kind];
-        app.occasionsPanel.show({
-          kind,
-          title: items.length === 1 ? words[0] : `${items.length} ${words[1]}`,
-          date: app.calendar.formatDay(key, "dddd, D MMMM"),
-          // People open their contact; holidays are only listed.
-          items: items.map(item => ({
-            name: item.name,
-            detail: kind === "anniversary" ? item.label : "",
-            badge: item.age === null ? "" : kind === "birthday" ? `turns ${item.age}` : `${item.age} ${item.age === 1 ? "year" : "years"}`,
-            open: item.index >= 0 ? () => openContact(item.index) : null
-          }))
-        }, left, right, top);
+        if (!contacts || !items.length || kind === "holiday") return;
+        const first = items[0];
+        openContact(first.index);
+        const contact = contacts.contacts[first.index];
+        const anniversary = contact.anniversaries.findIndex(item => item.label === first.label &&
+          (item.date.slice(5) === key.slice(5) || (item.date.slice(5) === "02-29" && key.slice(5) === "02-28")));
+        const field = document.querySelector(`#contacts [data-key="${kind === "birthday" ? "birthday" : `anniversaryDate:${anniversary}`}"]`)?.closest(".cx-field");
+        const targets = [...new Set(items.map(item => item.index))].map(index => document.querySelector(`#contacts .cx-row[data-contact="${index}"]`));
+        // The list scrolls at once, so that its smooth scroll does not compete with the one of the contact.
+        if (targets[0] instanceof HTMLElement) targets[0].scrollIntoView({ block: "center" });
+        for (const target of [...targets, field]) if (target instanceof HTMLElement) app.tiles.highlight(target);
       },
       showOptions() { app.menus.showOptions(); },
       showNewMenu() {
@@ -1189,7 +1199,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         if (!calendar || view === "contacts") return [];
         return [
           ...app.recurrence.occurrences(calendar, key).map(({ index }) => ({ series: index, key })),
-          ...app.calendar.entries(calendar, key).map((_, index) => ({ ref: { key, index }, key }))
+          // Days off show no tile and are never selected (docs/ui/Views.md#day-header).
+          ...app.calendar.entries(calendar, key).flatMap((entry, index) => entry.tag === app.calendar.dayOffTag ? [] : [{ ref: { key, index }, key }])
         ];
       },
       moveMany(refs, dragged, target) {

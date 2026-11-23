@@ -138,10 +138,6 @@ Ab hier ersetzt MD_Calendar den Google-Kalender als Daily-Driver.
 
 - [ ] Feature ausarbeiten
 
-### Überstunden
-
-- [ ] Feature ausarbeiten
-
 ### Bugs und Verbesserungen
 
 - [x] ~Farben für die Tags finalisieren~
@@ -154,6 +150,7 @@ Ab hier ersetzt MD_Calendar den Google-Kalender als Daily-Driver.
 - [x] ~New-Dialog: Markieren darf die Sicht nicht schließen~
 - [x] ~Focus-View verbessern~
 - [x] ~CSS anpassen~
+- [x] ~DayOff ergänzen~
 
 ### Release
 

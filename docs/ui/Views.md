@@ -23,17 +23,19 @@ Rotating the screen switches to the default view of the new orientation. The bac
 ## Day header
 
 - Weekday and date. Today: weekday in the accent color, a “Today” pill in the accent color next to the date and an accent-tinted day card with an accent outline and glow, so that today stands out wherever it is in the week. In the month view the date of today sits on an accent pill.
-- **Badges** start at the top right of the day card, by priority: anniversaries (heart, `--heart`), then birthdays (gift, `--warm`), then holidays (calendar with a star, `--accent-2`).
-  - **Written out** (week, while they fit: 2 badges in the landscape week, 5 in the portrait week, and only while no name would be cut; a day whose written-out badge would cut a name shows the compact badges): an anniversary or birthday shows the icon, the name and the age or number of years; several of one kind share one badge with the icon and their count; a holiday shows its name. Badges stack downwards.
-  - **Compact** (month, and the week when the written-out badges do not fit): one icon badge per kind in a row, with the count when there are several.
-  - Every anniversary or birthday badge, also for a single person, and every compact holiday badge opens a list below it, right-aligned to it, or left-aligned when there is no room to its left (badges at the left edge, as in the portrait week), in the color of its kind: a header with the icon on a tinted tile, the title (“2 birthdays”, “Anniversary”, “2 holidays”) and the weekday and date; below it one row per name. Birthdays show “turns 32” as a pill, anniversaries their label (“Wedding”) and “6 years”; rows of people end with a chevron and open the contact, holidays are only listed. A second click on the badge closes the list.
+- **Badges** start at the top right of the day card, by priority: anniversaries (heart, `--heart`), then birthdays (gift, `--warm`), then holidays (calendar with a star, `--accent-2`), then days off (clock, `--dayoff`). A day off is an entry with the tag “DayOff” (see [Domain](../Domain.md#tags)); it shows no tile, only one day-off badge per day.
+  - **Written out** (week, while they fit: 2 badges in the landscape week, 5 in the portrait week, and only while no name would be cut; a day whose written-out badge would cut a name shows the compact badges): an anniversary or birthday shows the icon, the name and the age or number of years; several of one kind share one badge with the icon and their count; a holiday shows its name; a day off shows the clock and “Day off”. Badges stack downwards.
+  - **Compact** (month, and the week when the written-out badges do not fit): one icon badge per kind in a row, with the count when there are several; a day off shows the clock only.
+- Every badge, written out or compact, leads to the page that answers it and lights up there what it stands for, with the highlight of a search hit (see [Design System](DesignSystem.md#motion)):
+  - A birthday or anniversary badge opens the [contact view](#contacts) on its person; with several people on the first of them (in the order of the badge). The rows of all its people in the list and the date in the opened contact (birthday or that anniversary) light up.
+  - A holiday badge opens the [holiday overview](#holiday-overview) on “Holidays”, a day-off badge on “Vacation”, each in the year of its day; the rows of that day light up. A second click on such a badge closes the overview.
 - School vacations are not shown in the week and month views; they appear only in the [holiday overview](#holiday-overview).
 
 ## Holiday overview
 
 An icon button in the right zone of the header toggles a small floating glass panel below the button. It shows the lists of one year; arrows switch the year. Below the year, a segmented control with a sliding indicator (as the view switcher) switches between three tabs by mouse; only the list of the selected tab is shown, so the panel does not scroll:
 
-1. “Vacation”: own vacations, that is entries and multi-day entries with the tag “Vacation”; date or date range and title. Consecutive days with the same title form one range. A vacation that lies within another one (a trip during a vacation) follows it, indented by 16px per level with a 2px guide line in `--accent-2` at `--ring` that joins it to the vacation above; vacations that only overlap or cover the same days stay side by side. Without vacations: “No vacation in <year>.”
+1. “Vacation”: own vacations and days off, that is entries and multi-day entries with the tag “Vacation” or “DayOff”, in one list by date; a mark, date or date range and title; a single day shows its weekday behind the date, within the width of a range. The mark before the date, centered on the first line, tells them apart at a glance: a vacation shows the icon of the tag “Vacation” in its color from `Config.md` and its date in the lightened tag color (without the tag: the palm tree and `--accent-2`); a day off shows the clock in `--dayoff` and its date in the lightened `--dayoff`. Consecutive days with the same title form one range. A vacation that lies within another one (a trip during a vacation) follows it, indented by 16px per level with a 2px guide line in the vacation color at `--ring` that joins it to the vacation above, and shows no mark of its own; it moves by the width of the marks, so that its guide line runs below the date above; vacations that only overlap or cover the same days stay side by side. Without vacations: “No vacation in <year>.”
 2. “Holidays”: date, weekday and name of each public holiday.
 3. “School vacations”: date range and name of each school vacation of North Rhine-Westphalia; a one-day vacation shows one date.
 
@@ -41,7 +43,7 @@ An icon button in the right zone of the header toggles a small floating glass pa
 
 All dates in the overview are written as `DD.MM.YY`.
 
-Past holidays and vacations are dimmed.
+Past holidays, vacations and days off are dimmed.
 
 ## Week, landscape
 

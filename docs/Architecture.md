@@ -47,7 +47,7 @@ domain/   calendar.js  recurrence.js  backlog.js  contacts.js  search.js
 io/       storage.js  calendar-format.js  backlog-format.js  contacts-format.js
           holidays-format.js  config-format.js  ics.js  vcard.js  folder-state.js
 ui/       tiles.js  render-week.js  render-month.js  render-contacts.js  header.js  start.js  backlog-panel.js
-          holidays-panel.js  occasions-panel.js  search-panel.js  focus.js  menus.js
+          holidays-panel.js  search-panel.js  focus.js  menus.js
           dialog.js  interactions.js  notifications.js  tooltips.js
 vendor/   fonts/
 res/logo/ logo and web icon set

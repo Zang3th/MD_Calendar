@@ -53,7 +53,7 @@ The arrows, `Space`, `Del`, `Ctrl+A` and `Ctrl+X` do nothing in the contacts vie
 | Holding the middle button on the week and dragging along the days (sideways in landscape, up and down in portrait) | The days follow the pointer, without end; on release they snap to the nearest whole day with a short glide, so that any seven consecutive days can show. The browser's autoscroll does not start there |
 | Click on the blurred background of the focus card | Closes it |
 
-A click on free space clears the selection; when a selection existed, a menu or panel was open (**+** menu, help, holiday overview, badge list, search bar) or an enlarged month cell shrinks, that click does only this and creates no entry. A `Ctrl`+click creates no entry either. Menus show only icon and label, no shortcut hints; they close with Escape or a click outside, and arrow keys move between their items.
+A click on free space clears the selection; when a selection existed, a menu or panel was open (**+** menu, help, holiday overview, search bar) or an enlarged month cell shrinks, that click does only this and creates no entry. A `Ctrl`+click creates no entry either. Menus show only icon and label, no shortcut hints; they close with Escape or a click outside, and arrow keys move between their items.
 
 ## Creating entries
 

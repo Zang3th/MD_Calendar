@@ -15,7 +15,6 @@ test("contacts are edited inline with undo, focus moves on, and saving writes Co
   await page.setViewportSize({ width: 1440, height: 900 });
   await expect(badge).toHaveClass(/badge--compact/);
   await badge.click();
-  await page.locator("#occasionsPanel .occ__row", { hasText: "Max Example" }).click();
   await expect(page.locator("#contacts")).toBeVisible();
   await expect(page.locator('[data-key="name"]')).toHaveValue("Max Example");
   await expect(page.locator(".cx-next__day")).toHaveText(["12.11, Thu"]);
@@ -23,7 +22,7 @@ test("contacts are edited inline with undo, focus moves on, and saving writes Co
   await page.locator('[data-key="name"]').fill("Maxi  Muster ");
   await page.keyboard.press("Tab");
   await expect(page.locator('[data-action="export"]')).toBeFocused();
-  await expect(page.locator("#save .save__count")).toHaveText("1");
+  await expect(page.locator("#save")).toHaveAttribute("aria-label", /^Save 1 unsaved change /);
   await expect(page.locator('[data-key="name"]')).toHaveValue("Maxi Muster");
 
   await page.locator('[data-add="phones"]').click();
@@ -70,7 +69,7 @@ test("a vCard import merges a duplicate and adds a new contact as one undoable s
   await expect(page.locator(".cx-row")).toHaveCount(1);
 });
 
-test("day badges: written out while they fit, otherwise one icon badge per kind; a count opens the list", async ({ page, calendar }) => {
+test("day badges: written out while they fit, otherwise one icon badge per kind; they open their page and light up what they stand for", async ({ page, calendar }) => {
   await calendar.openApp({
     "Contacts.md": "# Contacts\n\n## Contacts\n\n### Lena\n#FirstName\n- Lena\n#Birthday\n- 13.11.1994\n\n### Max\n#FirstName\n- Max\n#Birthday\n- 13.11.1990\n\n" +
       "### Beckers\n#FirstName\n- Beckers\n#Anniversary\n- Wedding: 13.11.2020\n\n### Tom\n#FirstName\n- Tom\n#Birthday\n- 12.11.1988\n",
@@ -83,13 +82,14 @@ test("day badges: written out while they fit, otherwise one icon badge per kind;
   await page.keyboard.press("c");
   await expect(page.locator('[data-key="name"]')).toHaveValue("Tom");
   await page.keyboard.press("w");
-  // A single birthday opens its list too.
+  /** Whether an element is lit by the highlight right now. @param {import("@playwright/test").Locator} locator */
+  const lit = locator => locator.evaluate(element => element.getAnimations().length > 0);
+  // A birthday badge opens the contact and lights up its row and its birthday.
   await page.locator('.day[data-day="2026-11-12"] .badge--birthday').click();
-  await expect(page.locator("#occasionsPanel .occ__title")).toHaveText("Birthday");
-  await expect(page.locator("#occasionsPanel .occ__row")).toHaveText(["Tomturns 38"]);
-  // A second click on the same badge closes the list again.
-  await page.locator('.day[data-day="2026-11-12"] .badge--birthday').click();
-  await expect(page.locator("#occasionsPanel")).toBeHidden();
+  await expect(page.locator('[data-key="name"]')).toHaveValue("Tom");
+  expect(await lit(page.locator('.cx-row', { hasText: "Tom" }))).toBe(true);
+  expect(await lit(page.locator('.cx-field:has([data-key="birthday"])'))).toBe(true);
+  await page.keyboard.press("w");
   // Friday: anniversary, two birthdays and a holiday do not fit; heart, gift with count and calendar star, in that order.
   const friday = page.locator('.day[data-day="2026-11-13"] .day__badges .badge');
   await expect(friday).toHaveCount(3);
@@ -97,20 +97,30 @@ test("day badges: written out while they fit, otherwise one icon badge per kind;
   await expect(friday.nth(1)).toHaveClass(/badge--birthday/);
   await expect(friday.nth(1)).toHaveText("2");
   await expect(friday.nth(2)).toHaveClass(/badge--holiday/);
+  // Several birthdays open the first person and light up the rows of all of them.
   await friday.nth(1).click();
-  await expect(page.locator("#occasionsPanel .occ__title")).toHaveText("2 birthdays");
-  await expect(page.locator("#occasionsPanel .occ__row")).toHaveText(["Lenaturns 32", "Maxturns 36"]);
-  await page.locator("#occasionsPanel .occ__row", { hasText: "Max" }).click();
-  await expect(page.locator('[data-key="name"]')).toHaveValue("Max");
+  await expect(page.locator('[data-key="name"]')).toHaveValue("Lena");
+  expect(await lit(page.locator('.cx-row', { hasText: "Lena" }))).toBe(true);
+  expect(await lit(page.locator('.cx-row', { hasText: "Max" }))).toBe(true);
+  expect(await lit(page.locator('.cx-row', { hasText: "Tom" }))).toBe(false);
+  // An anniversary lights up its date.
+  await page.keyboard.press("w");
+  await friday.nth(0).click();
+  await expect(page.locator('[data-key="name"]')).toHaveValue("Beckers");
+  expect(await lit(page.locator('.cx-field:has([data-key="anniversaryDate:0"])'))).toBe(true);
 
   // The month shows only icon badges.
   await page.keyboard.press("m");
   await expect(page.locator('.mcell[data-day="2026-11-12"] .mcell__badges .badge--compact')).toHaveCount(2);
+  // A holiday badge opens the holidays of the overview.
   await page.locator('.mcell[data-day="2026-11-12"] .badge--holiday').click();
-  await expect(page.locator("#occasionsPanel")).toHaveClass(/occ--holiday/);
-  await expect(page.locator("#occasionsPanel .occ__row")).toHaveText(["Some holiday"]);
+  await expect(page.getByRole("tab", { name: "Holidays" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator("#holidaysContent .hp__name")).toHaveText(["Some holiday", "Other holiday"]);
+  // Only the holiday of that day lights up.
+  expect(await lit(page.locator("#holidaysContent .hp__row").nth(0))).toBe(true);
+  expect(await lit(page.locator("#holidaysContent .hp__row").nth(1))).toBe(false);
   // Afterwards it shows the contact opened last.
   await page.keyboard.press("Escape");
   await page.keyboard.press("c");
-  await expect(page.locator('[data-key="name"]')).toHaveValue("Max");
+  await expect(page.locator('[data-key="name"]')).toHaveValue("Beckers");
 });

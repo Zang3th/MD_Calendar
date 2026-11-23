@@ -38,7 +38,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     cell.classList.toggle("is-past", key < today);
     const room = capacity(Number(cell.style.getPropertyValue("--lanes")) || 0);
     rooms.set(key, `${room.all}/${room.withMore}`);
-    const total = app.recurrence.occurrences(calendar, key).length + app.calendar.entries(calendar, key).length;
+    // Days off show no tile (docs/ui/Views.md#day-header).
+    const total = app.recurrence.occurrences(calendar, key).length + app.calendar.entries(calendar, key).length - app.calendar.daysOff(calendar, key).length;
     // An enlarged cell whose entries fit again (after a move or an edit) closes by itself.
     if (key === expanded && total <= room.all) expanded = "";
     const open = key === expanded;

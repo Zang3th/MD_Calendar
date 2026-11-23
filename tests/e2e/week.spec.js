@@ -29,7 +29,7 @@ test("an entry is created and saved; a stale write leads to the reload-or-overwr
   await expect(page.locator("#dialogRepeat")).toHaveAttribute("aria-expanded", "true");
   await page.keyboard.press("Enter");
   await expect(titles(page, thursday)).toHaveText(["Call Lena"]);
-  await expect(page.locator("#save .save__count")).toHaveText("1");
+  await expect(page.locator("#save")).toHaveAttribute("aria-label", /^Save 1 unsaved change /);
 
   await page.keyboard.press("Control+s");
   await expect(page.locator("#save")).not.toHaveClass(/is-dirty/);
@@ -45,6 +45,36 @@ test("an entry is created and saved; a stale write leads to the reload-or-overwr
   await overwrite.click();
   await expect(page.locator("#save")).not.toHaveClass(/is-dirty/);
   expect(await calendar.readFile("Calendar.md")).toBe("# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [x] 09:30 Call Lena\n");
+});
+
+test("a failed save shows a red cross whose tooltip names the error until the next save, which succeeds", async ({ page, calendar }) => {
+  await calendar.openApp({ "Calendar.md": "# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] First\n" });
+  // The first write of Calendar.md fails as on a lost network share.
+  await page.evaluate(() => {
+    const original = FileSystemFileHandle.prototype.createWritable;
+    let failed = false;
+    FileSystemFileHandle.prototype.createWritable = function (/** @type {FileSystemCreateWritableOptions | undefined} */ options) {
+      if (!failed && this.name === "Calendar.md") {
+        failed = true;
+        return Promise.reject(new Error("Disk unavailable"));
+      }
+      return original.call(this, options);
+    };
+  });
+  const save = page.locator("#save");
+  await page.locator(`${thursday} .ev__check`).click();
+  await page.keyboard.press("Control+s");
+  await expect(save).toHaveAttribute("aria-label", "Save failed");
+  await expect(save).toHaveAttribute("data-tooltip", "Disk unavailable");
+  await expect(save).toHaveClass(/is-failed/);
+  await expect(save).toHaveClass(/is-dirty/);
+  await expect(page.locator(".notification", { hasText: "Save failed" })).toBeVisible();
+
+  await page.keyboard.press("Control+s");
+  await expect(save).toHaveAttribute("aria-label", "All saved");
+  await expect(save).not.toHaveClass(/is-failed/);
+  await expect(save).not.toHaveAttribute("data-tooltip");
+  expect(await calendar.readFile("Calendar.md")).toBe("# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [x] First\n");
 });
 
 test("an external change without local changes is reloaded", async ({ page, calendar }) => {
@@ -77,7 +107,7 @@ test("moving an entry and moving it back leaves nothing unsaved and nothing to u
   await calendar.openApp({ "Calendar.md": "# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] A\n- [ ] B\n" });
   await calendar.drag(page.locator(`${thursday} .ev`, { hasText: "B" }), page.locator(`${thursday} .ev`, { hasText: "A" }));
   await expect(titles(page, thursday)).toHaveText(["B", "A"]);
-  await expect(page.locator("#save .save__count")).toHaveText("1");
+  await expect(page.locator("#save")).toHaveAttribute("aria-label", /^Save 1 unsaved change /);
   await calendar.drag(page.locator(`${thursday} .ev`, { hasText: "A" }), page.locator(`${thursday} .ev`, { hasText: "B" }));
   await expect(titles(page, thursday)).toHaveText(["A", "B"]);
   await expect(page.locator("#save")).not.toHaveClass(/is-dirty/);

@@ -23,6 +23,7 @@ The visual language of MD_Calendar. The values below are authoritative.
 | `--accent-2` | `#c9a2e0` | Secondary accent: holidays, gradients |
 | `--warm` | `#f3cf7e` | Birthdays |
 | `--heart` | `#ff8a8a` | Anniversaries |
+| `--dayoff` | `#8ee0b0` | Days off |
 | `--panel` | `#182235` | Opaque tint for floating panels and dialogs |
 | `--on-accent` | `#07121a` | Text on accent fills |
 | `--tag-s` | `62%` | Saturation applied to tag hues |
@@ -45,7 +46,7 @@ The visual language of MD_Calendar. The values below are authoritative.
 | `--item-edge` | `rgba(255,255,255,.09)` | Entry borders |
 | `--tint-a` / `--tint-b` | `.30` / `.13` | Tag tint gradient strength on entries |
 | `--tint-edge` | `.34` | Tag-tinted entry border alpha |
-| `--danger` | `#ff8fa3` | Overdue, delete |
+| `--danger` | `#ff8fa3` | Overdue, delete, failed save |
 | `--ok` | `#6ee7b7` | Saved state |
 | `--warn` | `#fcd34d` | Unsaved state |
 
@@ -91,7 +92,7 @@ Every alpha value belongs to one group and uses one of its steps; there are no v
 | Shadows (black) | `.35` header pill and main panel, `.5` popovers, menus, tooltips, notifications and the enlarged month cell, `.6` dialog |
 | Color tints (accent, accent-2, status colors, `--tone`; mixed with transparent) | `--hover` 12 % hover and subtle fills, `--active` 24 % selected, pressed and badge fills, `--glow` 30 % glows, halos and nested fills, `--ring` 45 % borders, focus and inset rings, `--strong` 70 % today outline, selection, lasso, drop target, pulse |
 | Lightened accent (mixed with white, for text) | `--light` 60 % |
-| Floating panels (`--panel` mixed with transparent) | 60 % backlog panel, 88 % dialog, popovers, search bar, notifications, occasion list |
+| Floating panels (`--panel` mixed with transparent) | 60 % backlog panel, 88 % dialog, popovers, search bar, notifications |
 | Recessed wells (`--base` mixed with transparent) | 40 % segmented controls, search fields, inputs, key caps, dialog backdrop |
 | Opacity of whole elements | `--o-disabled` .35 disabled controls, drag placeholder, blocked startup; `--o-past` .55 done and past entries, days outside the month (as a whole, their entries are not dimmed again), past holiday rows; `--o-dim` .7 ended bars, past badges, dragged bar; `--o-hover` .95 hovered past entries |
 
@@ -151,7 +152,7 @@ Scale: 2, 4, 6, 8, 10, 12, 14, 16, 20, 22, 24 px. Every padding, margin and gap 
 | Area | Spacing |
 |---|---|
 | Page | 14px around the header pill, main panel and backlog panel; 14px between them |
-| Header pill | padding 8px 12px; 14px between the three groups; 10px between title and **+**, 4px after **+**, no gap between undo and redo, 6px before the save control; 4px between the right zone buttons; 6px between icon and label in the view switcher; save control 100px wide in every state, padding 0 8px, 6px between icon, label and counter (36px without padding, icon only, in portrait and up to 1300px window width) |
+| Header pill | padding 8px 12px; 14px between the three groups; 10px between title and **+**, 4px after **+**, no gap between undo and redo, 6px before the save control; 4px between the right zone buttons; 6px between icon and label in the view switcher; the save control is a 36px icon button in every state |
 | Main panel | padding 12px, the sides of the header pill, so that cards start below the logo and end below Options; the week cancels the 5px card spacing and the month the 4px cell margin at the outer edges, the month's ISO week column stays left of the cells |
 | Week | 10px between day cards; day header padding 0 14px 0 16px, 4px between weekday and date, 4px between badges; day list padding 4px 10px 10px |
 | Entries in a day | 6px between entries; entry padding 8px 10px; 8px between check box and text |
@@ -209,7 +210,7 @@ Line icons as inline SVG with a 2px stroke and round caps and joins. No emoji an
   - **12px**: dense places only, namely badges and, in the month, the repeat icon and tag icons.
 - The check box of an entry is 18px with the 16px check mark centered in it, 1px from each side, so that the mark keeps its strokes on whole pixels; the month's 12px box takes the small check mark (`icon-check-small`), drawn in the middle of the same 16px canvas, which overhangs the box by exactly 2px on each side, so that its 2px strokes also stay on whole pixels. The box frame is an inset 1.5px shadow, not a border. Both legs of the check mark run at exactly 45°, as in MD_Manager, which keeps their edges as even steps; its corners lie on the same pixel phase as there, and its outline is centered on the canvas (`M5 15L13 23L27 9`, slightly larger than MD_Manager's, whose outline sits half a pixel high).
 - An icon button is about twice as large as its icon (16px in 28–36px) and at least 24px in each direction.
-- Header exception: the nine buttons of the header pill (**+**, undo, redo, save and the five buttons on the right) are 36×36px with 18px icons, in landscape and portrait; the save control is 100px wide in every state, with its icon and label centered (in portrait and up to 1300px window width 36px wide with its icon only). The view switcher keeps 16px icons. A 32-unit symbol would render with 2.25px strokes at 18px, so the header has its own symbols, `hdr-<name>` in the sprite and `res/header-icons/<name>.svg`, drawn on a 36×36 canvas: strokes of 4 units are exactly 2px, and straight strokes lie on even units, that is on whole pixels. Fine details use 3 units (1.5px). They exist for every header icon (plus, undo, redo, check, spinner, holiday, inbox, help, volume, muted, menu), including those taken over from MD_Manager.
+- Header exception: the nine buttons of the header pill (**+**, undo, redo, save and the five buttons on the right) are 36×36px with 18px icons, in landscape and portrait; the save control shows its icon only, in every layout. The view switcher keeps 16px icons. A 32-unit symbol would render with 2.25px strokes at 18px, so the header has its own symbols, `hdr-<name>` in the sprite and `res/header-icons/<name>.svg`, drawn on a 36×36 canvas: strokes of 4 units are exactly 2px, and straight strokes lie on even units, that is on whole pixels. Fine details use 3 units (1.5px). They exist for every header icon (plus, undo, redo, check, spinner, close, holiday, inbox, help, volume, muted, menu), including those taken over from MD_Manager.
 - Stroke and fill use `currentColor`; the button's state colors the icon.
 - Optical centering and pixel alignment are done with a `translate` group inside the symbol (for example `translate(.5 .5)` or `translate(-.625 0)`), never with CSS offsets.
 - Every symbol also exists as a standalone file `res/icons/<name>.svg` with identical geometry. A unit test checks that file and symbol match.
@@ -224,7 +225,7 @@ Every tag has an icon, referenced by its icon ID in `Config.md` (see [DataFormat
 - Tag icons are built exactly like the UI icons (see [Icons](#icons)): 32×32 canvas, shown at 14px (12px in the month), `currentColor`, inline `<symbol>` plus an identical standalone file.
 - They live in their own folder, `res/tag-icons/<icon-id>.svg`, and their symbols use the ID `tag-<icon-id>`, so they never collide with UI icons.
 - The icon ID is lowercase ASCII with hyphens, for example `home` or `shopping`.
-- On entry tiles the icon sits before the title, on multi-day bars before the bar title, and in the tag token and tag chips of the entry dialog in the lightened tag hue. On tinted tiles it uses the lightened tag hue.
+- On entry tiles the icon sits before the title, on multi-day bars before the bar title, the icon of the tag “Vacation” marks vacations in the holiday overview (the `vacation` icon without that tag), and in the tag token and tag chips of the entry dialog in the lightened tag hue. On tinted tiles it uses the lightened tag hue.
 
 The set, chosen by the user from three designs per tag:
 
@@ -248,13 +249,14 @@ The set, chosen by the user from three designs per tag:
 | `vacation` | Vacation | Palm tree |
 | `heart` | Relationship | Heart, the same drawing as the UI icon `heart` |
 | `friends` | Friends | Two people, the same drawing as the UI icon `contacts` |
+| `clock` | Day off | Clock, the same drawing as the UI icon `clock` |
 
 ## Motion
 
-- Short, interruptible transitions without layout work: transform and opacity, and paint-only properties (colors, backgrounds, borders, shadows). Never `filter` and never layout properties (size, margin, position); a hover that brightens adds a `--glass-2` surface instead of a brightness filter. When the backlog panel opens, the main panel takes its new width at once while the panel slides in.
+- Short, interruptible transitions without layout work: transform and opacity, and paint-only properties (colors, backgrounds, borders, shadows). Never `filter` and never layout properties (size, margin, position); a hover that brightens adds a `--glass-2` surface instead of a brightness filter. The one exception: when the backlog panel opens or closes, the main panel's margin follows the slide with the same curve (350ms), so that it narrows and widens smoothly.
 - The view switcher indicator slides between options; panels slide in.
 - A new week or month slides in briefly from the side it comes from (navigation, mouse wheel, jump to today or to a search hit).
-- Jumping to today or to a search hit, and creating an item in the entry dialog, scrolls smoothly and highlights the target once: after the slide, its own frame lights up in one long pulse: the border turns full `--accent` with a 2px inner accent edge and an accent glow (18px at `--strong` and 44px at `--ring` around a day, month cell or bar; inside an entry, which sits in a scrolling list, 18px at `--strong`); it rises over the first 20 %, holds until 60 % and fades back to the target's own look, 1.3s in all after a 120ms pause. There is no extra ring and no scale, so nothing moves and text and icons stay sharp; reduced motion keeps it, as it only fades.
+- Jumping to today, to a search hit or to the target of a day badge, and creating an item in the entry dialog, scrolls smoothly and highlights the target once: after the slide, its own frame lights up in one long pulse: the border turns full `--accent` with a 2px inner accent edge and an accent glow (18px at `--strong` and 44px at `--ring` around a day, month cell or bar; inside an entry, an overview row, a contact row or a contact field, which sit in scrolling lists, 18px at `--strong`); it rises over the first 20 %, holds until 60 % and fades back to the target's own look, 1.3s in all after a 120ms pause. There is no extra ring and no scale, so nothing moves and text and icons stay sharp; reduced motion keeps it, as it only fades.
 - After dragging the days, and when a snap or `T` moves them by less than a week, the days glide the remaining distance into place (240ms); a move by a week or more slides in like a new period.
 - The entry dialog fades in and rises 8px into place (200ms). It does not scale, and it keeps its own compositor layer while open, so that its icons do not snap to other pixels when the motion ends.
 - The focus card fades in its blurred background and rises in like the dialog; switching its day lets the content glide 16px in from that side.

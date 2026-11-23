@@ -41,6 +41,9 @@ interface MDCalendarNamespace {
     updateMultiDay(calendar: MDCCalendar, index: number, item: MDCMultiDay): MDCDayAction | null;
     deleteMultiDay(calendar: MDCCalendar, index: number): MDCDayAction;
     segments(calendar: MDCCalendar, start: string, count: number): { segments: MDCSegment[]; lanes: number; dayLanes: number[] };
+    vacationTag: string;
+    dayOffTag: string;
+    daysOff(calendar: MDCCalendar, key: string): string[];
     taggedPeriods(calendar: MDCCalendar, tag: string, year: number): MDCPeriod[];
     nestPeriods(periods: readonly MDCPeriod[]): Array<{ period: MDCPeriod; depth: number }>;
     changeOccurrences(calendar: MDCCalendar, occurrences: Array<{ index: number; key: string }>, mode: "done" | "open" | "delete"): MDCDayAction[];
@@ -152,7 +155,7 @@ interface MDCalendarNamespace {
   };
   tooltips: { hide(): void };
   sounds: { play(): Promise<void>; setMuted(value: boolean): void; isMuted(): boolean };
-  header: { update(state: MDCHeaderState): void; flashSaved(): void; saving(active: boolean): void; setVersion(version: string): void };
+  header: { update(state: MDCHeaderState): void; flashSaved(): void; saving(active: boolean): void; failed(message: string): void; setVersion(version: string): void };
   contactsView: {
     init(handlers: MDCContactsHandlers): void;
     render(contacts: MDCContacts, selected: number, today: string): void;
@@ -170,7 +173,6 @@ interface MDCalendarNamespace {
   };
   searchPanel: { init(search: (query: string) => MDCSearchItem[], jump: (item: MDCSearchItem) => void): void; toggle(): void; isOpen(): boolean };
   start: { show(folders: MDCRecentFolder[]): void; hide(): void };
-  occasionsPanel: { show(list: MDCOccasionList, left: number, right: number, top: number): void; isOpen(): boolean };
   tiles: {
     escape(value: string): string;
     icon(name: string): string;
@@ -179,7 +181,7 @@ interface MDCalendarNamespace {
     tagIconIds(): string[];
     setContacts(contacts: MDCContacts | null): void;
     slide(id: string, direction: number): void;
-    dayTiles(calendar: MDCCalendar, key: string, today: string, options?: { limit?: number; compact?: boolean; details?: boolean }): { html: string; hidden: number };
+    dayTiles(calendar: MDCCalendar, key: string, today: string, options?: { limit?: number; compact?: boolean; details?: boolean }): { html: string; hidden: number; shown: number };
     backlogTiles(entries: readonly MDCEntry[]): string;
     bar(segment: MDCSegment, today: string, withRange: boolean): string;
     badges(key: string, max: number, compact?: boolean): string;
@@ -187,10 +189,11 @@ interface MDCalendarNamespace {
     describeOccasion(item: { name: string; label: string; age: number | null }): string;
     setTags(tags: MDCTag[]): MDCTag[];
     setHolidays(holidays: MDCHolidays): void;
+    setCalendar(calendar: MDCCalendar | null): void;
     highlight(element: HTMLElement): void;
   };
   backlogPanel: { render(backlog: MDCBacklog, open: boolean): boolean; lists(): HTMLElement[] };
-  holidaysPanel: { update(holidays: MDCHolidays, today: string): void; toggle(holidays: MDCHolidays, today: string, vacations: (year: number) => MDCPeriod[]): void; isOpen(): boolean };
+  holidaysPanel: { update(holidays: MDCHolidays, today: string): void; toggle(holidays: MDCHolidays, today: string, periods: (year: number) => MDCPeriod[]): void; show(holidays: MDCHolidays, today: string, periods: (year: number) => MDCPeriod[], tab: "vacation" | "holidays", day: string): void; isOpen(): boolean };
   focus: {
     open(calendar: MDCCalendar, key: string, today: string): void;
     close(): void;
@@ -336,7 +339,8 @@ type MDCInteractionHandlers = {
   showOptions(): void;
   showNewMenu(): void;
   openContact(index: number): void;
-  showOccasions(key: string, kind: MDCBadgeKind, left: number, right: number, top: number): void;
+  showContacts(key: string, kind: MDCBadgeKind): void;
+  showOverview(tab: "vacation" | "holidays", key: string): void;
   isContactsView(): boolean;
   notice(title: string, body: MDCNotificationBody): void;
   toggleMany(picks: MDCPick[]): void;
@@ -486,7 +490,8 @@ type MDCBacklogGroup = { name: string; entries: MDCEntry[]; extra: string[] };
 type MDCBacklog = { newline: string; head: string[]; ungrouped: MDCEntry[]; groups: MDCBacklogGroup[] };
 type MDCHolidays = { holidays: Array<{ date: string; name: string }>; vacations: Array<{ start: string; end: string; name: string }> };
 type MDCTag = { name: string; color: string; icon: string };
-type MDCPeriod = { start: string; end: string; title: string };
+/** A period of the holiday overview; `dayOff` marks a day off among the vacations. */
+type MDCPeriod = { start: string; end: string; title: string; dayOff?: boolean };
 
 // Contacts (see docs/Domain.md#contact and docs/DataFormat.md#contacts).
 type MDCLabelled = { label: string; value: string };
@@ -514,13 +519,6 @@ type MDCContacts = {
 };
 /** A birthday (empty label) or an anniversary of a contact; `year` is "" when unknown. */
 type MDCBadgeKind = "anniversary" | "birthday" | "holiday";
-/** The list behind a day badge. */
-type MDCOccasionList = {
-  kind: MDCBadgeKind;
-  title: string;
-  date: string;
-  items: Array<{ name: string; detail: string; badge: string; open: (() => void) | null }>;
-};
 type MDCOccasion = { index: number; name: string; label: string; year: string };
 /** A coming birthday or anniversary of a contact; `years` is the age or the number of years, null when unknown. */
 type MDCUpcoming = { index: number; kind: "birthday" | "anniversary"; label: string; date: string; days: number; years: number | null };

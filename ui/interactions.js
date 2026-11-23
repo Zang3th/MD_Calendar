@@ -49,7 +49,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   function tiles() {
-    return /** @type {HTMLElement[]} */ (Array.from(document.querySelectorAll(":is(.day__list, .bl__list) .ev:not(.drag-preview *)")));
+    return /** @type {HTMLElement[]} */ (Array.from(document.querySelectorAll(":is(.day__list, .bl__list) .ev:not([hidden], .drag-preview *)")));
   }
 
   /** Marks the selected tiles again after a render. */
@@ -128,17 +128,15 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   /** Set when the current click began with a selection or an open menu or panel; that click only clears or closes it. */
   let clickClears = false;
-  const floating = ["contextMenu", "optionsMenu", "helpPanel", "holidaysPanel", "occasionsPanel", "searchPanel"].map(id => /** @type {HTMLElement} */ (document.getElementById(id)));
+  const floating = ["contextMenu", "optionsMenu", "helpPanel", "holidaysPanel", "searchPanel"].map(id => /** @type {HTMLElement} */ (document.getElementById(id)));
   // Capture phase: runs before the menus and panels close on this pointerdown.
   /** Where the last press began, so that a drag preview keeps the grabbed point under the pointer. */
   let press = { x: 0, y: 0 };
-  /** The day badge whose list is open, as `key kind`, and whether the current press began on it; that click only closes the list. */
-  let openOccasions = "";
-  let pressOnOpenOccasions = false;
+  /** Whether the current press began on a holiday or day-off badge while the holiday overview was open; that click only closes it. */
+  let pressOnOpenOverview = false;
   document.addEventListener("pointerdown", event => {
     clickClears = selection.size > 0 || floating.some(element => !element.hidden);
-    const badge = event.target instanceof Element ? /** @type {HTMLElement | null} */ (event.target.closest("[data-occasions]")) : null;
-    pressOnOpenOccasions = Boolean(badge && app.occasionsPanel.isOpen() && openOccasions === `${badge.dataset.occasions} ${badge.dataset.kind}`);
+    pressOnOpenOverview = Boolean(event.target instanceof Element && event.target.closest("[data-overview]") && app.holidaysPanel.isOpen());
     press = { x: event.clientX, y: event.clientY };
   }, true);
 
@@ -229,11 +227,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     else if (button.classList.contains("ev__open") && tile) current.openEntry(entryRef(button));
     else if (button.dataset.more) app.month.toggle(button.dataset.more);
     else if (button.dataset.multi) current.openMultiDay(Number(button.dataset.multi));
-    else if (button.dataset.occasions) {
-      if (pressOnOpenOccasions) return;
-      openOccasions = `${button.dataset.occasions} ${button.dataset.kind}`;
-      const bounds = button.getBoundingClientRect();
-      current.showOccasions(button.dataset.occasions, /** @type {MDCBadgeKind} */ (button.dataset.kind), bounds.left, bounds.right, bounds.bottom + 6);
+    // Badges lead to the page that answers them (docs/ui/Views.md#day-header).
+    else if (button.dataset.contacts) current.showContacts(button.dataset.contacts, /** @type {MDCBadgeKind} */ (button.dataset.kind));
+    else if (button.dataset.overview) {
+      if (!pressOnOpenOverview) current.showOverview(/** @type {"vacation" | "holidays"} */ (button.dataset.overview), button.dataset.overviewDay || "");
     }
   });
 

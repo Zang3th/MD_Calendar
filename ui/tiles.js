@@ -10,6 +10,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   let contacts = null;
   /** Day key → holiday names, from Holidays.md. @type {Map<string, string[]>} */
   let holidaysByDay = new Map();
+  /** The calendar whose days off show as day badges. @type {MDCCalendar | null} */
+  let calendar = null;
 
   /** @param {string} value */
   function escape(value) {
@@ -106,7 +108,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }, true);
 
   /**
-   * The day list of one day in display order (occurrences in their time slots between the entries).
+   * The day list of one day in display order (occurrences in their time slots between the entries). Days off show no
+   * tile, only a day badge (docs/ui/Views.md#day-header); they keep an empty hidden tile, so that positions read from
+   * the list (drops, placed occurrences) still count every entry. `shown` counts the visible tiles.
    * @param {MDCCalendar} calendar @param {string} key @param {string} today
    * @param {{limit?: number, compact?: boolean, details?: boolean}} [options] `details` adds location and note lines
    */
@@ -118,7 +122,16 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const details = Boolean(options.details);
     const html = [];
     const placed = app.calendar.placedAt(calendar, key);
-    for (const item of app.recurrence.dayOrder(occurrences, entries, placed).slice(0, limit)) {
+    let shown = 0;
+    let visible = 0;
+    for (const item of app.recurrence.dayOrder(occurrences, entries, placed)) {
+      if (!("occurrence" in item) && item.entry.tag === app.calendar.dayOffTag) {
+        if (shown < limit) html.push(`<div class="ev" data-index="${item.index}" hidden></div>`);
+        continue;
+      }
+      visible += 1;
+      if (shown >= limit) continue;
+      shown += 1;
       if ("occurrence" in item) {
         const { series, index, done } = item.occurrence;
         // Occurrences of recurring entries are never overdue (docs/Domain.md#entry). A placed one is marked, so that a
@@ -127,7 +140,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
           `data-series="${index}" data-key="${key}"${placed.has(index) ? " data-pinned" : ""}`, false, true, compact, details));
       } else html.push(tile(item.entry, `data-index="${item.index}"`, app.calendar.isOverdue(item.entry, key, today), false, compact, details));
     }
-    return { html: html.join(""), hidden: Math.max(0, occurrences.length + entries.length - limit) };
+    return { html: html.join(""), hidden: Math.max(0, visible - limit), shown };
   }
 
   /** Tiles of a backlog group; backlog entries have no date and are never overdue. @param {readonly MDCEntry[]} entries */
@@ -151,7 +164,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
    * the last one shows “+X” for the rest (docs/ui/Views.md#day-header).
    * @param {string} key @param {number} max
    */
-  /** Name, label and age of an occasion, for accessible names and the occasion list. @param {{name: string, label: string, age: number | null}} item */
+  /** Name, label and age of an occasion, for accessible names. @param {{name: string, label: string, age: number | null}} item */
   function describeOccasion(item) {
     return `${item.name}${item.label ? ` (${item.label})` : ""}${item.age !== null ? ` ${item.age}` : ""}`;
   }
@@ -163,22 +176,26 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     { kind: "holiday", icon: "holiday", one: "Holiday", many: "holidays" }
   ]);
 
+  /** @param {string} name */
+  const listed = name => ({ index: -1, name, label: "", age: /** @type {number | null} */ (null) });
+
   /** What a day has to show, by kind, in priority order. @param {string} key */
   function dayOccasions(key) {
     const occasions = contacts ? app.contacts.occasionsOn(contacts, key) : [];
     return {
       anniversary: occasions.filter(item => item.label),
       birthday: occasions.filter(item => !item.label),
-      holiday: (holidaysByDay.get(key) || []).map(name => ({ index: -1, name, label: "", age: /** @type {number | null} */ (null) }))
+      holiday: (holidaysByDay.get(key) || []).map(listed)
     };
   }
 
   /**
-   * Badges of a day header, starting at the top right: anniversaries (heart), birthdays (gift), holidays (calendar with a star).
-   * Written out (week): one anniversary or birthday shows its name and age, several share one badge with the icon and their
-   * count, holidays show their names; more than `max` of them switch to the compact form. Compact (month): one icon badge
-   * per kind with the count when there are several. Every anniversary and birthday badge, and every compact holiday badge,
-   * opens the list of its kind (docs/ui/Views.md#day-header).
+   * Badges of a day header, starting at the top right: anniversaries (heart), birthdays (gift), holidays (calendar with a star),
+   * a day off (clock). Written out (week): one anniversary or birthday shows its name and age, several share one badge with
+   * the icon and their count, holidays show their names, a day off shows “Day off”; more than `max` of them switch to the
+   * compact form. Compact (month): one icon badge per kind with the count when there are several; a day off shows its icon
+   * only. Anniversary and birthday badges open the contact view, holiday badges the holidays and the day-off badge the
+   * vacations of the holiday overview, each lighting up what the badge stands for (docs/ui/Views.md#day-header).
    * @param {string} key @param {number} max @param {boolean} [compact]
    */
   function badges(key, max, compact = false) {
@@ -188,15 +205,19 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     for (const { kind, icon: symbol, one, many } of badgeKinds) {
       const items = byKind[kind];
       if (!items.length) continue;
-      const css = `badge badge--${kind}${kind === "holiday" ? "" : " badge--occasion"}`;
-      // Every badge of people, and a compact holiday badge, opens the list of its kind; written-out holidays are text.
+      const named = kind === "holiday";
+      const css = `badge badge--${kind}${named ? "" : " badge--occasion"}`;
+      // Badges of people open their contacts; holiday badges open the holidays of the overview.
       const label = items.length === 1 ? `${one}: ${describeOccasion(items[0])}` : `${items.length} ${many}: ${items.map(describeOccasion).join(", ")}`;
-      const list = { tag: /** @type {const} */ ("button"), action: "show list", label,
-        attributes: `class="${css}${compact ? " badge--compact" : ""}" type="button" data-occasions="${key}" data-kind="${kind}" aria-haspopup="dialog"` };
+      const list = { tag: /** @type {const} */ ("button"), action: items.length === 1 ? "show contact" : "show contacts", label,
+        attributes: named
+          ? `class="${css}${compact ? " badge--compact" : ""}" type="button" data-overview="holidays" data-overview-day="${key}" aria-haspopup="dialog"`
+          : `class="${css}${compact ? " badge--compact" : ""}" type="button" data-contacts="${key}" data-kind="${kind}"` };
+      if (named) list.action = "show holidays";
       if (compact) {
         parts.push({ ...list, content: `${icon(symbol)}${items.length > 1 ? `<span class="badge__count">${items.length}</span>` : ""}` });
-      } else if (kind === "holiday") {
-        for (const item of items) parts.push({ label: item.name, tag: "span", action: "", attributes: `class="${css}"`, content: `<span class="badge__name">${escape(item.name)}</span>` });
+      } else if (named) {
+        for (const item of items) parts.push({ ...list, label: `${one}: ${item.name}`, content: `<span class="badge__name">${escape(item.name)}</span>` });
       } else if (items.length === 1) {
         const [item] = items;
         parts.push({ ...list, content: `${icon(symbol)}<span class="badge__name">${escape(item.name)}</span>${item.age !== null ? `<span class="badge__age">${item.age}</span>` : ""}` });
@@ -204,8 +225,14 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         parts.push({ ...list, content: `${icon(symbol)}<span class="badge__count">${items.length}</span>` });
       }
     }
+    const daysOff = calendar ? app.calendar.daysOff(calendar, key) : [];
+    if (daysOff.length) {
+      parts.push({ label: `Day off: ${daysOff.join(", ")}`, tag: "button", action: "show vacations",
+        attributes: `class="badge badge--dayoff${compact ? " badge--compact" : ""}" type="button" data-overview="vacation" data-overview-day="${key}" aria-haspopup="dialog"`,
+        content: `${icon("clock")}${compact ? "" : `<span class="badge__name">Day off</span>`}` });
+    }
     // Written-out badges that do not fit fall back to the compact row, which always fits.
-    if (!compact && parts.length > max) return badges(key, badgeKinds.length, true);
+    if (!compact && parts.length > max) return badges(key, badgeKinds.length + 1, true);
     const shown = parts.slice(0, max);
     const rest = parts.slice(max);
     return shown.map((part, index) => {
@@ -243,6 +270,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     contacts = next;
   }
 
+  /** @param {MDCCalendar | null} next */
+  function setCalendar(next) {
+    calendar = next;
+  }
+
   /** @param {MDCHolidays} holidays */
   function setHolidays(holidays) {
     holidaysByDay = new Map();
@@ -262,7 +294,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
     element.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "nearest", inline: "nearest" });
     const mix = (/** @type {string} */ amount) => `color-mix(in srgb, var(--accent) ${amount}, transparent)`;
-    const entry = element.classList.contains("ev");
+    // Elements inside a scrolling list keep their glow inside.
+    const entry = element.matches(".ev, .hp__row, .cx-row, .cx-field");
     const lit = {
       easing: "ease-in-out",
       borderColor: "var(--accent)",
@@ -275,5 +308,5 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     { duration: 1300, delay: 120, pseudoElement: element.classList.contains("day") ? "::before" : undefined });
   }
 
-  app.tiles = { escape, icon, tint, tagIcon, tagIconIds, dayTiles, backlogTiles, bar, badges, describeOccasion, dayOccasions, setTags, setContacts, setHolidays, highlight, slide };
+  app.tiles = { escape, icon, tint, tagIcon, tagIconIds, dayTiles, backlogTiles, bar, badges, describeOccasion, dayOccasions, setTags, setContacts, setHolidays, setCalendar, highlight, slide };
 })(window.MDCalendar);

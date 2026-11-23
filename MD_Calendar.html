@@ -323,6 +323,12 @@
           stroke-linecap="round"
           stroke-linejoin="round"/>
     </symbol>
+    <symbol id="hdr-close" viewBox="0 0 36 36" fill="none">
+    <path d="M10 10L26 26M26 10L10 26"
+          stroke="currentColor"
+          stroke-width="4"
+          stroke-linecap="round"/>
+    </symbol>
     <symbol id="hdr-spinner" viewBox="0 0 36 36" fill="none">
     <path d="M18 6A12 12 0 1 1 18 30A12 12 0 1 1 18 6Z"
           stroke="currentColor"
@@ -398,6 +404,14 @@
     </symbol>
     <symbol id="tag-car" viewBox="0 0 32 32" fill="none">
     <path d="M4 20V16.5Q4 14.5 6 14L9 13.5L12 9Q13 7.5 15 7.5H20Q22 7.5 23 9L26 13.5Q28 14.5 28 16.5V20Q28 21 27 21H25M7 21H5Q4 21 4 20M12.5 21H19.5M9.75 18.5A2.75 2.75 0 1 1 9.75 24A2.75 2.75 0 1 1 9.75 18.5ZM22.25 18.5A2.75 2.75 0 1 1 22.25 24A2.75 2.75 0 1 1 22.25 18.5Z"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="tag-clock" viewBox="0 0 32 32" fill="none">
+    <path d="M16 5A11 11 0 1 1 16 27A11 11 0 1 1 16 5Z
+             M16 10V16L20 19"
           stroke="currentColor"
           stroke-width="3"
           stroke-linecap="round"
@@ -538,7 +552,7 @@
           <input type="file" id="icsImport" accept=".ics,text/calendar" hidden>
           <button class="iconbtn" id="undo" type="button" aria-label="Undo" disabled><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#hdr-undo"></use></svg></button>
           <button class="iconbtn" id="redo" type="button" aria-label="Redo" disabled><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#hdr-redo"></use></svg></button>
-          <button class="save" id="save" type="button" aria-label="All saved"><span class="save__icon"><i class="save__dot"></i><svg class="ui-icon save__ok" aria-hidden="true" viewBox="0 0 32 32"><use href="#hdr-check"></use></svg><svg class="ui-icon save__spin" aria-hidden="true" viewBox="0 0 32 32"><use href="#hdr-spinner"></use></svg></span><span class="save__text"></span><b class="save__count"></b></button>
+          <button class="save" id="save" type="button" aria-label="All saved"><span class="save__icon"><i class="save__dot"></i><svg class="ui-icon save__ok" aria-hidden="true" viewBox="0 0 32 32"><use href="#hdr-check"></use></svg><svg class="ui-icon save__spin" aria-hidden="true" viewBox="0 0 32 32"><use href="#hdr-spinner"></use></svg><svg class="ui-icon save__fail" aria-hidden="true" viewBox="0 0 32 32"><use href="#hdr-close"></use></svg></span></button>
         </div>
       </div>
       <div class="seg" role="group" aria-label="View" data-open-only>
@@ -596,7 +610,6 @@
   </section>
   <div class="focus" id="focus" hidden><section class="focus__card" role="dialog" aria-modal="true" tabindex="-1"></section></div>
   <div class="menu popover glass" id="contextMenu" role="menu" aria-label="Entry" hidden></div>
-  <section class="occ popover glass" id="occasionsPanel" role="dialog" hidden></section>
   <div class="menu popover glass" id="optionsMenu" role="menu" aria-label="Options" hidden>
     <button class="menu__item menu__item--switch" id="hideIcons" type="button" role="menuitemcheckbox" aria-checked="false"><span>Hide icons</span><span class="switch" aria-hidden="true"></span></button>
   </div>

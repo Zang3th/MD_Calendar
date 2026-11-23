@@ -145,22 +145,61 @@ test("a tagged entry goes to its tag's group, keys paste at the pointer and a cl
   expect(await calendar.readFile("Config.md")).toBe("# Config\n\n## Tags\n- Home: #458588 home\n- Work: #d79921 briefcase\n");
 });
 
-test("the holiday overview shows vacations, holidays and school vacations as tabs", async ({ page, calendar }) => {
+test("days off show a day badge instead of a tile; the holiday overview lists vacations and days off, holidays and school vacations as tabs", async ({ page, calendar }) => {
   await calendar.openApp({
-    "Calendar.md": "# Calendar\n\n## November 2026\n\n### 24.11.2026\n- [ ] Day trip #Vacation\n\n## Multi-day\n\n### Trip #Vacation\n#Start\n- 23.11.2026\n#End\n- 25.11.2026\n",
+    "Calendar.md": "# Calendar\n\n## November 2026\n\n### 13.11.2026\n- [ ] Overtime #DayOff\n- [ ] Report\n- [ ] Slides\n\n### 24.11.2026\n- [ ] Day trip #Vacation\n\n" +
+      "## Multi-day\n\n### Comp days #DayOff\n#Start\n- 09.11.2026\n#End\n- 10.11.2026\n\n### Trip #Vacation\n#Start\n- 23.11.2026\n#End\n- 25.11.2026\n",
     "Holidays.md": "# Holidays\n\n## Holidays\n- 25.12.2026 Christmas Day\n\n## School vacations\n- 23.12.2026 - 06.01.2027 Christmas vacation\n",
-    "Config.md": "# Config\n\n## Tags\n- Vacation: #00ff00 vacation\n"
+    "Config.md": "# Config\n\n## Tags\n- Vacation: #00ff00 vacation\n- DayOff: #7be0c7 clock\n"
   });
-  await page.locator("#holidaysButton").click();
+  // A one-day day off shows no tile, only a badge with its icon and “Day off”; a multi-day one keeps its bar only.
+  await page.setViewportSize({ width: 2400, height: 900 });
+  const friday = '.day[data-day="2026-11-13"]';
+  await expect(page.locator(`${friday} .ev:visible .ev__title`)).toHaveText(["Report", "Slides"]);
+  await expect(page.locator(`${friday} .day__badges .badge--dayoff`)).toHaveText("Day off");
+  await expect(page.locator(`${friday} .day__badges .badge--dayoff .ui-icon`)).toBeVisible();
+  await expect(page.locator('.day[data-day="2026-11-09"] .day__badges .badge')).toHaveCount(0);
+  // The hidden day off still counts for positions: a drop before “Report” keeps it first.
+  await calendar.drag(page.locator(`${friday} .ev`, { hasText: "Slides" }), page.locator(`${friday} .ev`, { hasText: "Report" }), 0.2);
+  await page.keyboard.press("Control+s");
+  await expect(page.locator("#save")).not.toHaveClass(/is-dirty/);
+  expect(await calendar.readFile("Calendar.md")).toContain("### 13.11.2026\n- [ ] Overtime #DayOff\n- [ ] Slides\n- [ ] Report\n");
+  // The month shows the icon only; a click opens the days off of the holiday overview, a second one closes it.
+  await page.keyboard.press("m");
+  const badge = page.locator('.mcell[data-day="2026-11-13"] .badge--dayoff');
+  await expect(badge).toHaveText("");
+  await badge.click();
+  await expect(page.locator("#holidaysPanel")).toBeVisible();
+  await badge.click();
+  await expect(page.locator("#holidaysPanel")).toBeHidden();
+  await badge.click();
+  await expect(page.locator("#holidaysYear")).toHaveText("2026");
+  // Only the day off of that day lights up.
+  const lit = (/** @type {import("@playwright/test").Locator} */ locator) => locator.evaluate(element => element.getAnimations().length > 0);
+  expect(await lit(page.locator("#holidaysContent .hp__row", { hasText: "Overtime" }))).toBe(true);
+  expect(await lit(page.locator("#holidaysContent .hp__row", { hasText: "Comp days" }))).toBe(false);
+
   await expect(page.getByRole("tab")).toHaveText(["Vacation", "Holidays", "School vacations"]);
   await expect(page.getByRole("tab", { name: "Vacation", exact: true })).toHaveAttribute("aria-selected", "true");
-  // A vacation within another one is listed below it, indented.
-  await expect(page.locator("#holidaysContent .hp__name")).toHaveText(["Trip", "Day trip"]);
-  await expect(page.locator("#holidaysContent .hp__date")).toHaveText(["23.11.26 – 25.11.26", "24.11.26"]);
-  await expect(page.locator("#holidaysContent .hp__row").nth(1)).toHaveClass(/hp__row--sub/);
+  // Vacations and days off share one list by date; the days off are marked. A vacation within another one is listed
+  // below it, indented.
+  await expect(page.locator("#holidaysContent .hp__name")).toHaveText(["Comp days", "Overtime", "Trip", "Day trip"]);
+  await expect(page.locator("#holidaysContent .hp__date")).toHaveText(["09.11.26 – 10.11.26", "13.11.26Fri", "23.11.26 – 25.11.26", "24.11.26Tue"]);
+  expect(await page.locator("#holidaysContent .hp__kind").evaluateAll(marks => marks.map(mark => mark.getAttribute("aria-label"))))
+    .toEqual(["Day off", "Day off", "Vacation"]);
+  // The mark stands before the date; a vacation takes the color of its tag from Config.md.
+  await expect(page.locator("#holidaysContent .hp__row:not(.hp__row--sub) > :first-child")).toHaveClass(Array(3).fill(/hp__kind/));
+  await expect(page.locator("#holidaysContent .hp__row--vacation").first()).toHaveClass(/has-tag/);
+  await expect(page.locator("#holidaysContent .hp__row--vacation .hp__kind").first()).toHaveCSS("color", "rgb(123, 224, 123)");
+  await expect(page.locator("#holidaysContent .hp__row").nth(3)).toHaveClass(/hp__row--sub/);
   await page.getByRole("tab", { name: "Holidays" }).click();
   await expect(page.locator("#holidaysContent .hp__name")).toHaveText(["Christmas Day"]);
   await expect(page.locator("#holidaysContent .hp__date")).toHaveText(["25.12.26"]);
+  // A day-off badge opens the overview on the vacations, also when another tab was open last.
+  await badge.click();
+  await expect(page.locator("#holidaysPanel")).toBeHidden();
+  await badge.click();
+  await expect(page.getByRole("tab", { name: "Vacation", exact: true })).toHaveAttribute("aria-selected", "true");
   await page.getByRole("tab", { name: "School vacations" }).click();
   await expect(page.locator("#holidaysContent .hp__name")).toHaveText(["Christmas vacation"]);
   await expect(page.locator("#holidaysContent .hp__date")).toHaveText(["23.12.26 – 06.01.27"]);

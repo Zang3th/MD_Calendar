@@ -87,6 +87,7 @@ An entry, a recurring entry and a multi-day entry can be turned into each other 
 - Tags are defined by hand in `Config.md`, each with a color and an icon ID; the app does not create or edit tags. The icon ID names one of the tag icons (see [Design System](ui/DesignSystem.md#tag-icons)).
 - An unknown or missing icon ID is an error. It is reported when `Config.md` is read, through the [notifications](Architecture.md#notifications) with the code `MDC-301`; the tag keeps its color and shows no icon.
 - The tag named “Vacation” marks vacations: its entries and multi-day entries are listed in the [holiday overview](ui/Views.md#holiday-overview).
+- The tag named “DayOff” marks days off, for example to reduce overtime. Days off are kept by hand in `Calendar.md`; the app only shows them. Its entries and multi-day entries are listed together with the vacations in the [holiday overview](ui/Views.md#holiday-overview), marked as days off. Its entries show no tile in the day list; instead their day gets a day-off badge (see [Views](ui/Views.md#day-header)), and they are left out of selections. Multi-day entries with this tag keep their bar and add no badge.
 - An entry has at most one tag. Without a tag it has no color and no icon.
 
 ## Contact

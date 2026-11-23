@@ -192,7 +192,7 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 
 ## D36 · Vacations are entries with the tag “Vacation”
 
-**Decision:** Entries and multi-day entries with the tag named “Vacation” are listed as own vacations in the holiday overview, between holidays and school vacations. → [Views](ui/Views.md#holiday-overview)
+**Decision:** Entries and multi-day entries with the tag named “Vacation” are listed as own vacations in the holiday overview, together with the days off (D59). → [Views](ui/Views.md#holiday-overview)
 **Rejected:** recognizing vacations by the tag icon; listing multi-day entries only.
 
 ## D37 · Selection, internal clipboard and right-click
@@ -276,7 +276,7 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 
 ## D51 · Saving state with a minimum duration
 
-**Decision:** While a save writes, the save control shows “Saving” with a spinner, at least 600ms. → [Shell](ui/Shell.md#save-control)
+**Decision:** While a save writes, the save control shows a spinner, at least 600ms. → [Shell](ui/Shell.md#save-control)
 **Reasons:** saving to a network share takes a noticeable, varying time; a steady state masks it, and the minimum keeps quick saves from flickering.
 **Rejected:** a progress bar (the write cycles give no progress); showing the state only above a delay (the control would jump between states).
 
@@ -335,3 +335,15 @@ Open-source projects that were evaluated and what they contributed:
 **Decision:** The header shows its 18px icons from own symbols (`hdr-<name>`, `res/header-icons/`) drawn on a 36×36 canvas with 2px strokes on whole pixels, also for the icons taken over from MD_Manager; the entry check box is 18px with a centered 16px mark. → [Design System](ui/DesignSystem.md#icons)
 **Reasons:** the 32-unit icons render with 2.25px strokes at 18px and the check box mark with 2.1px strokes, so they were soft at every display scale; the user wants every icon crisp.
 **Rejected:** 16px icons in the header (smaller than wanted); keeping 18px with the 32-unit symbols (soft).
+
+## D59 · Days off are entries with the tag “DayOff”
+
+**Decision:** Days off, for example to reduce overtime, are entries with the tag named “DayOff”, kept by hand in `Calendar.md`. They show no tile; their day header shows one day-off badge after the holiday badge, in the fixed color `--dayoff` with the clock and “Day off” (the clock only where it does not fit). The badge opens the vacations of the holiday overview, as holiday badges open its holidays. A hidden tile stays in the list, so that positions read from it still count every entry. Multi-day entries with the tag keep their bar only. The holiday overview lists entries and multi-day entries with the tag in the tab “Vacation”, in one list with the vacations by date; a mark before the date tells them apart: the clock and a date in `--dayoff` for a day off, the icon and color of the tag “Vacation” from `Config.md` for a vacation. → [Domain](Domain.md#tags), [Views](ui/Views.md#day-header)
+**Reasons:** a day off belongs to the day like a holiday, not to its to-dos; a tag needs no new data format.
+**Rejected:** a tile in the day list (a day off is no to-do); editing days off in the app (kept in the file); the entry title on the badge; a separate `## Days off` section (new format); a tinted day card (not wanted); the badge in the tag color (the user wants a fixed color); badges for multi-day days off (the bar already shows them); an own tab “Days off” (the user wants days off and vacations in one list).
+
+## D60 · Badges lead to their page
+
+**Decision:** Day badges open no list of their own. A birthday or anniversary badge opens the contact view on its (first) person, a holiday badge the holidays and a day-off badge the vacations of the holiday overview; the target lights up there with the highlight of a search hit: the contact rows and the date in the contact, or the rows of that day. → [Views](ui/Views.md#day-header)
+**Reasons:** one way to handle every badge; the page behind a badge already shows everything the list showed, and the highlight says what was asked for.
+**Rejected:** the small list below the badge (a second way next to the jumps); a jump without a highlight (the user could not see what the badge meant).

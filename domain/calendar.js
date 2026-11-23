@@ -641,9 +641,21 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return result;
   }
 
+  /** Entries and multi-day entries with these tags are vacations and days off (docs/Domain.md#tags). */
+  const vacationTag = "Vacation";
+  const dayOffTag = "DayOff";
+
+  /**
+   * Titles of the days off of a day, for its day-off badge: entries only, multi-day entries keep their bar
+   * (docs/ui/Views.md#day-header). @param {MDCCalendar} calendar @param {string} key
+   */
+  function daysOff(calendar, key) {
+    return entries(calendar, key).filter(entry => entry.tag === dayOffTag).map(entry => entry.title);
+  }
+
   /**
    * Periods of a year with the given tag: multi-day entries and entries, consecutive days with the same title merged.
-   * Used for the vacations in the holiday overview (docs/ui/Views.md#holiday-overview).
+   * Used for the days off and vacations in the holiday overview (docs/ui/Views.md#holiday-overview).
    * @param {MDCCalendar} calendar @param {string} tag @param {number} year @returns {MDCPeriod[]}
    */
   function taggedPeriods(calendar, tag, year) {
@@ -693,6 +705,6 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     weekStart: dates.weekStart, weekDays, isoWeek: dates.isoWeek,
     entries, dayList, pins, placedAt, repin, keepPins, restorePins, pinOptions, toPins, slug, placeOccurrences, timeSlot, createEntry, updateEntry, deleteEntry, toggleDone, moveEntry, isOverdue,
     combine, createSeries, updateSeries, deleteSeries, toggleOccurrence, deleteOccurrence, endSeries,
-    createMultiDay, updateMultiDay, deleteMultiDay, segments, taggedPeriods, nestPeriods, changeOccurrences, importEvents
+    createMultiDay, updateMultiDay, deleteMultiDay, segments, vacationTag, dayOffTag, daysOff, taggedPeriods, nestPeriods, changeOccurrences, importEvents
   };
 })(window.MDCalendar);

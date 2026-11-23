@@ -12,8 +12,6 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   const titleText = element("titleText");
   const titleSizer = element("titleSizer");
   const save = element("save");
-  const saveText = /** @type {HTMLElement} */ (save.querySelector(".save__text"));
-  const saveCount = /** @type {HTMLElement} */ (save.querySelector(".save__count"));
   const sound = element("sound");
   const undo = /** @type {HTMLButtonElement} */ (element("undo"));
   const redo = /** @type {HTMLButtonElement} */ (element("redo"));
@@ -26,9 +24,17 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   const startOnly = [element("appVersion"), element("watermark")];
   let flashTimer = 0;
   let sized = false;
-  /** Saves in flight; while above 0 the control shows “Saving”. A “Saved” that arrives meanwhile waits for the end. */
+  /** Saves in flight; while above 0 the control shows the spinner. A “Saved” that arrives meanwhile waits for the end. */
   let savingCount = 0;
   let flashPending = false;
+  /**
+   * A failed save (docs/ui/Shell.md#save-control): its error message and the save state it failed in. It shows until the
+   * next save starts or the unsaved changes change.
+   * @type {{ message: string, status: string, count: number } | null}
+   */
+  let failure = null;
+  /** @type {{ status: string, count: number }} */
+  let lastSave = { status: "saved", count: 0 };
   /** @type {MDCHeaderState | null} */
   let lastState = null;
 
@@ -75,13 +81,19 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
     const dirty = shown.save.status !== "saved";
     const busy = savingCount > 0;
+    lastSave = { status: shown.save.status, count: shown.save.count };
+    if (failure && (failure.status !== lastSave.status || failure.count !== lastSave.count)) failure = null;
+    const failed = Boolean(failure) && !busy;
     save.classList.toggle("is-saving", busy);
-    // “Unsaved” stays until the files are written; while saving, the saving look lies over it.
+    // “Unsaved” stays until the files are written; while saving, the saving look lies over it, after a failed save the
+    // error look.
     save.classList.toggle("is-dirty", dirty);
-    // “Saved” is the resting state and always shows (docs/ui/Shell.md#save-control).
-    saveText.textContent = busy ? "Saving" : dirty ? "Save" : "Saved";
-    saveCount.textContent = dirty && !busy ? String(shown.save.count) : "";
-    label(save, busy ? "Saving…" : shown.save.label);
+    save.classList.toggle("is-failed", failed);
+    // An icon button: the state shows in the icon, the label and the number of changes in the accessible name; a failed
+    // save names its error in the tooltip (docs/ui/Shell.md#save-control).
+    label(save, busy ? "Saving…" : failed ? "Save failed" : shown.save.label);
+    if (failed) save.dataset.tooltip = /** @type {{ message: string }} */ (failure).message;
+    else delete save.dataset.tooltip;
 
     sound.setAttribute("aria-pressed", String(state.muted));
     label(sound, state.muted ? "Unmute" : "Mute");
@@ -105,11 +117,12 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   /**
-   * Starts or ends the saving state (docs/ui/Shell.md#save-control): an accent pill “Saving” with a spinner. Calls nest;
+   * Starts or ends the saving state (docs/ui/Shell.md#save-control): an accent button with a spinner. Calls nest;
    * the state ends with the last one and then shows a “Saved” that arrived meanwhile.
    * @param {boolean} active
    */
   function saving(active) {
+    if (active) failure = null;
     savingCount = Math.max(0, savingCount + (active ? 1 : -1));
     if (lastState) update(lastState);
     if (savingCount === 0 && flashPending) {
@@ -118,5 +131,15 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     }
   }
 
-  app.header = { update, flashSaved, saving, setVersion };
+  /**
+   * Shows a failed save (docs/ui/Shell.md#save-control): a red cross whose tooltip names the error, until the next save
+   * starts or the unsaved changes change.
+   * @param {string} message
+   */
+  function failed(message) {
+    failure = { message, ...lastSave };
+    if (lastState) update(lastState);
+  }
+
+  app.header = { update, flashSaved, saving, failed, setVersion };
 })(window.MDCalendar);

@@ -12,7 +12,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   function draw() {
     if (!shown) return;
     const { calendar, key, today } = shown;
-    const { html } = app.tiles.dayTiles(calendar, key, today, { details: true });
+    const { html, shown: visible } = app.tiles.dayTiles(calendar, key, today, { details: true });
     const bars = app.calendar.segments(calendar, key, 1).segments.map(segment => app.tiles.bar(segment, today, true)).join("");
     card.dataset.day = key;
     card.classList.toggle("is-today", key === today);
@@ -24,7 +24,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       // Holidays, birthdays and anniversaries sit at the top right; arrows, Esc and the background navigate and close.
       `<div class="focus__badges">${app.tiles.badges(key, 5)}</div></header>` +
       (bars ? `<div class="focus__bars">${bars}</div>` : "") +
-      `<div class="focus__list day__list" data-day="${key}">${html || `<p class="focus__empty">No entries</p>`}</div>`;
+      `<div class="focus__list day__list" data-day="${key}">${html}${visible ? "" : `<p class="focus__empty">No entries</p>`}</div>`;
     // The entries can be reordered inside the card (docs/ui/Views.md#focus-mode).
     app.interactions.bindFocusList(/** @type {HTMLElement} */ (card.querySelector(".focus__list")));
   }
