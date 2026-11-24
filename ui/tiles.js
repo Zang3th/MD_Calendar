@@ -134,10 +134,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       shown += 1;
       if ("occurrence" in item) {
         const { series, index, done } = item.occurrence;
-        // Occurrences of recurring entries are never overdue (docs/Domain.md#entry). A placed one is marked, so that a
-        // drop can read the placed occurrences of its day (docs/Domain.md#day-list-order).
+        // Occurrences of recurring entries are never overdue (docs/Domain.md#entry).
         html.push(tile({ title: series.title, done, start: series.startTime, end: series.endTime, tag: series.tag, location: series.location, note: series.note },
-          `data-series="${index}" data-key="${key}"${placed.has(index) ? " data-pinned" : ""}`, false, true, compact, details));
+          `data-series="${index}" data-key="${key}"`, false, true, compact, details));
       } else html.push(tile(item.entry, `data-index="${item.index}"`, app.calendar.isOverdue(item.entry, key, today), false, compact, details));
     }
     return { html: html.join(""), hidden: Math.max(0, visible - limit), shown };

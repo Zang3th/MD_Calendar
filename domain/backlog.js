@@ -190,16 +190,45 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   /**
+   * Whether an entry dropped within its day passes an occurrence that is not placed: with only the placed ones kept as
+   * dropped, some other shown occurrence would not stay where it was dropped (docs/Domain.md#day-list-order).
+   * @param {MDCCalendar} calendar @param {MDCEntryRef} from @param {MDCEntryRef} to @param {MDCPlacement[]} shown
+   */
+  function passesFree(calendar, from, to, shown) {
+    const placedAt = app.calendar.placedAt(calendar, from.key);
+    const entries = [...app.calendar.entries(calendar, from.key)];
+    entries.splice(to.index, 0, ...entries.splice(from.index, 1));
+    const kept = new Map(shown.filter(item => placedAt.has(item.series)).map(item => [item.series, item.at]));
+    /** @type {Map<number, number>} */
+    const at = new Map();
+    let before = 0;
+    for (const item of app.recurrence.dayOrder(app.recurrence.occurrences(calendar, from.key), entries, kept)) {
+      if ("entry" in item) before += 1;
+      else at.set(item.occurrence.index, before);
+    }
+    return shown.some(item => !placedAt.has(item.series) && at.get(item.series) !== item.at);
+  }
+
+  /**
    * Moves an entry between any two places; `to.index` is the position after the entry was removed. A timed entry that
    * arrives on a day from elsewhere goes into its time slot instead (docs/Domain.md#day-list-order). Within a day
-   * `placed` gives its placed occurrences as dropped, so that an entry can pass them.
+   * `shown` gives its occurrences as dropped, so that an entry can pass them; passing one that is not placed places
+   * every occurrence of the day as dropped.
    * @param {MDCCalendar} calendar @param {MDCBacklog} backlog @param {MDCEntryRef} from @param {MDCEntryRef} to
-   * @param {MDCPlacement[] | null} [placed]
+   * @param {MDCPlacement[] | null} [shown]
    * @returns {MDCDayAction | null}
    */
-  function move(calendar, backlog, from, to, placed = null) {
+  function move(calendar, backlog, from, to, shown = null) {
     const sameList = from.group === to.group && (isBacklog(from) || from.key === to.key);
-    const pinned = placed && sameList && !isBacklog(from) ? { key: from.key, pins: app.calendar.toPins(calendar, from.key, placed) } : null;
+    const withinDay = sameList && !isBacklog(from) ? shown : null;
+    if (withinDay && passesFree(calendar, from, to, withinDay)) {
+      const entry = entryAt(calendar, backlog, from);
+      const placing = app.calendar.placeOccurrences(calendar, from.key, withinDay, entry.title);
+      if (placing) return app.calendar.combine(entry.title, [action(calendar, backlog, entry.title, { ref: from, entry }, { ref: to, entry }), placing]);
+    }
+    const placedAt = withinDay ? app.calendar.placedAt(calendar, from.key) : new Map();
+    const placed = withinDay ? withinDay.filter(item => placedAt.has(item.series)) : null;
+    const pinned = placed ? { key: from.key, pins: app.calendar.toPins(calendar, from.key, placed) } : null;
     const pinsChange = pinned && JSON.stringify(pinned.pins) !== JSON.stringify(app.calendar.pins(calendar, from.key));
     if (sameList && from.index === to.index && !pinsChange) return null;
     const entry = entryAt(calendar, backlog, from);

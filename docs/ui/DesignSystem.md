@@ -250,6 +250,7 @@ The set, chosen by the user from three designs per tag:
 | `heart` | Relationship | Heart, the same drawing as the UI icon `heart` |
 | `friends` | Friends | Two people, the same drawing as the UI icon `contacts` |
 | `clock` | Day off | Clock, the same drawing as the UI icon `clock` |
+| `chip` | Tech | Processor chip with pins |
 
 ## Motion
 

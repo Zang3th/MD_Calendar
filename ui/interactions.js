@@ -349,18 +349,17 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   /**
-   * The occurrences of a list as dropped, each with the number of normal entries before it (docs/Domain.md#day-list-order):
-   * all of them after an occurrence was dropped, otherwise the placed ones.
-   * @param {HTMLElement} list @param {boolean} all @returns {MDCPlacement[]}
+   * The occurrences of a list as dropped, each with the number of normal entries before it (docs/Domain.md#day-list-order).
+   * @param {HTMLElement} list @returns {MDCPlacement[]}
    */
-  function placements(list, all) {
+  function placements(list) {
     /** @type {MDCPlacement[]} */
     const result = [];
     let before = 0;
     for (const tile of list.children) {
       if (!(tile instanceof HTMLElement) || !tile.classList.contains("ev")) continue;
       if (!tile.classList.contains("ev--series")) before += 1;
-      else if (all || tile.hasAttribute("data-pinned")) result.push({ series: Number(tile.dataset.series), at: before });
+      else result.push({ series: Number(tile.dataset.series), at: before });
     }
     return result;
   }
@@ -448,7 +447,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         const id = idOf({ ref: from, key: from.key });
         const others = selection.has(id) ? tiles().filter(tile => tile !== event.item && selection.has(idOf(pickOf(tile))) && !tile.classList.contains("ev--series")) : [];
         if (!others.length) {
-          handlers?.move(from, place(event.to, entryPosition(event.item, new Set())), event.to === event.from ? placements(event.to, false) : null);
+          handlers?.move(from, place(event.to, entryPosition(event.item, new Set())), event.to === event.from ? placements(event.to) : null);
           return;
         }
         // A selected tile drags the whole selection along (docs/ui/Interaction.md#selection-copy-and-paste).
@@ -481,7 +480,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       onEnd(event) {
         document.body.classList.remove("is-sorting");
         if (dropOccurrence(event)) return;
-        handlers?.move(place(event.from, Number(event.item.dataset.index)), place(event.to, entryPosition(event.item, new Set())), placements(event.to, false));
+        handlers?.move(place(event.from, Number(event.item.dataset.index)), place(event.to, entryPosition(event.item, new Set())), placements(event.to));
       }
     } }) : null;
   }
@@ -595,7 +594,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     occurrenceRefused = false;
     if (!event.item.classList.contains("ev--series")) return false;
     if (event.oldIndex === event.newIndex) return true;
-    handlers?.placeOccurrences(event.item.dataset.key || "", placements(event.from, true), Number(event.item.dataset.series));
+    handlers?.placeOccurrences(event.item.dataset.key || "", placements(event.from), Number(event.item.dataset.series));
     return true;
   }
 

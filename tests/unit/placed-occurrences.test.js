@@ -114,6 +114,22 @@ test("placed occurrences keep their place when entries are added, edited, checke
   check(app.backlog.toggleEntries(calendar, backlog, [{ key: "2026-11-13", index: 0 }]), ["Kyokushin"]);
 });
 
+test("an entry dragged past an occurrence that is not placed places every occurrence of its day as dropped", () => {
+  const backlog = { newline: "\n", head: [], ungrouped: [], groups: [] };
+  const key = "2026-11-12";
+  // The only entry has no time, so the occurrences come first; dropping it on top passes both.
+  const { calendar } = parse("### 12.11.2026\n- [ ] Microphone\n");
+  assert.deepEqual(order(calendar, key), ["Vitamins", "Kyokushin", "Microphone"]);
+  step(calendar, app.backlog.move(calendar, backlog, { key, index: 0 }, { key, index: 0 }, [{ series: 1, at: 1 }, { series: 0, at: 1 }]));
+  assert.deepEqual(order(calendar, key), ["Microphone", "Vitamins", "Kyokushin"]);
+  assert.deepEqual(plain(app.calendar.pins(calendar, key)), [{ id: "vitamins", at: 1 }, { id: "kyokushin", at: 1 }]);
+  // A drop that passes no occurrence that is not placed places nothing.
+  const timed = parse("### 12.11.2026\n- [ ] A\n- [ ] 09:00 Dentist\n- [ ] B\n").calendar;
+  step(timed, app.backlog.move(timed, backlog, { key, index: 2 }, { key, index: 0 }, [{ series: 1, at: 2 }, { series: 0, at: 3 }]));
+  assert.deepEqual(order(timed, key), ["B", "A", "Vitamins", "Dentist", "Kyokushin"]);
+  assert.deepEqual(plain(app.calendar.pins(timed, key)), []);
+});
+
 test("a series change drops the references it removes and keeps the others, in the same undo step", () => {
   const text = "### 10.11.2026\n- [ ] A\n- @kyokushin\n\n### 12.11.2026\n- [ ] B\n- @kyokushin\n\n### 19.11.2026\n- [ ] C\n- @kyokushin\n";
   const index = 0;

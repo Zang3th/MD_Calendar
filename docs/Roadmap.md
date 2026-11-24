@@ -138,6 +138,11 @@ Ab hier ersetzt MD_Calendar den Google-Kalender als Daily-Driver.
 
 - [ ] Feature ausarbeiten
 
+### Tags
+
+- [x] ~Friends ergänzen~
+- [x] ~Tech ergänzen~
+
 ### Bugs und Verbesserungen
 
 - [x] ~Farben für die Tags finalisieren~
