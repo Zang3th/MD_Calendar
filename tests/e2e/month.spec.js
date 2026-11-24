@@ -34,21 +34,35 @@ test("“+N” enlarges a long day in place; its entries can be dragged out and 
   await calendar.openApp({ "Calendar.md": `# Calendar\n\n## November 2026\n\n### 18.11.2026\n${titles.map(title => `- [ ] ${title}`).join("\n")}\n` });
   await page.keyboard.press("m");
   const cell = page.locator('.mcell[data-day="2026-11-18"]');
-  // How many tiles fit depends on the cell height; the visible ones plus “+N” always cover all entries, and one more
-  // entry row would not fit next to the chip.
+  // How many tiles fit depends on the cell height; the visible ones plus “+N” always cover all entries, “+N” sits at the
+  // end of the last entry row, and one more entry row would not fit.
   const visible = await cell.locator(".ev__title").allTextContents();
   expect(visible.length).toBeGreaterThan(0);
   expect(visible).toEqual(titles.slice(0, visible.length));
   await expect(cell.locator(".more")).toHaveText(`+${titles.length - visible.length}`);
-  const fits = await cell.evaluate(element => {
-    const list = /** @type {HTMLElement} */ (element.querySelector(".mcell__list")).getBoundingClientRect();
-    // Below the list: chip with its margin (24), cell padding (6) and border (1); another entry row needs 26 more.
-    return element.getBoundingClientRect().bottom - list.bottom >= 24 + 6 + 1 + 26;
+  /** Where “+N” sits against the last visible tile of a cell. @param {import("@playwright/test").Locator} target */
+  const chipPlace = target => target.evaluate(element => {
+    const last = /** @type {HTMLElement} */ (Array.from(element.querySelectorAll(".mcell__list .ev:not([hidden])")).at(-1)).getBoundingClientRect();
+    const chip = /** @type {HTMLElement} */ (element.querySelector(".more")).getBoundingClientRect();
+    return { sameRow: Math.abs(chip.top - last.top) < 0.5 && Math.abs(chip.bottom - last.bottom) < 0.5, gap: Math.round(chip.left - last.right) };
   });
-  expect(fits).toBe(false);
+  const layout = await cell.evaluate(element => {
+    const list = /** @type {HTMLElement} */ (element.querySelector(".mcell__list")).getBoundingClientRect();
+    const last = /** @type {HTMLElement} */ (Array.from(element.querySelectorAll(".mcell__list .ev:not([hidden])")).at(-1)).getBoundingClientRect();
+    const chip = /** @type {HTMLElement} */ (element.querySelector(".more")).getBoundingClientRect();
+    return {
+      // Below the list: cell padding (6) and border (1); another entry row needs 26 more.
+      fits: element.getBoundingClientRect().bottom - list.bottom >= 6 + 1 + 26,
+      sameRow: chip.top === last.top && chip.bottom === last.bottom,
+      gap: chip.left - last.right
+    };
+  });
+  expect(layout).toEqual({ fits: false, sameRow: true, gap: 4 });
   await cell.locator(".more").click();
   await expect(cell.locator(".ev__title")).toHaveText(titles);
   await expect(cell.locator(".more")).toHaveClass(/more--less/);
+  // The dash stays where “+N” was: at the end of the last entry row.
+  expect(await chipPlace(cell)).toEqual({ sameRow: true, gap: 4 });
   await expect(page.locator("#month")).toBeVisible();
   // The neighbors keep their columns while the cell lies over them.
   const columns = await page.locator('.mcell[data-day="2026-11-19"]').evaluate(element => getComputedStyle(element).gridColumnStart);

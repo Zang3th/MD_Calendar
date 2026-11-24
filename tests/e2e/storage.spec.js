@@ -128,5 +128,8 @@ test("a folder without MD_Calendar.json does not open; “New calendar” sets i
   await expect.poll(async () => JSON.parse(await calendar.readFile("MD_Calendar.json") || "{}").files?.["Calendar.md"]?.savedBy).toBe(device);
   const saved = JSON.parse(await calendar.readFile("MD_Calendar.json") || "{}");
   expect(saved.files["Calendar.md"].hash).toMatch(/^sha256-[0-9a-f]{64}$/);
+  // The hash is the one of the file as it was written.
+  const written = await calendar.readFile("Calendar.md") || "";
+  expect(saved.files["Calendar.md"].hash).toBe(await page.evaluate(text => /** @type {any} */ (window).MDCalendar.storage.fingerprint(text), written));
   expect(saved.devices[device || ""].lastSaved).toBe(utc);
 });

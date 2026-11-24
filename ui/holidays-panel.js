@@ -39,6 +39,13 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   /** @param {string} start @param {string} end */
   const range = (start, end) => start === end ? short(start) : `${short(start)} – ${short(end)}`;
 
+  /**
+   * A date range; a single day shows its weekday behind the date where the second date of a range starts, after a gap
+   * as wide as the dash between them. @param {string} start @param {string} end
+   */
+  const span = (start, end) => `<span class="hp__date hp__date--range">${range(start, end)}` +
+    `${start === end ? `<span class="hp__gap" aria-hidden="true"></span><span class="hp__weekday">${app.calendar.formatDay(start, "dd")}</span>` : ""}</span>`;
+
   /** @param {string} text */
   const empty = text => `<li class="hp__empty">${text}</li>`;
 
@@ -55,26 +62,18 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     if (tab === "school") {
       const vacations = data.vacations.filter(vacation => vacation.start.startsWith(prefix) || vacation.end.startsWith(prefix));
       return vacations.map(vacation =>
-        `<li class="hp__row${pastClass(vacation.end)}"><span class="hp__date hp__date--range">${range(vacation.start, vacation.end)}</span>` +
+        `<li class="hp__row${pastClass(vacation.end)}">${span(vacation.start, vacation.end)}` +
         `<span class="hp__name">${escape(vacation.name)}</span></li>`).join("")
         || empty(data.vacations.length ? `No school vacations in ${year}.` : "No Holidays.md in the folder.");
     }
-    // A period within another one is listed below it, indented. A mark before the date tells them apart: a day off shows
-    // the clock in the day-off color, a vacation the icon and color of its tag from Config.md (docs/ui/Views.md#holiday-overview).
+    // A period within another one is listed below it, indented. The color of the date tells them apart: a day off in the
+    // day-off color, a vacation in the color of its tag from Config.md (docs/ui/Views.md#holiday-overview).
     const vacation = app.tiles.tint(app.calendar.vacationTag);
-    const vacationIcon = app.tiles.tagIcon(app.calendar.vacationTag, "") || `<svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#tag-vacation"></use></svg>`;
     return app.calendar.nestPeriods(personal(year)).map(({ period: item, depth }) => {
-      // A vacation within another one needs no mark of its own: the guide line joins it to its vacation.
-      const bare = depth > 0 && !item.dayOff;
-      const kind = item.dayOff
-        ? `<span class="hp__kind" role="img" aria-label="Day off">${app.tiles.icon("clock")}</span>`
-        : bare ? "" : `<span class="hp__kind" role="img" aria-label="Vacation">${vacationIcon}</span>`;
-      const classes = `hp__row hp__row--${item.dayOff ? "dayoff" : `vacation${vacation.className}`}${depth ? " hp__row--sub" : ""}${bare ? " hp__row--bare" : ""}${pastClass(item.end)}`;
+      const classes = `hp__row hp__row--${item.dayOff ? "dayoff" : `vacation${vacation.className}`}${depth ? " hp__row--sub" : ""}${pastClass(item.end)}`;
       const style = [depth ? `--depth:${depth}` : "", !item.dayOff && vacation.hue !== null ? `--h:${vacation.hue}` : ""].filter(Boolean).join(";");
-      const span = item.dayOff ? ` data-from="${item.start}" data-to="${item.end}"` : "";
-      return `<li class="${classes}"${span}${style ? ` style="${style}"` : ""}>${kind}` +
-        // A single day shows its weekday behind the date, within the width of a range.
-        `<span class="hp__date hp__date--range">${range(item.start, item.end)}${item.start === item.end ? `<span class="hp__weekday">${app.calendar.formatDay(item.start, "dd")}</span>` : ""}</span>` +
+      const days = item.dayOff ? ` data-from="${item.start}" data-to="${item.end}"` : "";
+      return `<li class="${classes}"${days}${style ? ` style="${style}"` : ""}>${span(item.start, item.end)}` +
         `<span class="hp__name">${escape(item.title)}</span></li>`;
     }).join("") || empty(`No vacation in ${year}.`);
   }

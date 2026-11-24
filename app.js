@@ -349,12 +349,12 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         showConflict();
       });
       started.on("blocked", showConflict);
-      started.on("saved", ({ files }) => {
+      started.on("saved", ({ files, texts }) => {
         clearConflict();
         updateHeader();
         if (!files.length) return;
         app.header.flashSaved();
-        updateFolderState(opened, async (state, device, now) => app.folderState.saved(state, device, await hashes(opened, files), now));
+        updateFolderState(opened, async (state, device, now) => app.folderState.saved(state, device, await hashes(texts), now));
       });
       started.on("reloaded", ({ file }) => {
         render();
@@ -402,14 +402,14 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       });
     }
 
-    /** Fingerprint of each file as it is stored now. @param {MDCStorageAdapter} folder @param {string[]} files */
-    async function hashes(folder, files) {
+    /**
+     * Fingerprint of each file as the save wrote it; the session hands the texts over, so that the folder, often on a
+     * network drive, is not read once more. @param {Record<string, string>} texts
+     */
+    async function hashes(texts) {
       /** @type {Record<string, string>} */
       const result = {};
-      for (const file of files) {
-        const stored = await folder.read(file);
-        if (stored) result[file] = await app.storage.fingerprint(stored.text);
-      }
+      for (const [file, text] of Object.entries(texts)) result[file] = await app.storage.fingerprint(text);
       return result;
     }
 

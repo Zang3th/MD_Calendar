@@ -204,8 +204,10 @@ html[data-build="missing"] .build-missing { display: block; max-width: 40rem; ma
 .save.is-dirty:hover:not(:disabled) { background: color-mix(in srgb, var(--warn) var(--active), transparent); color: color-mix(in srgb, var(--warn) var(--light), #fff); }
 .save.is-dirty .save__ok { opacity: 0; transform: scale(.4); }
 .save.is-dirty .save__dot { opacity: 1; transform: none; animation: pulse 2s ease-in-out infinite; }
-/* Saving: a spinning arc masks the wait for the network and the write cycles of the storage; it turns with a transform. */
-.save__spin { position: absolute; opacity: 0; transform: scale(.4); transition: opacity .2s, transform .3s; }
+/* Saving: a spinning arc masks the wait for the network and the write cycles of the storage; it turns with a transform.
+   The arc turns inside an HTML wrapper: Chromium cannot run `rotate`/`scale` on an <svg> element on the compositor, so
+   the spinner would stop whenever the main thread is busy. */
+.save__spin { position: absolute; display: grid; opacity: 0; transform: scale(.4); transition: opacity .2s, transform .3s; }
 .save.is-saving { color: var(--accent); background: color-mix(in srgb, var(--accent) var(--hover), transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) var(--ring), transparent); cursor: progress; }
 .save.is-saving:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) var(--active), transparent); color: var(--accent); }
 .save.is-saving .save__ok, .save.is-saving .save__dot { opacity: 0; transform: scale(.4); animation: none; }
@@ -297,23 +299,18 @@ body.is-sorting .backlog__title { outline: 1px dashed var(--edge); outline-offse
 .hp__row.is-past { opacity: var(--o-past); }
 /* A vacation within another one: indented per level, with a guide line that joins it to the one above. */
 .hp__row--sub { position: relative; margin-left: calc(var(--depth) * 16px); }
-/* Without a mark, the row moves by the width of the marks (14px icon and 8px gap): its guide line runs below the date above. */
-.hp__row--sub.hp__row--bare { margin-left: calc(var(--depth) * 16px + 22px); }
 .hp__row--sub::before { content: ""; position: absolute; left: -8px; top: -2px; bottom: 0; width: 2px; border-radius: 1px; background: color-mix(in srgb, var(--accent-2) var(--ring), transparent); }
 .hp__date { flex: none; width: 64px; font-weight: 700; font-variant-numeric: tabular-nums; color: color-mix(in srgb, var(--accent-2) var(--light), #fff); }
 .hp__date--range { width: 140px; }
 .hp__day { flex: none; width: 30px; color: var(--muted); font-size: 12px; }
-.hp__weekday { margin-left: 8px; color: var(--muted); font-size: 12px; font-weight: 400; }
+/* The weekday of a single day starts where the second date of a range starts: the gap is the dash of a range, invisible. */
+.hp__gap::before { content: " – "; white-space: pre; visibility: hidden; }
+.hp__weekday { color: var(--muted); font-size: 12px; font-weight: 400; }
 .hp__name { min-width: 0; }
-/* Vacation or day off at a glance: the mark before the date and the date in the color of the vacation tag (Config.md,
-   --accent-2 without it) or in --dayoff (docs/ui/Views.md#holiday-overview). */
-/* Centered on the first line of the row, also when the title wraps. */
-.hp__kind { flex: none; align-self: flex-start; width: 14px; height: 1lh; display: inline-flex; align-items: center; color: var(--accent-2); }
-.hp__kind .ui-icon { width: 14px; height: 14px; }
-.hp__row--vacation.has-tag .hp__kind { color: hsl(var(--h) var(--tag-s) var(--tag-l)); }
+/* Vacation or day off at a glance: the date in the color of the vacation tag (Config.md, --accent-2 without it) or in
+   --dayoff (docs/ui/Views.md#holiday-overview). */
 .hp__row--vacation.has-tag .hp__date { color: hsl(var(--h) var(--tag-s) 80%); }
 .hp__row--vacation.has-tag.hp__row--sub::before { background: color-mix(in srgb, hsl(var(--h) var(--tag-s) var(--tag-l)) var(--ring), transparent); }
-.hp__row--dayoff .hp__kind { color: var(--dayoff); }
 .hp__row--dayoff .hp__date { color: color-mix(in srgb, var(--dayoff) var(--light), #fff); }
 .hp__empty { padding: 6px; color: var(--faint); }
 
@@ -510,6 +507,14 @@ body.is-sorting .backlog__title { outline: 1px dashed var(--edge); outline-offse
 .more { flex: none; align-self: flex-start; height: 20px; margin-top: 4px; font-size: 11px; font-weight: 700; padding: 0 8px; border-radius: 999px; background: color-mix(in srgb, var(--accent) var(--active), transparent); color: color-mix(in srgb, var(--accent) var(--light), #fff); }
 .more--less { display: inline-flex; align-items: center; justify-content: center; width: 28px; padding: 0; }
 .more--less::before { content: ""; width: 7px; height: 2px; border-radius: 1px; background: currentColor; }
+/* “+N”, and the dash of the enlarged cell, is a small tile at the end of the last entry row, as high as an entry; that
+   entry ends 4px before it and shortens its title. A cell growing up drops its lanes (.is-up), so the chip does too. */
+.mcell { --more-w: 30px; }
+.mcell.has-inline-more .more {
+  position: absolute; right: 6px; top: calc(var(--mhdr) + var(--more-lanes, var(--lanes, 0)) * var(--mbarh) + var(--more-row, 0) * (var(--mevh) + 4px));
+  display: inline-flex; align-items: center; justify-content: center; width: var(--more-w); height: var(--mevh); margin: 0; padding: 0; border-radius: 8px;
+}
+.mcell.has-inline-more .ev--before-more { margin-right: calc(var(--more-w) + 4px); }
 .more:hover { background: color-mix(in srgb, var(--accent) var(--glow), transparent); }
 /* Enlarged cell: lies over the cells below it (or, with .is-up, above it) in its own grid column. Growing down, its row's
    bars stay on top of it; growing up, its head no longer lines up with them, so it covers them and drops the lanes. */
@@ -520,6 +525,7 @@ body.is-sorting .backlog__title { outline: 1px dashed var(--edge); outline-offse
 }
 .mcell.is-expanded:not(.is-today) { background-image: linear-gradient(var(--card), var(--card)); box-shadow: 0 20px 60px rgba(0,0,0,.5); }
 .mcell.is-up { z-index: 3; }
+.mcell.is-up { --more-lanes: 0; }
 .mcell.is-up .mcell__spacer { display: none; }
 
 /* ---------- Week, portrait: days as rows, entry grid 3 columns x 4 entries ---------- */
@@ -598,13 +604,11 @@ body.is-sorting .backlog__title { outline: 1px dashed var(--edge); outline-offse
   background: color-mix(in srgb, var(--base) 40%, transparent); border: 1px solid var(--edge); }
 .dlg__title:focus { border-color: color-mix(in srgb, var(--accent) var(--ring), transparent); }
 .dlg__title::placeholder, .dlg__note::placeholder { color: var(--faint); }
-/* Duplicate, delete and close sit above the title at the right, duplicate lit in the accent; Apply ends the strip of tokens. */
+/* Duplicate, delete and close sit above the title at the right; Apply ends the strip of tokens. */
 .dlg__head { display: flex; justify-content: flex-end; gap: 4px; margin: -8px -8px -4px 0; }
 .dlg__bar { display: flex; align-items: center; gap: 12px; }
 .dlg__bar > .dlg__toks { flex: 1; }
 .dlg__bar > .btn { flex: none; height: 32px; padding: 0 16px; }
-.dlg__dup { color: var(--accent); }
-.dlg__dup:hover:not(:disabled) { color: var(--accent); background: color-mix(in srgb, var(--accent) var(--hover), transparent); }
 /* The tokens stay on one line; when it is full, tokens drop their value and keep only their icon, tag first. */
 .dlg__toks { min-width: 0; display: flex; gap: 6px; align-items: center; }
 /* A set token shows its value; an unset one is only its icon. */

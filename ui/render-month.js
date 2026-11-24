@@ -5,8 +5,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 // and multi-day bars.
 (function (app) {
   const board = /** @type {HTMLElement} */ (document.getElementById("month"));
-  // Heights from styles.css (.month): cell header, bar lane, entry tile, gap, “+N” chip, cell bottom padding.
-  const sizes = { head: 32, lane: 22, entry: 22, gap: 4, more: 24, padding: 6 };
+  // Heights from styles.css (.month): cell header, bar lane, entry tile, gap, cell bottom padding. “+N” sits at the end
+  // of the last entry row and needs no height of its own.
+  const sizes = { head: 32, lane: 22, entry: 22, gap: 4, padding: 6 };
   /** @type {{calendar: MDCCalendar, today: string} | null} */
   let shown = null;
   let cellHeight = 0;
@@ -15,21 +16,15 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   let shownMonth = "";
   /** @type {Map<string, HTMLElement>} */
   const cells = new Map();
-  /** Room for entries each cell was last filled for, as "all/withMore". @type {Map<string, string>} */
+  /** Entry rows each cell was last filled for. @type {Map<string, number>} */
   const rooms = new Map();
   /** Day whose cell is enlarged to show all its entries, or "". */
   let expanded = "";
 
-  /**
-   * Entries that fit into a cell next to its bar lanes.
-   * Returns the number to show when all fit, and the number to show next to “+N” otherwise.
-   * @param {number} lanes
-   */
+  /** Entry rows that fit into a cell next to its bar lanes; “+N” shares the last one. @param {number} lanes */
   function capacity(lanes) {
     const room = cellHeight - sizes.head - sizes.padding - lanes * sizes.lane;
-    const all = Math.max(0, Math.floor((room + sizes.gap) / (sizes.entry + sizes.gap)));
-    const withMore = Math.max(0, Math.floor((room - sizes.more + sizes.gap) / (sizes.entry + sizes.gap)));
-    return { all, withMore };
+    return Math.max(0, Math.floor((room + sizes.gap) / (sizes.entry + sizes.gap)));
   }
 
   /** @param {HTMLElement} cell @param {MDCCalendar} calendar @param {string} key @param {string} today */
@@ -37,14 +32,20 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     cell.classList.toggle("is-today", key === today);
     cell.classList.toggle("is-past", key < today);
     const room = capacity(Number(cell.style.getPropertyValue("--lanes")) || 0);
-    rooms.set(key, `${room.all}/${room.withMore}`);
+    rooms.set(key, room);
     // Days off show no tile (docs/ui/Views.md#day-header).
     const total = app.recurrence.occurrences(calendar, key).length + app.calendar.entries(calendar, key).length - app.calendar.daysOff(calendar, key).length;
     // An enlarged cell whose entries fit again (after a move or an edit) closes by itself.
-    if (key === expanded && total <= room.all) expanded = "";
+    if (key === expanded && total <= room) expanded = "";
     const open = key === expanded;
-    const { html, hidden } = app.tiles.dayTiles(calendar, key, today, { limit: open || total <= room.all ? total : room.withMore, compact: true });
-    /** @type {HTMLElement} */ (cell.querySelector(".mcell__list")).innerHTML = html;
+    const { html, hidden, shown: rows } = app.tiles.dayTiles(calendar, key, today, { limit: open || total <= room ? total : room, compact: true });
+    const list = /** @type {HTMLElement} */ (cell.querySelector(".mcell__list"));
+    list.innerHTML = html;
+    // “+N” and, in the enlarged cell, the dash sit at the end of the last entry row; that tile ends before the chip.
+    const inline = open || hidden > 0;
+    cell.classList.toggle("has-inline-more", inline);
+    cell.style.setProperty("--more-row", String(Math.max(0, rows - 1)));
+    if (inline) Array.from(list.querySelectorAll(".ev:not([hidden])")).at(-1)?.classList.add("ev--before-more");
     /** @type {HTMLElement} */ (cell.querySelector(".mcell__badges")).innerHTML = app.tiles.badges(key, 3, true);
     const more = /** @type {HTMLButtonElement} */ (cell.querySelector(".more"));
     more.hidden = !open && !hidden;
@@ -193,7 +194,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         cellHeight = height;
         for (const [key, cell] of cells) {
           const room = capacity(Number(cell.style.getPropertyValue("--lanes")) || 0);
-          if (rooms.get(key) !== `${room.all}/${room.withMore}`) fill(cell, shown.calendar, key, shown.today);
+          if (rooms.get(key) !== room) fill(cell, shown.calendar, key, shown.today);
         }
       }
       placeExpanded();

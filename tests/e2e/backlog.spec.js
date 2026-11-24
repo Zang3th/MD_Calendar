@@ -149,7 +149,7 @@ test("days off show a day badge instead of a tile; the holiday overview lists va
   await calendar.openApp({
     "Calendar.md": "# Calendar\n\n## November 2026\n\n### 13.11.2026\n- [ ] Overtime #DayOff\n- [ ] Report\n- [ ] Slides\n\n### 24.11.2026\n- [ ] Day trip #Vacation\n\n" +
       "## Multi-day\n\n### Comp days #DayOff\n#Start\n- 09.11.2026\n#End\n- 10.11.2026\n\n### Trip #Vacation\n#Start\n- 23.11.2026\n#End\n- 25.11.2026\n",
-    "Holidays.md": "# Holidays\n\n## Holidays\n- 25.12.2026 Christmas Day\n\n## School vacations\n- 23.12.2026 - 06.01.2027 Christmas vacation\n",
+    "Holidays.md": "# Holidays\n\n## Holidays\n- 25.12.2026 Christmas Day\n\n## School vacations\n- 13.11.2026 - 13.11.2026 Bridge day\n- 23.12.2026 - 06.01.2027 Christmas vacation\n",
     "Config.md": "# Config\n\n## Tags\n- Vacation: #00ff00 vacation\n- DayOff: #7be0c7 clock\n"
   });
   // A one-day day off shows no tile, only a badge with its icon and “Day off”; a multi-day one keeps its bar only.
@@ -181,16 +181,27 @@ test("days off show a day badge instead of a tile; the holiday overview lists va
 
   await expect(page.getByRole("tab")).toHaveText(["Vacation", "Holidays", "School vacations"]);
   await expect(page.getByRole("tab", { name: "Vacation", exact: true })).toHaveAttribute("aria-selected", "true");
-  // Vacations and days off share one list by date; the days off are marked. A vacation within another one is listed
-  // below it, indented.
+  // Vacations and days off share one list by date, without icons; the color of the date tells them apart. A vacation
+  // within another one is listed below it, indented.
   await expect(page.locator("#holidaysContent .hp__name")).toHaveText(["Comp days", "Overtime", "Trip", "Day trip"]);
   await expect(page.locator("#holidaysContent .hp__date")).toHaveText(["09.11.26 – 10.11.26", "13.11.26Fri", "23.11.26 – 25.11.26", "24.11.26Tue"]);
-  expect(await page.locator("#holidaysContent .hp__kind").evaluateAll(marks => marks.map(mark => mark.getAttribute("aria-label"))))
-    .toEqual(["Day off", "Day off", "Vacation"]);
-  // The mark stands before the date; a vacation takes the color of its tag from Config.md.
-  await expect(page.locator("#holidaysContent .hp__row:not(.hp__row--sub) > :first-child")).toHaveClass(Array(3).fill(/hp__kind/));
+  // The weekday of a single day starts where the second date of a range starts.
+  // Left edge of the weekday of a single day, or of the second date of a range.
+  const second = (/** @type {string} */ text) => page.locator("#holidaysContent .hp__row", { hasText: text }).evaluate(row => {
+    const date = /** @type {HTMLElement} */ (row.querySelector(".hp__date"));
+    const weekday = date.querySelector(".hp__weekday");
+    if (weekday) return weekday.getBoundingClientRect().left;
+    const node = /** @type {Text} */ (date.firstChild);
+    const range = document.createRange();
+    range.setStart(node, node.data.indexOf("–") + 2);
+    range.setEnd(node, node.data.indexOf("–") + 3);
+    return range.getBoundingClientRect().left;
+  });
+  expect(Math.abs(await second("Overtime") - await second("Comp days"))).toBeLessThan(1);
+  await expect(page.locator("#holidaysContent .hp__row .ui-icon")).toHaveCount(0);
+  await expect(page.locator("#holidaysContent .hp__row:not(.hp__row--sub) > :first-child")).toHaveClass(Array(3).fill(/hp__date/));
+  // A vacation takes the color of its tag from Config.md.
   await expect(page.locator("#holidaysContent .hp__row--vacation").first()).toHaveClass(/has-tag/);
-  await expect(page.locator("#holidaysContent .hp__row--vacation .hp__kind").first()).toHaveCSS("color", "rgb(123, 224, 123)");
   await expect(page.locator("#holidaysContent .hp__row").nth(3)).toHaveClass(/hp__row--sub/);
   await page.getByRole("tab", { name: "Holidays" }).click();
   await expect(page.locator("#holidaysContent .hp__name")).toHaveText(["Christmas Day"]);
@@ -201,8 +212,9 @@ test("days off show a day badge instead of a tile; the holiday overview lists va
   await badge.click();
   await expect(page.getByRole("tab", { name: "Vacation", exact: true })).toHaveAttribute("aria-selected", "true");
   await page.getByRole("tab", { name: "School vacations" }).click();
-  await expect(page.locator("#holidaysContent .hp__name")).toHaveText(["Christmas vacation"]);
-  await expect(page.locator("#holidaysContent .hp__date")).toHaveText(["23.12.26 – 06.01.27"]);
+  // A one-day school vacation shows its weekday behind the date, like a single vacation day.
+  await expect(page.locator("#holidaysContent .hp__name")).toHaveText(["Bridge day", "Christmas vacation"]);
+  await expect(page.locator("#holidaysContent .hp__date")).toHaveText(["13.11.26Fri", "23.12.26 – 06.01.27"]);
   await page.locator("[data-year='1']").click();
   await expect(page.locator("#holidaysContent .hp__name")).toHaveText(["Christmas vacation"]);
 });
