@@ -17,13 +17,14 @@ interface MDCalendarNamespace {
     pins(calendar: MDCCalendar, key: string): readonly MDCPin[];
     placedAt(calendar: MDCCalendar, key: string): Map<number, number>;
     repin(before: readonly MDCEntry[], after: readonly MDCEntry[], pins: readonly MDCPin[], moved?: Set<MDCEntry>, replaced?: Map<MDCEntry, MDCEntry>): MDCPin[];
-    keepPins(calendar: MDCCalendar, keys: string[], change: () => void, options?: { moved?: Set<MDCEntry>; replaced?: Map<MDCEntry, MDCEntry>; placed?: { key: string; pins: MDCPin[] } | null }): Array<{ key: string; pins: readonly MDCPin[] }>;
+    keepPins(calendar: MDCCalendar, keys: string[], change: () => void, options?: { moved?: Set<MDCEntry>; replaced?: Map<MDCEntry, MDCEntry>; placed?: { key: string; pins: MDCPin[] } | null; slotted?: MDCSlotted[] }): Array<{ key: string; pins: readonly MDCPin[] }>;
     restorePins(calendar: MDCCalendar, states: Array<{ key: string; pins: readonly MDCPin[] }>): void;
     pinOptions(from: { ref: MDCEntryRef; entry: MDCEntry } | null, to: { ref: MDCEntryRef; entry: MDCEntry } | null): { moved?: Set<MDCEntry>; replaced?: Map<MDCEntry, MDCEntry> };
     toPins(calendar: MDCCalendar, key: string, placed: MDCPlacement[]): MDCPin[];
     slug(title: string, taken: ReadonlySet<string>): string;
     placeOccurrences(calendar: MDCCalendar, key: string, placed: MDCPlacement[], label: string): MDCDayAction | null;
-    timeSlot(list: readonly MDCEntry[], time: string): number;
+    timeSlot(calendar: MDCCalendar, key: string, time: string, skip?: number): { index: number; stay: Set<string> };
+    insertTimed(calendar: MDCCalendar, key: string, list: MDCEntry[], placed: readonly MDCPin[], entry: MDCEntry): MDCPin[];
     createEntry(calendar: MDCCalendar, key: string, fields: MDCEntryFields & Partial<Pick<MDCEntry, "tag" | "extra">>): MDCDayAction;
     updateEntry(calendar: MDCCalendar, ref: MDCEntryRef, key: string, fields: MDCEntryFields): MDCDayAction | null;
     deleteEntry(calendar: MDCCalendar, ref: MDCEntryRef): MDCDayAction;
@@ -422,6 +423,8 @@ type MDCEntry = {
 };
 /** An occurrence placed by hand: the series ID and the number of normal entries before it (docs/Domain.md#day-list-order). */
 type MDCPin = { id: string; at: number };
+/** An entry that went into its time slot and the placed occurrences (series IDs) that stay before it. */
+type MDCSlotted = { entry: MDCEntry; stay: ReadonlySet<string> };
 /** A placement as dropped on screen: the series index and the number of normal entries before it. */
 type MDCPlacement = { series: number; at: number };
 type MDCDay = {

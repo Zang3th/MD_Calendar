@@ -61,7 +61,7 @@ test("a vCard import merges a duplicate and adds a new contact as one undoable s
   await page.keyboard.press("c");
   await page.locator("#contactsImport").setInputFiles({
     name: "import.vcf", mimeType: "text/vcard",
-    buffer: Buffer.from("BEGIN:VCARD\r\nVERSION:3.0\r\nN:Example;Max;;;\r\nEMAIL:max@example.com\r\nEND:VCARD\r\nBEGIN:VCARD\r\nVERSION:3.0\r\nN:Walker;Lena;;;\r\nEND:VCARD\r\n")
+    buffer: Buffer.from("BEGIN:VCARD\r\nVERSION:3.0\r\nN:Example;Max;;;\r\nEMAIL:max@example.com\r\nEND:VCARD\r\nBEGIN:VCARD\r\nVERSION:3.0\r\nN:Walker;Clara;;;\r\nEND:VCARD\r\n")
   });
   await expect(page.locator(".notification", { hasText: "1 new, 1 merged" })).toBeVisible();
   await expect(page.locator(".cx-row")).toHaveCount(2);
@@ -71,7 +71,7 @@ test("a vCard import merges a duplicate and adds a new contact as one undoable s
 
 test("day badges: written out while they fit, otherwise one icon badge per kind; they open their page and light up what they stand for", async ({ page, calendar }) => {
   await calendar.openApp({
-    "Contacts.md": "# Contacts\n\n## Contacts\n\n### Lena\n#FirstName\n- Lena\n#Birthday\n- 13.11.1994\n\n### Max\n#FirstName\n- Max\n#Birthday\n- 13.11.1990\n\n" +
+    "Contacts.md": "# Contacts\n\n## Contacts\n\n### Clara\n#FirstName\n- Clara\n#Birthday\n- 13.11.1994\n\n### Max\n#FirstName\n- Max\n#Birthday\n- 13.11.1990\n\n" +
       "### Beckers\n#FirstName\n- Beckers\n#Anniversary\n- Wedding: 13.11.2020\n\n### Tom\n#FirstName\n- Tom\n#Birthday\n- 12.11.1988\n",
     "Holidays.md": "# Holidays\n\n## Holidays\n- 12.11.2026 Some holiday\n- 13.11.2026 Other holiday\n\n## School vacations\n"
   });
@@ -99,8 +99,8 @@ test("day badges: written out while they fit, otherwise one icon badge per kind;
   await expect(friday.nth(2)).toHaveClass(/badge--holiday/);
   // Several birthdays open the first person and light up the rows of all of them.
   await friday.nth(1).click();
-  await expect(page.locator('[data-key="name"]')).toHaveValue("Lena");
-  expect(await lit(page.locator('.cx-row', { hasText: "Lena" }))).toBe(true);
+  await expect(page.locator('[data-key="name"]')).toHaveValue("Clara");
+  expect(await lit(page.locator('.cx-row', { hasText: "Clara" }))).toBe(true);
   expect(await lit(page.locator('.cx-row', { hasText: "Max" }))).toBe(true);
   expect(await lit(page.locator('.cx-row', { hasText: "Tom" }))).toBe(false);
   // An anniversary lights up its date.

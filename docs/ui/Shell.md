@@ -17,7 +17,7 @@ While no folder is open, the main panel shows a centered card with the heading �
 - Only a calendar folder opens, one that holds `MD_Calendar.json` (see [DataFormat](../DataFormat.md#md_calendarjson)). Opening any other folder, by “Open folder”, a recent folder or at startup, keeps the card open with the warning “Not a calendar folder”; the body names the folder and says to set it up with [New calendar].
 - If the browser still grants access to the most recently opened folder, it opens at startup without the card. If that folder no longer exists (moved, renamed, deleted or its drive not mounted), the card stays open with the warning “Last folder not found”; clicking such a row shows “Folder not found”. The body names the folder and says to open it from its new place. Without permission the card stays open silently. The folder stays in the list, so that it opens again once it is back.
 - Clicking the logo in the header returns to the start card. It reloads the page, so unsaved changes trigger the browser's leave prompt; the next startup then shows the card instead of opening the last folder.
-- **Version and watermark**, as in MD_Manager: the header shows the version label (`v0.7.0`) next to “MD_Calendar”, and the bottom left corner shows the watermark “© 2026 MD_Calendar v0.7.0 · Tim Krüger (Zang3th) · GitHub”. Both appear only on the start card. The version comes from `package.json` (see [Architecture](../Architecture.md#runtime)); between releases it carries the next release with `-dev`.
+- **Version and watermark**, as in MD_Manager: the header shows the version label (`v0.8.0`) next to “MD_Calendar”, and the bottom left corner shows the watermark “© 2026 MD_Calendar v0.8.0 · Tim Krüger (Zang3th) · GitHub”. Both appear only on the start card. The version comes from `package.json` (see [Architecture](../Architecture.md#runtime)); between releases it carries the next release with `-dev`.
 - The header has the same height on the start card and in the views (58px), so that nothing moves when a folder opens.
 
 ## Header
@@ -63,7 +63,7 @@ The help button and `?` toggle a small floating glass panel below the button, bu
 ### Undo and redo
 
 - Disabled when nothing can be undone or redone.
-- The accessible name names the concrete action, for example “Undo “Call Lena” (Ctrl+Z)”.
+- The accessible name names the concrete action, for example “Undo “Call Clara” (Ctrl+Z)”.
 
 ### Save control
 

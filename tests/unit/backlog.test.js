@@ -2,7 +2,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const load = require("./load-classic");
 
-const app = load("domain/calendar.js", "domain/backlog.js");
+const app = load("domain/calendar.js", "domain/recurrence.js", "domain/backlog.js");
 
 /** @param {string} title */
 function entry(title) {

@@ -18,9 +18,9 @@ test("the contacts golden file round-trips with all fields", () => {
   assert.equal(app.contactsFormat.serialize(contacts), golden);
   assert.deepEqual(plain(contacts.contacts[0]), {
     firstName: "Max", lastName: "Example", birthday: "1990-05-17",
-    phones: [{ label: "Mobile", value: "+49 170 0000000" }, { label: "Work", value: "+49 2151 000000" }],
+    phones: [{ label: "Mobile", value: "+49 170 0000000" }, { label: "Work", value: "+49 1234 000000" }],
     emails: [{ label: "Home", value: "max@example.com" }],
-    addresses: [{ label: "Home", value: "Example Street 1, 47798 Krefeld, Germany" }],
+    addresses: [{ label: "Home", value: "Example Street 1, 12345 Musterstadt, Germany" }],
     anniversaries: [{ label: "Wedding", date: "2018-06-09" }],
     note: ["Met at university.", "Prefers phone calls."], extra: []
   });
@@ -29,10 +29,10 @@ test("the contacts golden file round-trips with all fields", () => {
 });
 
 test("unknown contact lines stay, the heading is rewritten from the name", () => {
-  const text = "# Contacts\n\n## Contacts\n\n### Old heading\n#FirstName\n- Lena\n#Shoe\n- 42\n";
+  const text = "# Contacts\n\n## Contacts\n\n### Old heading\n#FirstName\n- Clara\n#Shoe\n- 42\n";
   const { contacts, warnings } = app.contactsFormat.parse(text);
   assert.deepEqual(plain(warnings).map((/** @type {any} */ warning) => warning.lineNumber), [8, 9]);
-  assert.equal(app.contactsFormat.serialize(contacts), "# Contacts\n\n## Contacts\n\n### Lena\n#FirstName\n- Lena\n#Shoe\n- 42\n");
+  assert.equal(app.contactsFormat.serialize(contacts), "# Contacts\n\n## Contacts\n\n### Clara\n#FirstName\n- Clara\n#Shoe\n- 42\n");
 });
 
 test("groups, favorites, nickname, company and position of earlier versions are dropped without warnings", () => {
@@ -52,15 +52,15 @@ test("birthdays show with age; 29 February shows on 28 February in non-leap year
 });
 
 test("vCards are read and written; duplicates are merged without overwriting", () => {
-  const card = "BEGIN:VCARD\r\nVERSION:3.0\r\nN:Example;Max;;;\r\nFN:Max Example\r\nTEL;TYPE=CELL:+49 170 0000000\r\nTEL;TYPE=HOME:02151 1234\r\n" +
+  const card = "BEGIN:VCARD\r\nVERSION:3.0\r\nN:Example;Max;;;\r\nFN:Max Example\r\nTEL;TYPE=CELL:+49 170 0000000\r\nTEL;TYPE=HOME:01234 1234\r\n" +
     "EMAIL;TYPE=INTERNET:max@example.com\r\nBDAY:--0517\r\nitem1.X-ABDATE:2018-06-09\r\nitem1.X-ABLabel:_$!<Anniversary>!$_\r\nNOTE:Line one\\nLine two\r\nEND:VCARD\r\n" +
-    "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Lena Walker\r\nEMAIL:lena@example.com\r\nEND:VCARD\r\n";
+    "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Clara Walker\r\nEMAIL:clara@example.com\r\nEND:VCARD\r\n";
   const parsed = app.vcard.parse(card);
-  assert.deepEqual(plain(parsed[0].phones), [{ label: "Mobile", value: "+49 170 0000000" }, { label: "Home", value: "02151 1234" }]);
+  assert.deepEqual(plain(parsed[0].phones), [{ label: "Mobile", value: "+49 170 0000000" }, { label: "Home", value: "01234 1234" }]);
   assert.equal(parsed[0].birthday, "--05-17");
   assert.deepEqual(plain(parsed[0].anniversaries), [{ label: "Anniversary", date: "2018-06-09" }]);
   assert.deepEqual(plain(parsed[0].note), ["Line one", "Line two"]);
-  assert.deepEqual([parsed[1].firstName, parsed[1].lastName], ["Lena", "Walker"]);
+  assert.deepEqual([parsed[1].firstName, parsed[1].lastName], ["Clara", "Walker"]);
 
   const { contacts } = app.contactsFormat.parse(golden);
   const result = app.contacts.importContacts(contacts, parsed);
@@ -68,7 +68,7 @@ test("vCards are read and written; duplicates are merged without overwriting", (
   result.action.redo();
   const max = contacts.contacts[0];
   assert.equal(max.birthday, "1990-05-17");
-  assert.deepEqual(plain(max.phones).map((/** @type {any} */ item) => item.value), ["+49 170 0000000", "+49 2151 000000", "02151 1234"]);
+  assert.deepEqual(plain(max.phones).map((/** @type {any} */ item) => item.value), ["+49 170 0000000", "+49 1234 000000", "01234 1234"]);
   assert.equal(contacts.contacts.length, 3);
   result.action.undo();
   assert.equal(contacts.contacts.length, 2);

@@ -13,6 +13,7 @@ Plan your days while keeping your data open, portable, and human-readable.
 - Entries with optional time, location, note and tag; multi-day and recurring entries.
 - Grouped backlog for entries that are not scheduled yet.
 - Contact editor with birthdays and anniversaries.
+- Holidays and vacations at a glance, with a yearly overview.
 - Drag and drop, multi-selection, copy and paste, and keyboard controls.
 - Undo and redo across everything with calendar-wide fuzzy search.
 - ICS import of a calendar history or a single invitation.
@@ -145,7 +146,8 @@ The verification pipeline builds the bundle and runs strict TypeScript checking 
     </tr>
   </thead>
   <tbody>
-    <tr><td>master</td><td>24.11.2026</td><td>643</td><td>834</td><td>5,952</td><td>100</td><td>See <a href="https://github.com/Zang3th/MD_Calendar/blob/master/docs/Roadmap.md">roadmap</a></td></tr>
+    <tr><td>master</td><td>26.11.2026</td><td>643</td><td>834</td><td>6,014</td><td>101</td><td>See <a href="https://github.com/Zang3th/MD_Calendar/blob/master/docs/Roadmap.md">roadmap</a></td></tr>
+    <tr><td>v0.8.0</td><td>26.11.2026</td><td>643</td><td>834</td><td>6,014</td><td>101</td><td>Focus mode, better controls and highlighting</td></tr>
     <tr><td>v0.7.0</td><td>19.11.2026</td><td>591</td><td>805</td><td>5,472</td><td>86</td><td>Reworked entry dialog, contacts and start page</td></tr>
     <tr><td>v0.6.0</td><td>16.11.2026</td><td>517</td><td>606</td><td>4,070</td><td>59</td><td>Project baseline with MD_Libs as application core</td></tr>
   </tbody>

@@ -26,7 +26,7 @@ Keyboard navigation of controls is not supported, so keyboard focus is never sho
 | `Ctrl+A` | Select all entries of the day under the pointer, also those hidden behind “+N”, or of the backlog group under it |
 | `Ctrl+C` | Copy the selection |
 | `Ctrl+X` | Cut the selection: copy it and delete it as one undoable action |
-| `Ctrl+V` | Paste onto the day under the pointer, or into the backlog group under it at the pointer's position (where the tag decides the group, see [Domain](../Domain.md#backlog)), otherwise onto the preselected day |
+| `Ctrl+V` | Paste onto the day under the pointer at the pointer's position (see [Domain](../Domain.md#day-list-order)), or into the backlog group under it at the pointer's position (where the tag decides the group, see [Domain](../Domain.md#backlog)), otherwise at the end of the preselected day |
 | `Ctrl+S` | Save |
 | `Ctrl+Z` | Undo |
 | `Ctrl+Y`, `Ctrl+Shift+Z` | Redo |
@@ -42,7 +42,7 @@ The arrows, `Space`, `Del`, `Ctrl+A` and `Ctrl+X` do nothing in the contacts vie
 |---|---|
 | Click on the body of a day (below its header, outside entries and bars) | New entry on that day |
 | Right-click on an entry (in a day or the backlog) | Copies the entry; on a selected entry it copies the whole selection |
-| Right-click on free space of a day (outside entries, bars and badges) | Pastes into that day when something is copied, otherwise nothing |
+| Right-click on free space of a day (outside entries, bars and badges) | Pastes into that day at the pointer's position, like `Ctrl+V`, when something is copied, otherwise nothing |
 | Right-click on free space of the backlog panel | Pastes into the group there at the pointer's position, like `Ctrl+V` |
 | Click on free space of the backlog panel | New backlog entry in the group under or nearest to the pointer, with its tag preset (see [Shell](Shell.md#backlog-panel)) |
 | Right-click anywhere else | Nothing; the browser menu does not open either, except in text fields |

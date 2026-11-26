@@ -20,6 +20,11 @@ test("a right-click copies the entry or, on a selected one, the selection; a rig
   await expect(page.locator(`${friday} .ev__title`)).toHaveText(["C"]);
   await page.keyboard.press("Control+z");
   await expect(page.locator(`${friday} .ev`)).toHaveCount(0);
+  // A copy without a time lands at the pointer's position: here in the gap between A and B.
+  const a = /** @type {{x: number, y: number, width: number, height: number}} */ (await page.locator(`${thursday} .ev`, { hasText: "A" }).boundingBox());
+  const b = /** @type {{x: number, y: number, width: number, height: number}} */ (await page.locator(`${thursday} .ev`, { hasText: "B" }).boundingBox());
+  await page.mouse.click(a.x + a.width / 2, (a.y + a.height + b.y) / 2, { button: "right" });
+  await expect(page.locator(`${thursday} .ev__title`)).toHaveText(["A", "C", "B", "C"]);
 });
 
 test("Ctrl+click selects entries; Space checks them off and Delete removes them as one action", async ({ page, calendar }) => {

@@ -38,7 +38,7 @@ test("holidays show in the day header and tags take their color from Config.md",
       "## Recurring\n\n### Gym\n#Start\n- 13.11.2026\n#Repeat\n- FREQ=WEEKLY;BYDAY=FR\n",
     "Holidays.md": "# Holidays\n\n## Holidays\n- 11.11.2026 St. Martin's Day\n\n## School vacations\n",
     "Config.md": "# Config\n\n## Tags\n- Work: #ff0000 briefcase\n",
-    "Contacts.md": "# Contacts\n\n## Contacts\n\n### Lena\n#FirstName\n- Lena\n#Birthday\n- 14.11.1994\n"
+    "Contacts.md": "# Contacts\n\n## Contacts\n\n### Clara\n#FirstName\n- Clara\n#Birthday\n- 14.11.1994\n"
   });
   const friday = '.day[data-day="2026-11-13"]';
   const gift = page.locator('.day[data-day="2026-11-14"] .badge--occasion .ui-icon');

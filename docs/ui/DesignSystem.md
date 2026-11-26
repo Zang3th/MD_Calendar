@@ -242,7 +242,7 @@ The set, chosen by the user from three designs per tag:
 | `code` | Programming | Angle brackets with slash |
 | `household` | Household | Washing machine |
 | `shopping` | Shopping | Shopping cart |
-| `karate` | Karate | Gi jacket |
+| `martial-arts` | Martial arts | Gi jacket |
 | `car` | Car | Car from the side |
 | `doctor` | Doctor | Cross in a rounded square |
 | `physio` | Physio | Stretching figure |

@@ -97,10 +97,15 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
   /** The placed occurrences of a day in display order: series index → number of normal entries before it. @param {MDCCalendar} calendar @param {string} key */
   function placedAt(calendar, key) {
+    return placedBy(calendar, pins(calendar, key));
+  }
+
+  /** Series index → number of normal entries before it, for the pins `list`. @param {MDCCalendar} calendar @param {readonly MDCPin[]} list */
+  function placedBy(calendar, list) {
     const ids = seriesIds(calendar);
     /** @type {Map<number, number>} */
     const placed = new Map();
-    for (const pin of pins(calendar, key)) {
+    for (const pin of list) {
       const index = ids.get(pin.id);
       if (index !== undefined) placed.set(index, pin.at);
     }
@@ -130,10 +135,22 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   /**
-   * Runs `change` on the days of `keys` and keeps their pins in place; `placed` sets the pins of one day as dropped.
+   * Pins after an entry went into its time slot at `index`: the placed occurrences of `stay` that the repin put directly
+   * behind it stay before it (docs/Domain.md#day-list-order).
+   * @param {MDCPin[]} list @param {number} index @param {ReadonlySet<string>} stay @returns {MDCPin[]}
+   */
+  function keepBefore(list, index, stay) {
+    if (!stay.size) return list;
+    const next = list.map(pin => stay.has(pin.id) && pin.at === index + 1 ? { id: pin.id, at: index } : pin);
+    return next.map((pin, order) => ({ pin, order })).sort((left, right) => left.pin.at - right.pin.at || left.order - right.order).map(item => item.pin);
+  }
+
+  /**
+   * Runs `change` on the days of `keys` and keeps their pins in place; `placed` sets the pins of one day as dropped,
+   * `slotted` names entries that went into their time slot with the placed occurrences that stay before them.
    * Returns the pins before, for `restorePins`.
    * @param {MDCCalendar} calendar @param {string[]} keys @param {() => void} change
-   * @param {{moved?: Set<MDCEntry>, replaced?: Map<MDCEntry, MDCEntry>, placed?: {key: string, pins: MDCPin[]} | null}} [options]
+   * @param {{moved?: Set<MDCEntry>, replaced?: Map<MDCEntry, MDCEntry>, placed?: {key: string, pins: MDCPin[]} | null, slotted?: MDCSlotted[]}} [options]
    * @returns {Array<{key: string, pins: readonly MDCPin[]}>}
    */
   function keepPins(calendar, keys, change, options = {}) {
@@ -142,7 +159,14 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     for (const state of states) {
       const target = day(calendar, state.key);
       if (options.placed && options.placed.key === state.key) target.pins = options.placed.pins;
-      else if (state.pins.length) target.pins = repin(state.entries, target.entries, state.pins, options.moved, options.replaced);
+      else if (state.pins.length) {
+        let next = repin(state.entries, target.entries, state.pins, options.moved, options.replaced);
+        for (const { entry, stay } of options.slotted || []) {
+          const at = target.entries.indexOf(entry);
+          if (at >= 0) next = keepBefore(next, at, stay);
+        }
+        target.pins = next;
+      }
     }
     return states;
   }
@@ -267,16 +291,17 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
    * @param {string} label
    * @param {{ref: MDCEntryRef, entry: MDCEntry} | null} from
    * @param {{ref: MDCEntryRef, entry: MDCEntry} | null} to
+   * @param {MDCSlotted[]} [slotted] entries that went into their time slot
    * @returns {MDCDayAction}
    */
-  function replaceAction(calendar, label, from, to) {
+  function replaceAction(calendar, label, from, to, slotted = []) {
     /** @param {{ref: MDCEntryRef, entry: MDCEntry} | null} removed @param {{ref: MDCEntryRef, entry: MDCEntry} | null} inserted */
     function apply(removed, inserted) {
       if (removed) dayList(calendar, removed.ref.key).splice(removed.ref.index, 1);
       if (inserted) dayList(calendar, inserted.ref.key).splice(inserted.ref.index, 0, inserted.entry);
     }
     const days = [...new Set([from?.ref.key, to?.ref.key].filter(key => key !== undefined))];
-    const options = pinOptions(from, to);
+    const options = { ...pinOptions(from, to), slotted };
     /** @type {Array<{key: string, pins: readonly MDCPin[]}>} */
     let saved = [];
     return {
@@ -302,24 +327,60 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   /**
-   * Where an entry with this start time goes in a day list (docs/Domain.md#day-list-order): directly before the first
-   * entry that starts later, otherwise directly after the last timed entry; without a time at the end.
-   * @param {readonly MDCEntry[]} list @param {string} time
+   * The time slot of a start time among the entries `list` of day `key` with the pins `placed`, judged on the day as
+   * shown (docs/Domain.md#day-list-order): directly before the first entry or occurrence with a later start time,
+   * otherwise directly after the last one with a time, otherwise first; without a time at the end. Returns the index in
+   * `list` and the placed occurrences of that gap that stay before the entry.
+   * @param {MDCCalendar} calendar @param {string} key @param {readonly MDCEntry[]} list @param {readonly MDCPin[]} placed @param {string} time
+   * @returns {{index: number, stay: Set<string>}}
    */
-  function timeSlot(list, time) {
-    if (!time) return list.length;
-    const later = list.findIndex(entry => entry.start !== "" && entry.start > time);
-    if (later >= 0) return later;
-    let last = -1;
-    list.forEach((entry, index) => { if (entry.start) last = index; });
-    return last + 1;
+  function slotIn(calendar, key, list, placed, time) {
+    /** @type {Set<string>} */
+    const stay = new Set();
+    if (!time) return { index: list.length, stay };
+    const pinned = new Set(placed.map(pin => pin.id));
+    const order = app.recurrence.dayOrder(app.recurrence.occurrences(calendar, key), list, placedBy(calendar, placed));
+    const times = order.map(item => "entry" in item ? item.entry.start : item.occurrence.series.startTime);
+    let end = times.findIndex(start => start !== "" && start > time);
+    if (end < 0) end = times.reduce((last, start, position) => start ? position + 1 : last, 0);
+    let index = 0;
+    for (const item of order.slice(0, end)) {
+      if ("entry" in item) {
+        index += 1;
+        stay.clear();
+      } else if (pinned.has(item.occurrence.series.id)) stay.add(item.occurrence.series.id);
+    }
+    return { index, stay };
+  }
+
+  /**
+   * The time slot of a start time in day `key` as stored, without the entry at `skip` when it moves within the day.
+   * @param {MDCCalendar} calendar @param {string} key @param {string} time @param {number} [skip]
+   */
+  function timeSlot(calendar, key, time, skip = -1) {
+    const all = entries(calendar, key);
+    const list = skip < 0 ? all : all.filter((_, position) => position !== skip);
+    return slotIn(calendar, key, list, skip < 0 ? pins(calendar, key) : repin(all, list, pins(calendar, key)), time);
+  }
+
+  /**
+   * Inserts `entry` into its time slot of `list`, the entries of day `key` with the pins `placed`, and returns the pins
+   * after. @param {MDCCalendar} calendar @param {string} key @param {MDCEntry[]} list @param {readonly MDCPin[]} placed @param {MDCEntry} entry
+   * @returns {MDCPin[]}
+   */
+  function insertTimed(calendar, key, list, placed, entry) {
+    const { index, stay } = slotIn(calendar, key, list, placed, entry.start);
+    const before = [...list];
+    list.splice(index, 0, entry);
+    return keepBefore(placed.length ? repin(before, list, placed) : [], index, stay);
   }
 
   /** @param {MDCCalendar} calendar @param {string} key @param {MDCEntryFields & Partial<Pick<MDCEntry, "tag" | "extra">>} fields */
   function createEntry(calendar, key, fields) {
     /** @type {MDCEntry} */
     const entry = { done: false, tag: "", extra: [], ...fields };
-    return replaceAction(calendar, entry.title, null, { ref: { key, index: timeSlot(entries(calendar, key), entry.start) }, entry });
+    const { index, stay } = timeSlot(calendar, key, entry.start);
+    return replaceAction(calendar, entry.title, null, { ref: { key, index }, entry }, [{ entry, stay }]);
   }
 
   /**
@@ -336,9 +397,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     });
     if (unchanged) return null;
     const sameDay = key === ref.key;
-    const index = sameDay && updated.start === entry.start ? ref.index
-      : timeSlot(entries(calendar, key).filter((_, position) => !sameDay || position !== ref.index), updated.start);
-    return replaceAction(calendar, updated.title, { ref, entry }, { ref: { key, index }, entry: updated });
+    const { index, stay } = sameDay && updated.start === entry.start ? { index: ref.index, stay: new Set() }
+      : timeSlot(calendar, key, updated.start, sameDay ? ref.index : -1);
+    return replaceAction(calendar, updated.title, { ref, entry }, { ref: { key, index }, entry: updated }, [{ entry: updated, stay }]);
   }
 
   /** @param {MDCCalendar} calendar @param {MDCEntryRef} ref */
@@ -610,16 +671,14 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     if (!newEntries.size && !newSeries.length && !newMultiDay.length) return result;
     const keys = Array.from(newEntries.keys());
     const before = keys.map(key => [...entries(calendar, key)]);
-    // Imported entries go into their time slots like new ones (docs/Domain.md#day-list-order).
-    const after = keys.map((key, index) => (newEntries.get(key) || []).reduce((list, entry) => {
-      list.splice(timeSlot(list, entry.start), 0, entry);
-      return list;
-    }, [...before[index]]));
+    const pinsBefore = keys.map(key => pins(calendar, key));
+    // Imported entries go into their time slots like new ones (docs/Domain.md#day-list-order); the pins keep their place
+    // among the entries that were there.
+    const after = before.map(list => [...list]);
+    const pinsAfter = keys.map((key, index) => (newEntries.get(key) || []).reduce(
+      (/** @type {readonly MDCPin[]} */ placed, entry) => insertTimed(calendar, key, after[index], placed, entry), pinsBefore[index]));
     const seriesBefore = [...calendar.series];
     const multiBefore = [...calendar.multiDay];
-    const pinsBefore = keys.map(key => pins(calendar, key));
-    // Imported entries are new: the pins keep their place among the entries that were there.
-    const pinsAfter = keys.map((key, index) => pinsBefore[index].length ? repin(before[index], after[index], pinsBefore[index]) : pinsBefore[index]);
     /** @param {MDCEntry[][]} days @param {Array<MDCSeries | MDCRawBlock>} series @param {Array<MDCMultiDay | MDCRawBlock>} multi @param {ReadonlyArray<readonly MDCPin[]>} placed */
     const set = (days, series, multi, placed) => {
       keys.forEach((key, index) => {
@@ -703,7 +762,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   app.calendar = {
     parseDate, formatDate: dates.format, formatDay, parseTime, todayKey: dates.today, addDays: dates.addDays, addMonths: dates.monthStart,
     weekStart: dates.weekStart, weekDays, isoWeek: dates.isoWeek,
-    entries, dayList, pins, placedAt, repin, keepPins, restorePins, pinOptions, toPins, slug, placeOccurrences, timeSlot, createEntry, updateEntry, deleteEntry, toggleDone, moveEntry, isOverdue,
+    entries, dayList, pins, placedAt, repin, keepPins, restorePins, pinOptions, toPins, slug, placeOccurrences, timeSlot, insertTimed, createEntry, updateEntry, deleteEntry, toggleDone, moveEntry, isOverdue,
     combine, createSeries, updateSeries, deleteSeries, toggleOccurrence, deleteOccurrence, endSeries,
     createMultiDay, updateMultiDay, deleteMultiDay, segments, vacationTag, dayOffTag, daysOff, taggedPeriods, nestPeriods, changeOccurrences, importEvents
   };

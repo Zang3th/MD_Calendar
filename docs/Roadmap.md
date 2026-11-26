@@ -114,14 +114,13 @@
 - [x] ~Screenshots erneuern~
 - [x] ~Docs + README aktualisieren~
 
-#Pin
 ## Umstieg und Nutzung
 
 #Version
 - 0.8.0
 
 #Date
-- 23.11.2026 - TBD
+- 23.11.2026 - 26.11.2026
 
 #Info
 Ab hier ersetzt MD_Calendar den Google-Kalender als Daily-Driver.
@@ -133,10 +132,6 @@ Ab hier ersetzt MD_Calendar den Google-Kalender als Daily-Driver.
 - [x] ~Kalenderdaten exportieren~
 - [x] ~Kalender: Einträge neutralisieren, einordnen und taggen~
 - [x] ~Kontaktdaten exportieren~
-
-### Synchronisierung
-
-- [ ] Feature ausarbeiten
 
 ### Tags
 
@@ -156,6 +151,26 @@ Ab hier ersetzt MD_Calendar den Google-Kalender als Daily-Driver.
 - [x] ~Focus-View verbessern~
 - [x] ~CSS anpassen~
 - [x] ~DayOff ergänzen~
+- [x] ~Copy/Paste bestmöglich der Mauszeigerposition nach ausführen~
+
+### Release
+
+- [x] ~Docs + README aktualisieren~
+
+#Pin
+## Synchronisierung
+
+#Version
+- 0.8.1
+
+#Date
+- TBD
+
+### Synchronisierung
+
+- [ ] Feature ausarbeiten
+
+### Bugs und Verbesserungen
 
 ### Release
 
@@ -164,7 +179,7 @@ Ab hier ersetzt MD_Calendar den Google-Kalender als Daily-Driver.
 ## Feintuning
 
 #Version
-- 0.8.1
+- 0.8.2
 
 #Date
 - TBD

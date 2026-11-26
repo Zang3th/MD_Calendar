@@ -40,23 +40,23 @@ test("ICS events become entries, multi-day entries and series; past ones are don
     "BEGIN:VEVENT", "UID:b", "DTSTART;TZID=Europe/Berlin:20261120T093000", "DTEND;TZID=Europe/Berlin:20261120T103000", "SUMMARY:Meeting", "LOCATION:Office", "DESCRIPTION:Line 1\\nLine 2", "END:VEVENT",
     "BEGIN:VEVENT", "UID:c", "DTSTART;VALUE=DATE:20261214", "DTEND;VALUE=DATE:20261219", "SUMMARY:Vacation", "END:VEVENT",
     "BEGIN:VEVENT", "UID:d", "DTSTART;TZID=Europe/Berlin:20261105T180000", "DTEND;TZID=Europe/Berlin:20261105T190000",
-    "RRULE:FREQ=WEEKLY;WKST=MO;COUNT=3;BYDAY=TH", "SUMMARY:Karate", "END:VEVENT",
-    "BEGIN:VEVENT", "UID:d", "RECURRENCE-ID;TZID=Europe/Berlin:20261112T180000", "DTSTART;TZID=Europe/Berlin:20261113T180000", "SUMMARY:Karate (moved)", "END:VEVENT",
+    "RRULE:FREQ=WEEKLY;WKST=MO;COUNT=3;BYDAY=TH", "SUMMARY:Martial arts", "END:VEVENT",
+    "BEGIN:VEVENT", "UID:d", "RECURRENCE-ID;TZID=Europe/Berlin:20261112T180000", "DTSTART;TZID=Europe/Berlin:20261113T180000", "SUMMARY:Martial arts (moved)", "END:VEVENT",
     "BEGIN:VEVENT", "UID:e", "DTSTART;VALUE=DATE:20261101", "SUMMARY:Cancelled", "STATUS:CANCELLED", "END:VEVENT",
     "END:VCALENDAR"
   ].join("\r\n");
   const { events, skipped } = app.ics.parse(ics);
   assert.equal(skipped, 1);
-  const { calendar } = app.calendarFormat.parse("# Calendar\n\n## November 2026\n\n### 13.11.2026\n- [ ] Karate (moved)\n");
+  const { calendar } = app.calendarFormat.parse("# Calendar\n\n## November 2026\n\n### 13.11.2026\n- [ ] Martial arts (moved)\n");
   const result = app.calendar.importEvents(calendar, events, "2026-11-12");
   assert.deepEqual([result.entries, result.series, result.multiDay, result.duplicates], [2, 1, 1, 1]);
   result.action.redo();
   assert.equal(app.calendarFormat.serialize(calendar),
-    "# Calendar\n\n## November 2026\n\n### 02.11.2026\n- [x] Holiday, off\n\n### 13.11.2026\n- [ ] Karate (moved)\n\n### 20.11.2026\n- [ ] 09:30 - 10:30 Meeting\n  - Location: Office\n  Line 1\n  Line 2\n\n" +
+    "# Calendar\n\n## November 2026\n\n### 02.11.2026\n- [x] Holiday, off\n\n### 13.11.2026\n- [ ] Martial arts (moved)\n\n### 20.11.2026\n- [ ] 09:30 - 10:30 Meeting\n  - Location: Office\n  Line 1\n  Line 2\n\n" +
     "## Multi-day\n\n### Vacation\n#Start\n- 14.12.2026\n#End\n- 18.12.2026\n\n" +
-    "## Recurring\n\n### Karate\n#Start\n- 05.11.2026 18:00 - 19:00\n#Repeat\n- FREQ=WEEKLY;BYDAY=TH;UNTIL=20261119\n#Except\n- 12.11.2026\n");
+    "## Recurring\n\n### Martial arts\n#Start\n- 05.11.2026 18:00 - 19:00\n#Repeat\n- FREQ=WEEKLY;BYDAY=TH;UNTIL=20261119\n#Except\n- 12.11.2026\n");
   result.action.undo();
-  assert.equal(app.calendarFormat.serialize(calendar), "# Calendar\n\n## November 2026\n\n### 13.11.2026\n- [ ] Karate (moved)\n");
+  assert.equal(app.calendarFormat.serialize(calendar), "# Calendar\n\n## November 2026\n\n### 13.11.2026\n- [ ] Martial arts (moved)\n");
 });
 
 test("several selected entries move together into one place as one action", () => {

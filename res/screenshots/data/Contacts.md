@@ -32,9 +32,9 @@
 #Note
 Plays strategy games online on Sunday evenings.
 
-### Lena Hartmann
+### Clara Hartmann
 #FirstName
-- Lena
+- Clara
 #LastName
 - Hartmann
 #Birthday
@@ -42,33 +42,33 @@ Plays strategy games online on Sunday evenings.
 #Phone
 - Mobile: +49 170 1234567
 #Email
-- Home: lena.hartmann@example.com
+- Home: clara.hartmann@example.com
 #Address
-- Home: Lindenstraße 12, 47798 Krefeld, Germany
+- Home: Lindenstraße 12, 12345 Musterstadt, Germany
 #Note
 Loves crime novels and good coffee.
 
-### Margarete Krüger
+### Margarete Lorenz
 #FirstName
 - Margarete
 #LastName
-- Krüger
+- Lorenz
 #Birthday
 - 30.11.1962
 #Phone
-- Home: +49 2151 987654
+- Home: +49 1234 987654
 #Address
-- Home: Ostwall 80, 47798 Krefeld, Germany
+- Home: Ostwall 80, 12345 Musterstadt, Germany
 
-### Thomas Krüger
+### Peter Lorenz
 #FirstName
-- Thomas
+- Peter
 #LastName
-- Krüger
+- Lorenz
 #Birthday
 - 02.02.1960
 #Phone
-- Home: +49 2151 987654
+- Home: +49 1234 987654
 
 ### Paul Schneider
 #FirstName
@@ -78,7 +78,7 @@ Loves crime novels and good coffee.
 #Birthday
 - 27.11.1988
 #Phone
-- Work: +49 211 4567890
+- Work: +49 123 4567890
 #Email
 - Work: paul.schneider@example.com
 
@@ -100,14 +100,14 @@ Loves crime novels and good coffee.
 #Phone
 - Mobile: +49 173 5678901
 #Note
-Karate teacher at the dojo.
+Martial arts teacher at the dojo.
 
 ### Dr. Weber's practice
 #Phone
-- Work: +49 2151 555123
+- Work: +49 1234 555123
 #Address
-- Work: Rheinstraße 5, 47799 Krefeld, Germany
+- Work: Rheinstraße 5, 12346 Musterstadt, Germany
 
-### Garage Hoffmann
+### Garage Schmidt
 #Phone
-- Work: +49 2151 444321
+- Work: +49 1234 444321

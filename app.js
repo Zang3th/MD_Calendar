@@ -685,7 +685,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
           return document.querySelector(`.bl__list[data-group="${group}"] .ev[data-index="${list.length - 1}"]`);
         };
       }
-      const index = app.calendar.timeSlot(app.calendar.entries(target, result.date), result.startTime);
+      const { index } = app.calendar.timeSlot(target, result.date, result.startTime);
       return () => renderer().cell(result.date)?.querySelector(`.ev[data-index="${index}"]`) || null;
     }
 
@@ -970,7 +970,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         app.notifications.show("info", "Nothing to paste", "");
         return;
       }
-      execute(app.backlog.pasteEntries(calendar, backlog, clipboard, target || { key: visibleDay(), index: 0 }));
+      execute(app.backlog.pasteEntries(calendar, backlog, clipboard, target || { key: visibleDay(), index: Infinity }));
       confirm(entriesTitle(clipboard.length, "pasted"), clipboard.map(entry => entry.title));
     }
 

@@ -51,7 +51,7 @@
 - [x] 10:00 - 11:30 Architecture workshop #Work
 - [x] 14:00 Talk: Local-first apps #Work
 - [x] Expense report #Finance
-- [ ] Order the birthday gift for Lena #Private
+- [ ] Order the birthday gift for Clara #Private
 - [x] Buy groceries #Household
 - [x] 18:30 Call Mom #Private
 
@@ -68,7 +68,7 @@
 ### 19.11.2026
 - [ ] 08:15 Dentist check-up #Health
   - Location: Dr. Weber's practice
-- [ ] Call Lena #Private
+- [ ] Call Clara #Private
 - [ ] 12:00 Team lunch #Work
 - [ ] Prepare the demo #Work
 - [ ] Transfer money to Jonas #Finance
@@ -77,7 +77,7 @@
 - [ ] 10:00 Sprint planning #Work
 - [ ] 13:00 1:1 with Paul #Work
 - [ ] 15:00 Car inspection #Car
-  - Location: Garage Hoffmann
+  - Location: Garage Schmidt
 - [ ] Pick up the parcel
 - [ ] Book the train to Hamburg #Private
 - [ ] 19:00 Movie night #Private
@@ -86,11 +86,11 @@
 - [ ] 10:00 Farmers' market #Cooking
 - [ ] Vacuum the apartment #Household
 - [ ] Clean the windows #Household
-- [ ] 15:00 Bake a cake for Lena #Cooking
-- [ ] 19:30 Dinner at Lena's #Private
+- [ ] 15:00 Bake a cake for Clara #Cooking
+- [ ] 19:30 Dinner at Clara's #Private
 
 ### 22.11.2026
-- [ ] 11:00 Brunch with the family #Private
+- [ ] 11:00 Breakfast with the family #Private
 - [ ] 16:00 Walk in the park #Private
 - [ ] Meal prep for the week #Cooking
 - [ ] Plan the week #Work
@@ -128,7 +128,7 @@
 #End
 - 17.11.2026
 #Location
-- Messe Düsseldorf
+- Messe Musterstadt
 
 ### Hamburg trip #Vacation
 #Start
@@ -136,7 +136,7 @@
 #End
 - 29.11.2026
 
-### Karate seminar #Karate
+### Martial arts seminar #MartialArts
 #Start
 - 05.12.2026
 #End
@@ -150,7 +150,7 @@
 #Repeat
 - FREQ=MONTHLY;BYMONTHDAY=1
 
-### Karate training #Karate
+### Martial arts training #MartialArts
 #Start
 - 02.11.2026 19:00 - 20:30
 #Repeat
@@ -162,7 +162,7 @@
 - 12.11.2026
 - 16.11.2026
 #Location
-- Dojo Krefeld
+- Dojo Musterstadt
 
 ### Gym #Sport
 #Start

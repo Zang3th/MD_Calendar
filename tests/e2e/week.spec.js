@@ -12,7 +12,7 @@ test("an entry is created and saved; a stale write leads to the reload-or-overwr
   await calendar.openApp();
   await page.locator("#new").click();
   await page.getByRole("menuitem", { name: "Create new entry" }).click();
-  await page.locator("#dialogTitle").fill("Call Lena");
+  await page.locator("#dialogTitle").fill("Call Clara");
   // Tab opens token after token; in the prefilled date it first walks day, month and year. Leaving the time popover
   // keeps what was typed, and Enter applies from anywhere.
   const date = page.locator("#dialogDateInput");
@@ -28,12 +28,12 @@ test("an entry is created and saved; a stale write leads to the reload-or-overwr
   await expect(page.locator("#dialogTime")).toHaveText("09:30");
   await expect(page.locator("#dialogRepeat")).toHaveAttribute("aria-expanded", "true");
   await page.keyboard.press("Enter");
-  await expect(titles(page, thursday)).toHaveText(["Call Lena"]);
+  await expect(titles(page, thursday)).toHaveText(["Call Clara"]);
   await expect(page.locator("#save")).toHaveAttribute("aria-label", /^Save 1 unsaved change /);
 
   await page.keyboard.press("Control+s");
   await expect(page.locator("#save")).not.toHaveClass(/is-dirty/);
-  expect(await calendar.readFile("Calendar.md")).toBe("# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] 09:30 Call Lena\n");
+  expect(await calendar.readFile("Calendar.md")).toBe("# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] 09:30 Call Clara\n");
 
   await page.locator(`${thursday} .ev__check`).click();
   await calendar.writeFile("Calendar.md", "# Calendar\n\n## November 2026\n\n### 13.11.2026\n- [ ] Changed elsewhere, longer\n");
@@ -44,7 +44,7 @@ test("an entry is created and saved; a stale write leads to the reload-or-overwr
 
   await overwrite.click();
   await expect(page.locator("#save")).not.toHaveClass(/is-dirty/);
-  expect(await calendar.readFile("Calendar.md")).toBe("# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [x] 09:30 Call Lena\n");
+  expect(await calendar.readFile("Calendar.md")).toBe("# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [x] 09:30 Call Clara\n");
 });
 
 test("a failed save shows a red cross whose tooltip names the error until the next save, which succeeds", async ({ page, calendar }) => {
@@ -152,7 +152,7 @@ test("the time wheels of the entry dialog pick start and end with the pointer", 
 });
 
 test("the entry dialog picks days and ranges in its calendar, moves an entry to the backlog by date and deletes with its trash button", async ({ page, calendar }) => {
-  await calendar.openApp({ "Calendar.md": "# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] Call Lena #Work\n" });
+  await calendar.openApp({ "Calendar.md": "# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] Call Clara #Work\n" });
   const day = (/** @type {string} */ key) => page.locator(`[data-calday="${key}"]`);
   await page.locator('.day[data-day="2026-11-13"]').click({ position: { x: 60, y: 400 } });
   // A new entry opens with its calendar open and the focus in the title.
@@ -182,7 +182,7 @@ test("the entry dialog picks days and ranges in its calendar, moves an entry to 
 
   // “Backlog” as the date moves a day entry to the backlog, into the group of its tag.
   // An item without a note opens with its calendar, for viewing: no cursor in the title; Tab starts at the buttons above it.
-  await page.locator(".ev__open", { hasText: "Call Lena" }).click();
+  await page.locator(".ev__open", { hasText: "Call Clara" }).click();
   await expect(page.locator("#dialog")).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(page.locator("#dialogDuplicate")).toBeFocused();
@@ -190,17 +190,17 @@ test("the entry dialog picks days and ranges in its calendar, moves an entry to 
   await page.keyboard.press("Enter");
   await page.keyboard.press("Control+s");
   await expect(page.locator("#save")).not.toHaveClass(/is-dirty/);
-  expect(await calendar.readFile("Backlog.md")).toBe("# Backlog\n\n## Work\n- [ ] Call Lena #Work\n");
+  expect(await calendar.readFile("Backlog.md")).toBe("# Backlog\n\n## Work\n- [ ] Call Clara #Work\n");
   expect(await calendar.readFile("Calendar.md")).toBe("# Calendar\n\n## Multi-day\n\n### Trip\n#Start\n- 14.11.2026\n#End\n- 15.11.2026\n");
 
   // A duplicated backlog entry stays in the backlog.
   await page.keyboard.press("b");
-  await page.locator(".bl__list .ev__open", { hasText: "Call Lena" }).click();
+  await page.locator(".bl__list .ev__open", { hasText: "Call Clara" }).click();
   await page.locator("#dialogDuplicate").click();
   await page.keyboard.press("Enter");
   await page.keyboard.press("Control+s");
   await expect(page.locator("#save")).not.toHaveClass(/is-dirty/);
-  expect(await calendar.readFile("Backlog.md")).toBe("# Backlog\n\n## Work\n- [ ] Call Lena #Work\n- [ ] Call Lena #Work\n");
+  expect(await calendar.readFile("Backlog.md")).toBe("# Backlog\n\n## Work\n- [ ] Call Clara #Work\n- [ ] Call Clara #Work\n");
   await page.keyboard.press("b");
 
   // An item with a note opens with its note; the trash button above the title deletes it.
@@ -230,7 +230,7 @@ test("the entry dialog picks days and ranges in its calendar, moves an entry to 
 });
 
 test("links in notes open in a new tab: by click in the focus card and the dialog's note, by Ctrl+click while editing it", async ({ page, calendar }) => {
-  await calendar.openApp({ "Calendar.md": "# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] Call Lena #Work\n  www.example.org\n  See [docs](https://e.de) here\n" });
+  await calendar.openApp({ "Calendar.md": "# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] Call Clara #Work\n  www.example.org\n  See [docs](https://e.de) here\n" });
   await page.evaluate(() => {
     const opened = /** @type {string[]} */ ([]);
     Object.assign(window, { opened });

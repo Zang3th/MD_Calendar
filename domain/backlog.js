@@ -41,9 +41,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
    * @param {MDCCalendar} calendar @param {MDCBacklog} backlog @param {string} label
    * @param {{ref: MDCEntryRef, entry: MDCEntry} | null} from @param {{ref: MDCEntryRef, entry: MDCEntry} | null} to
    * @param {{key: string, pins: MDCPin[]} | null} [placed] the pins of one day as dropped
+   * @param {MDCSlotted[]} [slotted] entries that went into their time slot
    * @returns {MDCDayAction}
    */
-  function action(calendar, backlog, label, from, to, placed = null) {
+  function action(calendar, backlog, label, from, to, placed = null, slotted = []) {
     /** @param {{ref: MDCEntryRef, entry: MDCEntry} | null} removed @param {{ref: MDCEntryRef, entry: MDCEntry} | null} inserted */
     function apply(removed, inserted) {
       if (removed) list(calendar, backlog, removed.ref).splice(removed.ref.index, 1);
@@ -53,7 +54,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const crossing = from && to && isBacklog(from.ref) !== isBacklog(to.ref);
     const days = [...new Set(refs.filter(ref => !isBacklog(ref)).map(ref => ref.key))];
     // Placed occurrences keep their place among the entries (docs/Domain.md#day-list-order).
-    const options = { ...app.calendar.pinOptions(from, to), placed };
+    const options = { ...app.calendar.pinOptions(from, to), placed, slotted };
     /** @type {Array<{key: string, pins: readonly MDCPin[]}>} */
     let saved = [];
     return {
@@ -171,10 +172,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     }
     const samePlace = !isBacklog(ref) && target.key === ref.key;
     if (samePlace && JSON.stringify(updated) === JSON.stringify(entry)) return null;
-    const destination = app.calendar.dayList(calendar, target.key);
-    const index = samePlace && updated.start === entry.start ? ref.index
-      : app.calendar.timeSlot(destination.filter((_, position) => !samePlace || position !== ref.index), updated.start);
-    return action(calendar, backlog, updated.title, { ref, entry }, { ref: { ...target, index }, entry: updated });
+    // The target day exists before the step, so that undoing it leaves the days as they were.
+    app.calendar.dayList(calendar, target.key);
+    const { index, stay } = samePlace && updated.start === entry.start ? { index: ref.index, stay: new Set() }
+      : app.calendar.timeSlot(calendar, target.key, updated.start, samePlace ? ref.index : -1);
+    return action(calendar, backlog, updated.title, { ref, entry }, { ref: { ...target, index }, entry: updated }, null, [{ entry: updated, stay }]);
   }
 
   /** @param {MDCCalendar} calendar @param {MDCBacklog} backlog @param {MDCEntryRef} ref */
@@ -241,8 +243,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         place(backlog, entry, { group: /** @type {number} */ (to.group), index: to.index }, isBacklog(from) ? /** @type {number} */ (from.group) : null);
       }, isBacklog(from) ? undefined : backlogFile, 2 * sizeOf(entry));
     }
-    const target = !sameList && entry.start ? { ...to, index: app.calendar.timeSlot(list(calendar, backlog, to), entry.start) } : to;
-    return action(calendar, backlog, entry.title, { ref: from, entry }, { ref: target, entry }, pinned);
+    if (!sameList && entry.start) {
+      const { index, stay } = app.calendar.timeSlot(calendar, to.key, entry.start);
+      return action(calendar, backlog, entry.title, { ref: from, entry }, { ref: { ...to, index }, entry }, null, [{ entry, stay }]);
+    }
+    return action(calendar, backlog, entry.title, { ref: from, entry }, { ref: to, entry }, pinned);
   }
 
   /**
@@ -358,18 +363,23 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         });
       }, crossing ? backlogFile : undefined, moving.reduce((total, entry) => total + 2 * sizeOf(entry), 0));
     }
+    /** @type {{moved: Set<MDCEntry>, placed?: {key: string, pins: MDCPin[]}}} */
+    const pinning = { moved: new Set(moving) };
     return snapshot(calendar, backlog, `${refs.length} entries`, [...refs, target], () => {
+      const original = [...list(calendar, backlog, target)];
       for (const ref of descending(refs)) list(calendar, backlog, ref).splice(ref.index, 1);
       const destination = list(calendar, backlog, target);
       const slotted = moving.map((entry, index) => Boolean(entry.start) && !isBacklog(target) && placeId(ordered[index]) !== placeId(target));
       destination.splice(Math.min(target.index, destination.length), 0, ...moving.filter((_, index) => !slotted[index]));
-      for (const entry of moving.filter((_, index) => slotted[index])) destination.splice(app.calendar.timeSlot(destination, entry.start), 0, entry);
-    }, crossing ? (isBacklog(target) ? backlogFile : calendarFile) : undefined, { moved: new Set(moving) });
+      const timed = moving.filter((_, index) => slotted[index]);
+      if (timed.length) pinning.placed = { key: target.key, pins: insertAll(calendar, target.key, original, destination, timed, pinning.moved) };
+    }, crossing ? (isBacklog(target) ? backlogFile : calendarFile) : undefined, pinning);
   }
 
   /**
-   * Inserts open copies into a day (timed ones into their time slots, the others at the end) or into the backlog at
-   * `target`, where they arrive from outside: the tag decides the group (docs/Domain.md#backlog).
+   * Inserts open copies into a day (timed ones into their time slots, the others in their order at `target.index`, at
+   * most the end) or into the backlog at `target`, where they arrive from outside: the tag decides the group
+   * (docs/Domain.md#backlog).
    * @param {MDCCalendar} calendar @param {MDCBacklog} backlog @param {MDCEntry[]} entries @param {MDCEntryRef} target
    */
   function pasteEntries(calendar, backlog, entries, target) {
@@ -384,10 +394,30 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         }
       }, undefined, copies.reduce((total, entry) => total + sizeOf(entry), 0));
     }
+    /** @type {{placed?: {key: string, pins: MDCPin[]}}} */
+    const pinning = {};
     return snapshot(calendar, backlog, label, [target], () => {
       const day = list(calendar, backlog, target);
-      for (const copy of copies) day.splice(app.calendar.timeSlot(day, copy.start), 0, copy);
-    }, undefined);
+      const original = [...day];
+      day.splice(Math.min(target.index, day.length), 0, ...copies.filter(copy => !copy.start));
+      const timed = copies.filter(copy => copy.start);
+      if (timed.length) pinning.placed = { key: target.key, pins: insertAll(calendar, target.key, original, day, timed, new Set()) };
+    }, undefined, pinning);
+  }
+
+  /**
+   * Inserts timed entries one by one into their time slots of `day`, which was `original` before other changes; returns
+   * the pins of the day after (docs/Domain.md#day-list-order).
+   * @param {MDCCalendar} calendar @param {string} key @param {readonly MDCEntry[]} original @param {MDCEntry[]} day
+   * @param {MDCEntry[]} timed @param {Set<MDCEntry>} moved
+   * @returns {MDCPin[]}
+   */
+  function insertAll(calendar, key, original, day, timed, moved) {
+    const pins = app.calendar.pins(calendar, key);
+    /** @type {readonly MDCPin[]} */
+    let placed = pins.length ? app.calendar.repin(original, day, pins, moved) : [];
+    for (const entry of timed) placed = app.calendar.insertTimed(calendar, key, day, placed, entry);
+    return [...placed];
   }
 
   app.backlog = { ungrouped, entryAt, create, update, remove, toggle, move, moveGroup, isBacklog, removeEntries, toggleEntries, moveEntries, pasteEntries };

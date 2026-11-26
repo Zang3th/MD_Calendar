@@ -116,9 +116,31 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return element && pointer ? backlogPlace(element, pointer.x, pointer.y) : null;
   }
 
-  /** Where Ctrl+V pastes: the backlog place or the day under the pointer, else the preselected day. @returns {MDCEntryRef | null} */
+  /**
+   * The day place at `element` and the height `y`: before the first visible normal tile of the day whose middle lies
+   * below `y`, otherwise after all its entries (docs/ui/Interaction.md#pointer). Null outside a day.
+   * @param {Element} element @param {number} y
+   * @returns {MDCEntryRef | null}
+   */
+  function dayPlace(element, y) {
+    const cell = element.closest(".day[data-day], .mcell[data-day], .focus__card[data-day]");
+    const key = cell ? dayOf(cell) : "";
+    if (!cell || !key) return null;
+    const below = /** @type {HTMLElement[]} */ (Array.from(cell.querySelectorAll(".day__list > .ev:not(.ev--series, [hidden])"))).find(tile => {
+      const bounds = tile.getBoundingClientRect();
+      return bounds.top + bounds.height / 2 > y;
+    });
+    return { key, index: below ? Number(below.dataset.index) : Infinity };
+  }
+
+  /**
+   * Where Ctrl+V pastes: the backlog place or the day place under the pointer, else the end of the last hovered day,
+   * else the preselected day. @returns {MDCEntryRef | null}
+   */
   function pasteTarget() {
-    return hoveredBacklogPlace() || (hoveredDay ? { key: hoveredDay, index: 0 } : null);
+    const element = pointer && document.elementFromPoint(pointer.x, pointer.y);
+    const atPointer = element && pointer ? backlogPlace(element, pointer.x, pointer.y) || dayPlace(element, pointer.y) : null;
+    return atPointer || (hoveredDay ? { key: hoveredDay, index: Infinity } : null);
   }
 
   /** The day whose body (below its header, outside tiles and bars) contains `element`. @param {Element} element */
@@ -254,8 +276,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       current.paste(place);
       return;
     }
-    const key = event.target.closest("button") ? "" : dayOf(event.target);
-    if (key) current.paste({ key, index: 0 });
+    // On free space of a day it pastes at the pointer's place there.
+    const target = event.target.closest("button") ? null : dayPlace(event.target, event.clientY);
+    if (target) current.paste(target);
   });
 
   /** Last pointer position in the window, for the entry under the pointer. @type {{x: number, y: number} | null} */

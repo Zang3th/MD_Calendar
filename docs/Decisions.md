@@ -240,8 +240,8 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 
 ## D45 · Timed entries arrive in their time slot
 
-**Decision:** Occurrences of recurring entries sit in their time slot among the normal entries of a day unless placed by hand (D57). A normal entry with a time goes into its time slot when it lands on a day (created, pasted, imported, moved to another day in the dialog or by dragging) and when its start time changes; afterwards it stays freely sortable. → [Domain](Domain.md#day-list-order)
-**Reasons:** a series at 19:00 above a 09:00 entry misread the day, and so did a new timed entry at the end of the day; placing entries only when they arrive keeps the user's own order intact.
+**Decision:** Occurrences of recurring entries sit in their time slot among the normal entries of a day unless placed by hand (D57). A normal entry with a time goes into its time slot when it lands on a day (created, pasted, imported, moved to another day in the dialog or by dragging) and when its start time changes; the slot counts the occurrences as shown, placed ones included. Afterwards it stays freely sortable. → [Domain](Domain.md#day-list-order)
+**Reasons:** a series at 19:00 above a 09:00 entry misread the day, and so did a new timed entry at the end of the day or one sorted past a placed occurrence's time; placing entries only when they arrive keeps the user's own order intact.
 **Rejected:** occurrences always on top; new entries always at the end; sorting all entries by time, which would take the free order away.
 
 ## D46 · “+N” enlarges the month cell in place

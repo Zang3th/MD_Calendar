@@ -24,7 +24,7 @@ test("golden entries carry done state, time, title, tag, location and note", () 
     { done: false, start: "", end: "", title: "Sort tax documents", tag: "", location: "", note: [], extra: [] },
     { done: false, start: "09:30", end: "10:15", title: "Dentist", tag: "Private", location: "Dr. Example's practice", note: ["- Bring the bonus booklet"], extra: [] },
     { done: true, start: "14:00", end: "", title: "Hairdresser", tag: "", location: "", note: [], extra: [] },
-    { done: false, start: "", end: "", title: "Gift for Lena: book \"Momo\" & card", tag: "Private", location: "", note: ["- First note line", "", "- Second note line"], extra: [] }
+    { done: false, start: "", end: "", title: "Gift for Clara: book \"Momo\" & card", tag: "Private", location: "", note: ["- First note line", "", "- Second note line"], extra: [] }
   ]);
   assert.deepEqual(plain(calendar.multiDay.map((/** @type {any} */ item) => [item.title, item.tag, item.start, item.end, item.location, item.note])), [
     ["Vacation", "Private", "2026-11-20", "2026-11-24", "", []],

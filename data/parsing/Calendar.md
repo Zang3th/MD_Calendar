@@ -14,7 +14,7 @@
   - Location: Dr. Example's practice
   - Bring the bonus booklet
 - [x] 14:00 Hairdresser
-- [ ] Gift for Lena: book "Momo" & card #Private
+- [ ] Gift for Clara: book "Momo" & card #Private
   - First note line
 
   - Second note line
