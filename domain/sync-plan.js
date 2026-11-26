@@ -126,8 +126,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     if (google.action === "insert") {
       const created = await client.insert({ ...body, id: operation.id }, signal);
       if (created.status === "created") return done(created.event);
-      // Created before, by an interrupted run: bring it to the target state.
-      const updated = await client.patch(operation.id, body, "", signal);
+      // Created before, by an interrupted run, or an ID Google still keeps for a deleted event: bring it to the target state.
+      const updated = await client.patch(operation.id, { ...body, status: "confirmed" }, "", signal);
       return updated.status === "updated" ? done(updated.event) : leave(operation, "deleted-meanwhile");
     }
     if (google.action === "restore") {
@@ -217,7 +217,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     for (const operation of [...links, ...journal.operations.filter(operation => !links.includes(operation))]) {
       const { local } = operation;
       if (operation.state !== "done" || !local) continue;
-      const where = local.action === "link" ? linkTarget(calendar, backlog, local) : local.action === "import" ? null : find(calendar, backlog, operation.id);
+      // Completing a journal again after an interruption finds what an earlier run already applied and leaves it.
+      const current = find(calendar, backlog, operation.id);
+      const applied = local.action === "import" || local.action === "link" ? Boolean(current) : local.action === "remove" || local.action === "unlink" ? !current : false;
+      if (applied) continue;
+      const where = local.action === "link" ? linkTarget(calendar, backlog, local) : current;
       if (local.action !== "import" && !where) {
         leave(operation, "missing-locally");
         continue;

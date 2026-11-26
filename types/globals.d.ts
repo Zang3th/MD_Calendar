@@ -135,6 +135,7 @@ interface MDCalendarNamespace {
     fromEvent(event: any, timeZone: string, tags: MDCTag[]): MDCSyncRemote;
     toEvent(kind: MDCSyncKind, fields: Record<string, string>, timeZone: string, tags: MDCTag[], tag?: string): Record<string, unknown>;
     compare(input: { local: MDCSyncLocal; base: Record<string, MDCSyncItem>; events: any[]; full: boolean; timeZone: string; tags: MDCTag[] }): MDCSyncComparison;
+    order(differences: MDCSyncDifference[]): MDCSyncDifference[];
     combined(difference: MDCSyncDifference): Record<string, string>;
   };
   syncDialog: {

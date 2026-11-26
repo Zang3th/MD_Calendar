@@ -194,9 +194,21 @@ test("an export changed in Google is set back with keep, or recorded as seen wit
   const comparison = sync.compare({ local, base, events: [...google.events.values()], full: false, timeZone: zone, tags: [] });
   const journal = syncPlan.plan(comparison, { trip0001: "keep", fair0001: "ignore" }, { ...context, base, newId: () => "unused00" });
   await syncPlan.run({ journal, client: google.client });
-  assert.deepEqual(plain([google.events.get("trip0001").summary, google.events.get("trip0001").start, google.events.get("fair0001").summary]), ["Trip", { date: "2026-12-01" }, "Fair renamed"]);
+  assert.deepEqual(plain([google.events.get("trip0001").summary, google.events.get("trip0001").start.date, google.events.get("fair0001").summary]), ["Trip", "2026-12-01", "Fair renamed"]);
   const { items } = syncPlan.record(base, journal);
   assert.equal(items.fair0001.etag, "\"fair0001-2\"");
   assert.equal(items.trip0001.etag, google.events.get("trip0001").etag);
   assert.equal(sync.compare({ local, base: items, events: [google.events.get("fair0001")], full: false, timeZone: zone, tags: [] }).differences.length, 0);
+});
+
+test("completing a journal again after its local changes were saved changes nothing twice", async () => {
+  const { calendar, backlog, base, google, comparison } = scenario();
+  const journal = syncPlan.plan(comparison, { comb0001: "combine", rmgo0001: "delete-calendar" }, { ...context, base, newId: () => "fresh001" });
+  await syncPlan.run({ journal, client: google.client });
+  syncPlan.applyLocal(calendar, backlog, journal)?.redo();
+  const once = [app.calendarFormat.serialize(calendar), app.backlogFormat.serialize(backlog)];
+  // An interruption after saving: the journal is completed again on the saved files.
+  assert.equal(syncPlan.applyLocal(calendar, backlog, journal), null);
+  assert.deepEqual([app.calendarFormat.serialize(calendar), app.backlogFormat.serialize(backlog)], once);
+  assert.ok(journal.operations.every((/** @type {any} */ operation) => operation.state === "done"));
 });

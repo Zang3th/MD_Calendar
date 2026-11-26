@@ -160,8 +160,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
     /** Turns a failed calendar request into its error. @param {Response} response @param {any} payload @returns {never} */
     function fail(response, payload) {
-      const { message } = reason(payload);
+      const { reason: why, message } = reason(payload);
       const detail = `HTTP ${response.status} ${message}`.trim();
+      if (why === "accessNotConfigured" || why === "SERVICE_DISABLED") throw new GoogleError("MDC-406", "The Google Calendar API is not enabled", detail);
       if (response.status === 404) throw new GoogleError("MDC-403", "Calendar not found", detail);
       if (response.status === 403) throw new GoogleError("MDC-404", "No write access to the calendar", detail);
       throw new GoogleError("MDC-406", "Google rejected the request", detail);

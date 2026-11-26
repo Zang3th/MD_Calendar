@@ -238,12 +238,18 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       summary: fields.title, location: fields.location, description: fields.note,
       colorId: color || null, extendedProperties: { private: { mdcTag: tag } }
     };
+    // Google merges objects in a PATCH, so a changed shape clears the other form explicitly: an entry that becomes a day
+    // off loses its times, a series that becomes an entry its rule.
+    /** @param {string} date @param {string} time */
+    const timed = (date, time) => ({ date: null, dateTime: `${date}T${time}:00`, timeZone });
+    /** @param {string} date */
+    const allDay = date => ({ date, dateTime: null, timeZone: null });
     if (kind === "entry") {
       const [start, end] = fields.time.split("-");
-      return { ...body, start: { dateTime: `${fields.date}T${start}:00`, timeZone }, end: { dateTime: `${fields.date}T${end || start}:00`, timeZone } };
+      return { ...body, start: timed(fields.date, start), end: timed(fields.date, end || start), recurrence: null };
     }
     if (kind === "day-off" || kind === "multi-day") {
-      return { ...body, start: { date: fields.start }, end: { date: dates.addDays(fields.end, 1) } };
+      return { ...body, start: allDay(fields.start), end: allDay(dates.addDays(fields.end, 1)), recurrence: null };
     }
     const [date, times] = fields.start.split(" ");
     const [start, end] = times.split("-");
@@ -251,7 +257,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const except = fields.except ? fields.except.split(",").map(day => `EXDATE;TZID=${timeZone}:${day.replace(/-/g, "")}T${start.replace(":", "")}00`) : [];
     return {
       ...body,
-      start: { dateTime: `${date}T${start}:00`, timeZone }, end: { dateTime: `${date}T${end || start}:00`, timeZone },
+      start: timed(date, start), end: timed(date, end || start),
       recurrence: [`RRULE:${rule}`, ...except]
     };
   }
@@ -315,7 +321,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
             continue;
           }
           if (left) differ({ id, kind, case: "left-local", reason: left.reason, choices: ["delete-google"], preselected: "delete-google", ...display });
-          else if (!gone) differ({ id, kind, case: "deleted-local", choices: ["delete-google"], ...display });
+          else differ({ id, kind, case: "deleted-local", choices: ["delete-google"], ...display });
           continue;
         }
         if (known && changedThere) differ({ id, kind, case: "export-changed", reason: gone ? "deleted" : "changed", choices: ["keep", "ignore"], ...display });
@@ -349,6 +355,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       }
       const seen = known ? known.google || known.calendar : null;
       const mineChanged = seen ? changedFields(ours, /** @type {MDCSyncItem} */ (known).calendar) : [];
+      if (!known && theirState === "unchanged") {
+        // Nothing recorded and Google said nothing: offer it as new; an existing event is found by its ID and updated.
+        differ({ id, kind, case: "new-local", choices: ["to-google"], preselected: "to-google", ...display });
+        continue;
+      }
       if (theirState === "unchanged" || !view) {
         if (mineChanged.length) differ({ id, kind, case: "changed-local", changed: { calendar: mineChanged, google: [] }, choices: ["to-google"], preselected: "to-google", ...display });
         continue;
@@ -378,8 +389,12 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     for (const item of local.fresh) {
       differ({ id: "", kind: item.kind, case: "new-local", choices: ["to-google"], preselected: "to-google", calendar: item.fields, google: null, etag: "", ref: item.ref });
     }
-    differences.sort((left, right) => sortKey(left).localeCompare(sortKey(right)));
-    return { differences, same, forgotten, duplicates: local.duplicates };
+    return { differences: order(differences), same, forgotten, duplicates: local.duplicates };
+  }
+
+  /** Differences in the order of the merge view; again after Google's side of some was read. @param {MDCSyncDifference[]} differences */
+  function order(differences) {
+    return differences.sort((left, right) => sortKey(left).localeCompare(sortKey(right)));
   }
 
   /** Day entries by date first, then series, then notes. @param {MDCSyncDifference} difference */
@@ -400,5 +415,5 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return Object.fromEntries(Object.keys(calendar).map(name => [name, fromGoogle.includes(name) ? google[name] : calendar[name]]));
   }
 
-  app.sync = { cutover, fieldsOf, colorId, eventTag, zoned, instantOf, localFields, fingerprints, collect, fromEvent, toEvent, compare, combined };
+  app.sync = { cutover, fieldsOf, colorId, eventTag, zoned, instantOf, localFields, fingerprints, collect, fromEvent, toEvent, compare, order, combined };
 })(window.MDCalendar);

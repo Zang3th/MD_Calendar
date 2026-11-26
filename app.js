@@ -502,7 +502,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       const { changed } = app.folderState.syncStatus(state);
       const last = section.last;
       const device = last ? state.devices[last.by]?.name || "another device" : "";
-      const when = last ? `${app.calendar.formatDay(new Date(last.at).toISOString().slice(0, 10), "dd DD.MM.YYYY")} ${new Date(last.at).toTimeString().slice(0, 5)}` : "";
+      const at = last ? new Date(last.at) : null;
+      const when = at ? `${app.calendar.formatDay(app.calendar.todayKey(at), "dd DD.MM.YYYY")} ${at.toTimeString().slice(0, 5)}` : "";
       const journal = section.journal;
       app.syncDialog.render({
         phase: "overview",
@@ -641,7 +642,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
           if ("fields" in mapped) difference.google = mapped.fields;
           if (event?.etag && !difference.etag) difference.etag = String(event.etag);
         }
+        app.sync.order(comparison.differences);
         await atLeast(Promise.resolve());
+        // Closed meanwhile: nothing more to show.
+        if (signal.aborted) return;
         if (comparison.duplicates.length) {
           app.notifications.show("warning", "Sync ID used twice", note`${comparison.duplicates.join(", ")}\nOnly the first item is synchronized.`);
         }

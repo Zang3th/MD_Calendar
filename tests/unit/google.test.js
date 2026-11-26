@@ -96,7 +96,8 @@ test("the probe names a missing calendar, missing write access, a refused key an
     [[tokenRoute, [events, () => json({ error: { code: 404, message: "Not Found" } }, 404)]], "MDC-403"],
     [[tokenRoute, [events, () => json({ accessRole: "reader", items: [] })]], "MDC-404"],
     [[["https://oauth2", () => json({ error: "invalid_grant", error_description: "Invalid JWT Signature." }, 400)]], "MDC-402"],
-    [[tokenRoute], "MDC-405"]
+    [[tokenRoute], "MDC-405"],
+    [[tokenRoute, [events, () => json({ error: { code: 403, message: "Calendar API has not been used", errors: [{ reason: "accessNotConfigured" }] } }, 403)]], "MDC-406"]
   ]);
   for (const [routes, code] of cases) {
     const { client } = await clientWith(fakeFetch(routes).fetch);

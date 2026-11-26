@@ -216,7 +216,7 @@ Line icons as inline SVG with a 2px stroke and round caps and joins. No emoji an
 - Every symbol also exists as a standalone file `res/icons/<name>.svg` with identical geometry. A unit test checks that file and symbol match.
 - A toggle shows both of its icons in the markup; CSS shows one of them based on the button's `aria-pressed` state. The markup is never swapped.
 - The header icons for sound (speaker with two sound waves, speaker with an X) and help (question mark) follow the drawings of MD_Manager, redrawn on the 36-unit canvas (see the header exception).
-- The sync icon is the circle arrows: two arcs of one circle, each ending in an arrowhead, as `hdr-sync` for the header and `icon-sync` (32-unit canvas) for the head of the sync dialog. Draft geometry on the 36-unit canvas: `M7.5 16A10.5 10.5 0 0 1 26.5 11`, `M27 5v6.5h-6.5`, `M28.5 20A10.5 10.5 0 0 1 9.5 25`, `M9 31v-6.5h6.5`; the final drawing puts its straight strokes on whole pixels.
+- The sync icon is the circle arrows: two arcs of one circle, each ending in an arrowhead, as `hdr-sync` for the header and `icon-sync` (32-unit canvas) for the head of the sync dialog. The arcs span exactly as far as the arrowheads, so the icon is as wide as it is high (22 × 22 units on the 36-unit canvas); the straight strokes of the arrowheads lie on whole pixels.
 - Tooltips are not used for now; every icon button names its action through `aria-label`. The tooltip system stays in place for tooltips that are added back one by one.
 
 ## Tag icons

@@ -161,7 +161,7 @@ Ab hier ersetzt MD_Calendar den Google-Kalender als Daily-Driver.
 ## Synchronisierung
 
 #Version
-- 0.8.1
+- 0.9.0
 
 #Date
 - 26.11.2026 - TBD
@@ -169,7 +169,9 @@ Ab hier ersetzt MD_Calendar den Google-Kalender als Daily-Driver.
 ### Synchronisierung
 
 - [x] ~Feature ausarbeiten~
-- [ ] Feature implementieren
+- [x] ~Feature implementieren~
+- [ ] Google-Auth hinterlegen
+- [ ] Feature testen
 
 ### Bugs und Verbesserungen
 

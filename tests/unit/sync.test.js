@@ -62,13 +62,16 @@ test("local items become Google events with only the mapped fields", () => {
   const entry = sync.toEvent("entry", { date: "2026-11-27", time: "09:30", title: "Dentist", location: "", note: "Bring it", tag: "Private" }, zone, tags);
   assert.deepEqual(plain(entry), {
     summary: "Dentist", location: "", description: "Bring it", colorId: sync.colorId("#458588"), extendedProperties: { private: { mdcTag: "Private" } },
-    start: { dateTime: "2026-11-27T09:30:00", timeZone: zone }, end: { dateTime: "2026-11-27T09:30:00", timeZone: zone }
+    start: { date: null, dateTime: "2026-11-27T09:30:00", timeZone: zone }, end: { date: null, dateTime: "2026-11-27T09:30:00", timeZone: zone },
+    recurrence: null
   });
   const dayOff = plain(sync.toEvent("day-off", { start: "2026-12-04", end: "2026-12-04", title: "Overtime", location: "", note: "" }, zone, tags));
-  assert.deepEqual([dayOff.start, dayOff.end, dayOff.extendedProperties.private.mdcTag, dayOff.colorId], [{ date: "2026-12-04" }, { date: "2026-12-05" }, "DayOff", null]);
+  // A PATCH merges objects: the other form of start and end is cleared explicitly.
+  assert.deepEqual([dayOff.start, dayOff.end, dayOff.recurrence, dayOff.extendedProperties.private.mdcTag, dayOff.colorId],
+    [{ date: "2026-12-04", dateTime: null, timeZone: null }, { date: "2026-12-05", dateTime: null, timeZone: null }, null, "DayOff", null]);
   const series = plain(sync.toEvent("series", { start: "2026-11-24 18:30-20:00", rule: "FREQ=WEEKLY;BYDAY=TU,TH;UNTIL=20261231", except: "2026-12-01", title: "Gym", location: "", note: "", tag: "" }, zone, tags));
   assert.deepEqual(series.recurrence, ["RRULE:FREQ=WEEKLY;BYDAY=TU,TH;UNTIL=20261231T225900Z", "EXDATE;TZID=Europe/Berlin:20261201T183000"]);
-  assert.deepEqual([series.start, series.end], [{ dateTime: "2026-11-24T18:30:00", timeZone: zone }, { dateTime: "2026-11-24T20:00:00", timeZone: zone }]);
+  assert.deepEqual([series.start, series.end], [{ date: null, dateTime: "2026-11-24T18:30:00", timeZone: zone }, { date: null, dateTime: "2026-11-24T20:00:00", timeZone: zone }]);
 });
 
 test("only timed entries, days off, multi-day entries and timed series from the cutover on take part; IDs out of range are remembered", () => {
@@ -177,4 +180,9 @@ test("a full comparison treats missing events as deleted in Google, and items wi
   const { result, rows } = cases({ local, base, events, full: true });
   assert.deepEqual(rows, [["lost0001", "deleted-google", null], ["unkn0001", "new-local", "to-google"]]);
   assert.deepEqual(plain(result.same.map((/** @type {any} */ item) => item.id)), ["eqal0001"]);
+});
+
+test("an item with a sync ID but no recorded state is offered as new when Google reports nothing about it", () => {
+  const { calendar, backlog } = folder(["## November 2026", "", "### 24.11.2026", "- [ ] 09:00 Kept {sync=kept0001}"]);
+  assert.deepEqual(cases({ local: sync.collect(calendar, backlog) }).rows, [["kept0001", "new-local", "to-google"]]);
 });

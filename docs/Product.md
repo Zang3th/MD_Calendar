@@ -41,7 +41,7 @@ In scope for the desktop releases up to the cutover (0.6.0):
 - Undo/redo and explicit saving
 - One-time import of the complete Google Calendar history and import of single `.ics` invitations; vCard import and export
 
-In scope after the cutover (0.8.1):
+In scope after the cutover (0.9.0):
 
 - Explicit synchronization of timed entries with one dedicated Google calendar, so that they are available on the phone (see [Domain](Domain.md#synchronization-with-google))
 
