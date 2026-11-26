@@ -22,7 +22,7 @@ test("golden entries carry done state, time, title, tag, location and note", () 
   assert.deepEqual(Array.from(calendar.days.keys()), ["2026-01-01", "2026-11-12", "2026-11-20", "2026-12-28", "2027-01-04"]);
   assert.deepEqual(plain(calendar.days.get("2026-11-12").entries), [
     { done: false, start: "", end: "", title: "Sort tax documents", tag: "", location: "", note: [], extra: [] },
-    { done: false, start: "09:30", end: "10:15", title: "Dentist", tag: "Private", location: "Dr. Example's practice", note: ["- Bring the bonus booklet"], extra: [] },
+    { done: false, start: "09:30", end: "10:15", title: "Dentist", tag: "Private", location: "Dr. Example's practice", note: ["- Bring the bonus booklet"], extra: [], sync: "k3v9q2ab" },
     { done: true, start: "14:00", end: "", title: "Hairdresser", tag: "", location: "", note: [], extra: [] },
     { done: false, start: "", end: "", title: "Gift for Clara: book \"Momo\" & card", tag: "Private", location: "", note: ["- First note line", "", "- Second note line"], extra: [] }
   ]);
@@ -40,6 +40,42 @@ test("golden entries carry done state, time, title, tag, location and note", () 
     note: ["Demo the new calendar.", "Collect feedback."], extra: []
   });
   assert.equal(calendar.series[1].rule.until, "2026-12-31");
+  assert.deepEqual([calendar.multiDay[1].sync, calendar.series[4].sync, calendar.series[4].id], ["t7m2p4qd", "4c8n1kre", "gym"]);
+});
+
+test("a sync ID is read only at the end of an entry line, after the tag", () => {
+  const day = (/** @type {string[]} */ ...lines) => calendarFormat.parse(["# Calendar", "", "## November 2026", "", "### 30.11.2026", ...lines, ""].join("\n"));
+  const { calendar, warnings } = day(
+    "- [ ] 10:00 Call {sync=ab12}",
+    "- [ ] Read {sync=ab12} later #Work",
+    "- [ ] Bad id #Work {sync=xyz}",
+    "- [ ] Glued{sync=cd34}"
+  );
+  assert.deepEqual(plain(calendar.days.get("2026-11-30").entries.map((/** @type {any} */ entry) => [entry.title, entry.tag, entry.sync ?? ""])), [
+    ["Call", "", "ab12"], ["Read {sync=ab12} later", "Work", ""], ["Bad id #Work {sync=xyz}", "", ""], ["Glued{sync=cd34}", "", ""]
+  ]);
+  assert.deepEqual(plain(warnings), []);
+  assert.equal(calendarFormat.serialize(calendar).split("\n")[5], "- [ ] 10:00 Call {sync=ab12}");
+});
+
+test("a sync ID used twice is reported and kept; an invalid #Sync makes the item unreadable", () => {
+  const source = [
+    "# Calendar", "", "## November 2026", "", "### 30.11.2026", "- [ ] 10:00 A {sync=ab12}", "- [ ] 11:00 B {sync=ab12}", "",
+    "## Multi-day", "", "### Broken", "#Sync", "- not valid", "#Start", "- 01.12.2026", "#End", "- 02.12.2026", "",
+    "### Trip", "#Sync", "- ab12", "#Start", "- 01.12.2026", "#End", "- 02.12.2026", ""
+  ].join("\n");
+  const { calendar, warnings } = calendarFormat.parse(source);
+  assert.deepEqual(plain(warnings).map((/** @type {any} */ warning) => [warning.lineNumber, warning.kind]), [[7, "duplicate-sync"], [11, "invalid-item"], [19, "duplicate-sync"]]);
+  // The unreadable item follows the readable ones.
+  const lines = source.split("\n");
+  assert.equal(calendarFormat.serialize(calendar), [...lines.slice(0, 10), ...lines.slice(18, 26), ...lines.slice(10, 18)].join("\n"));
+});
+
+test("a day off with a time is reported and written without it", () => {
+  const source = "# Calendar\n\n## November 2026\n\n### 30.11.2026\n- [ ] 08:00 - 12:00 Overtime #DayOff\n";
+  const { calendar, warnings } = calendarFormat.parse(source);
+  assert.deepEqual(plain(warnings).map((/** @type {any} */ warning) => [warning.lineNumber, warning.kind]), [[6, "day-off-time"]]);
+  assert.equal(calendarFormat.serialize(calendar), "# Calendar\n\n## November 2026\n\n### 30.11.2026\n- [ ] Overtime #DayOff\n");
 });
 
 test("a blank line inside a note is an empty note line; blank lines around the note are not part of it", () => {

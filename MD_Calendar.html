@@ -258,6 +258,56 @@
           stroke-linecap="round"
           stroke-linejoin="round"/>
     </symbol>
+    <symbol id="icon-sync" viewBox="0 0 32 32" fill="none">
+    <path d="M7 15A9 9 0 0 1 23 10M24 4V10H18
+             M25 17A9 9 0 0 1 9 22M8 28V22H14"
+          stroke="currentColor"
+          stroke-width="4"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-arrow-right" viewBox="0 0 32 32" fill="none">
+    <path d="M6 16H26M18 8L26 16L18 24"
+          stroke="currentColor"
+          stroke-width="4"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-arrow-left" viewBox="0 0 32 32" fill="none">
+    <path d="M26 16H6M14 8L6 16L14 24"
+          stroke="currentColor"
+          stroke-width="4"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-merge" viewBox="0 0 32 32" fill="none">
+    <path d="M6 8H10C14 8 14 16 18 16H26M6 24H10C14 24 14 16 18 16M20 10L26 16L20 22"
+          stroke="currentColor"
+          stroke-width="4"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-dash" viewBox="0 0 32 32" fill="none">
+    <path d="M9 16H23"
+          stroke="currentColor"
+          stroke-width="4"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-pause" viewBox="0 0 32 32" fill="none">
+    <path d="M12 9V23M20 9V23"
+          stroke="currentColor"
+          stroke-width="4"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="icon-info" viewBox="0 0 32 32" fill="none">
+    <path d="M16 4A12 12 0 1 1 16 28A12 12 0 1 1 16 4ZM16 15V22M16 10V10.5"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
     <symbol id="icon-search" viewBox="0 0 32 32" fill="none">
     <path d="M14 6A8 8 0 1 1 14 22A8 8 0 1 1 14 6ZM20 20L26 26"
           stroke="currentColor"
@@ -311,6 +361,14 @@
     <symbol id="hdr-redo" viewBox="0 0 36 36" fill="none">
     <path d="M23 11L28 16L23 21
              M28 16H16C11 16 8 19.5 8 24"
+          stroke="currentColor"
+          stroke-width="4"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="hdr-sync" viewBox="0 0 36 36" fill="none">
+    <path d="M8 17A10 10 0 0 1 27 12M28 6V12H22
+             M28 19A10 10 0 0 1 9 24M8 30V24H14"
           stroke="currentColor"
           stroke-width="4"
           stroke-linecap="round"
@@ -559,6 +617,7 @@
           <input type="file" id="icsImport" accept=".ics,text/calendar" hidden>
           <button class="iconbtn" id="undo" type="button" aria-label="Undo" disabled><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#hdr-undo"></use></svg></button>
           <button class="iconbtn" id="redo" type="button" aria-label="Redo" disabled><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#hdr-redo"></use></svg></button>
+          <button class="iconbtn sync" id="syncButton" type="button" aria-haspopup="dialog" aria-label="Sync with Google"><span class="sync__icon"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#hdr-sync"></use></svg><i class="sync__dot"></i></span></button>
           <button class="save" id="save" type="button" aria-label="All saved"><span class="save__icon"><i class="save__dot"></i><svg class="ui-icon save__ok" aria-hidden="true" viewBox="0 0 32 32"><use href="#hdr-check"></use></svg><i class="save__spin"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#hdr-spinner"></use></svg></i><svg class="ui-icon save__fail" aria-hidden="true" viewBox="0 0 32 32"><use href="#hdr-close"></use></svg></span></button>
         </div>
       </div>
@@ -639,6 +698,17 @@
       <div class="dlg__pop" id="dialogPop" tabindex="-1" hidden></div>
       <div class="menu glass dlg__menu" id="dialogDeleteMenu" role="menu" aria-label="Delete" hidden></div>
     </form>
+  </dialog>
+  <dialog class="sd" id="syncDialog" aria-labelledby="syncTitle">
+    <header class="sd__head">
+      <svg class="ui-icon sd__icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-sync"></use></svg>
+      <h2 class="sd__heading" id="syncTitle">Sync with Google</h2>
+      <span class="sd__status" id="syncStatus" role="status"></span>
+      <button class="iconbtn sd__close" id="syncClose" type="button" aria-label="Close"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-close"></use></svg></button>
+    </header>
+    <div class="sd__body" id="syncBody"></div>
+    <footer class="sd__foot" id="syncFoot"></footer>
+    <input type="file" id="syncKeyInput" accept=".json,application/json" hidden>
   </dialog>
   <div class="watermark" id="watermark" hidden>© 2026 MD_Calendar <span id="watermarkVersion"></span> · Tim Krüger (Zang3th) · <a href="https://github.com/Zang3th" target="_blank" rel="noopener noreferrer">GitHub</a></div>
   <section class="notifications" id="notifications" aria-label="Notifications" aria-live="polite"></section>

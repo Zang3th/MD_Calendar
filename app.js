@@ -9,6 +9,8 @@ import "./domain/recurrence.js";
 import "./domain/backlog.js";
 import "./domain/contacts.js";
 import "./domain/search.js";
+import "./domain/sync.js";
+import "./domain/sync-plan.js";
 import "./io/calendar-format.js";
 import "./io/backlog-format.js";
 import "./io/holidays-format.js";
@@ -17,6 +19,7 @@ import "./io/contacts-format.js";
 import "./io/vcard.js";
 import "./io/ics.js";
 import "./io/folder-state.js";
+import "./io/google.js";
 import "./io/storage.js";
 import "./ui/notifications.js";
 import "./ui/tooltips.js";
@@ -33,6 +36,7 @@ import "./ui/menus.js";
 import "./ui/search-panel.js";
 import "./ui/focus.js";
 import "./ui/interactions.js";
+import "./ui/sync-dialog.js";
 
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
@@ -102,6 +106,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   async function startApplication() {
     /** Saving and external-change handling of the open folder (MD_Libs platform/session). @type {MDCSession | null} */
     let fileSession = null;
+    /** The open folder; the synchronization reads its key and MD_Calendar.json through it. @type {MDCStorageAdapter | null} */
+    let openFolderAdapter = null;
     /** @type {MDCCalendar | null} */
     let calendar = null;
     /** @type {MDCBacklog | null} */
@@ -262,10 +268,18 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 
     /** @param {MDCFileName} name @param {MDCFormatWarning[]} warnings */
     function reportWarnings(name, warnings) {
-      if (!warnings.length) return;
-      const lines = warnings.map(warning => warning.lineNumber);
-      const shown = lines.slice(0, 8).join(", ") + (lines.length > 8 ? " …" : "");
-      app.notifications.show("warning", "Unreadable lines", note`${name}, ${warnings.length === 1 ? "line" : "lines"} ${shown}\nKept as is.`);
+      /** @param {MDCFormatWarning[]} found @param {string} title @param {string} hint */
+      const report = (found, title, hint) => {
+        if (!found.length) return;
+        const lines = found.map(warning => warning.lineNumber);
+        const shown = lines.slice(0, 8).join(", ") + (lines.length > 8 ? " …" : "");
+        app.notifications.show("warning", title, note`${name}, ${found.length === 1 ? "line" : "lines"} ${shown}\n${hint}`);
+      };
+      // Days off have no time (docs/Domain.md#tags); a sync ID belongs to one item (docs/DataFormat.md#sync-ids).
+      const special = ["day-off-time", "duplicate-sync"];
+      report(warnings.filter(warning => warning.kind === "day-off-time"), "Day off with a time", "The time is dropped on the next save.");
+      report(warnings.filter(warning => warning.kind === "duplicate-sync"), "Sync ID used twice", "Only the first item is synchronized.");
+      report(warnings.filter(warning => !special.includes(warning.kind)), "Unreadable lines", "Kept as is.");
     }
 
     /** Parses one file (`null`: missing) into the model; writable files start a new history. @param {MDCFileName} name @param {string | null} text */
@@ -322,6 +336,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
      * @param {MDCStorageAdapter} opened
      */
     async function startSession(opened) {
+      openFolderAdapter = opened;
       let previous = fileSession;
       const started = await session.open({
         adapter: opened,
@@ -340,7 +355,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         reloadWhenClean: true,
         window,
         // While the dialog is open it refers to an entry by position; a reload would make that reference stale.
-        shouldCheck: () => !app.dialog.isOpen(),
+        // The sync dialog refers to entries by position as well, and applies changes of its own.
+        shouldCheck: () => !app.dialog.isOpen() && !app.syncDialog.isOpen(),
         confirmLeave: true
       });
       started.on("change", updateHeader);
@@ -382,6 +398,370 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       return file;
     }
 
+    // ---------- Synchronization with Google (docs/Architecture.md#synchronization-with-google) ----------
+
+    const keyFile = "MD_Calendar.key.json";
+    /** Shortest time a step of the sync dialog shows, so that no state only flashes (docs/ui/Shell.md#sync-dialog). */
+    const stepMinimum = 600;
+    /**
+     * The running synchronization: the client, the calendar's time zone, the comparison under review, a controller that
+     * aborts the check and the cancel request of “Apply”.
+     */
+    const syncRun = {
+      /** @type {MDCGoogleClient | null} */ client: null,
+      timeZone: "",
+      syncToken: "",
+      /** @type {MDCSyncComparison | null} */ comparison: null,
+      /** @type {Record<string, MDCSyncItem>} */ base: {},
+      /** @type {AbortController | null} */ abort: null,
+      cancelled: false
+    };
+
+    /** Waits for `work` and at least `ms`. @template T @param {Promise<T>} work @param {number} [ms] @returns {Promise<T>} */
+    async function atLeast(work, ms = stepMinimum) {
+      const [result] = await Promise.all([work, new Promise(resolve => window.setTimeout(resolve, ms))]);
+      return result;
+    }
+
+    /** The stored MD_Calendar.json, or null. */
+    async function readFolderState() {
+      if (!openFolderAdapter) return null;
+      const stored = await openFolderAdapter.read(app.folderState.fileName);
+      return stored ? app.folderState.read(stored.text) : null;
+    }
+
+    /** The stored key; null when there is none. Throws MDC-401 for a file that is no key. */
+    async function readStoredKey() {
+      const stored = openFolderAdapter ? await openFolderAdapter.read(keyFile) : null;
+      return stored ? app.google.readKey(stored.text) : null;
+    }
+
+    /** @param {boolean} busy */
+    function syncBusy(busy) {
+      syncShown = { ...syncShown, busy };
+      app.header.syncState(syncShown);
+    }
+
+    /** @param {MDCGoogleKey} key @param {string} calendarId */
+    function syncClient(key, calendarId) {
+      return app.google.client({
+        key, calendarId,
+        onWait: seconds => {
+          // A countdown while Google asks to wait (docs/ui/Shell.md#sync-dialog).
+          for (let left = seconds; left > 0; left -= 1) window.setTimeout(() => app.syncDialog.notice(`Google asks to wait – retrying in ${left} s`), (seconds - left) * 1000);
+          window.setTimeout(() => app.syncDialog.notice(""), seconds * 1000);
+        }
+      });
+    }
+
+    /** @type {MDCSyncDialogHandlers} */
+    const syncHandlers = {
+      close() {
+        syncRun.abort?.abort();
+        syncBusy(false);
+        app.syncDialog.close();
+      },
+      overview() { void showSyncOverview(); },
+      setup() { void showSyncSetup(true); },
+      connect(text, name, calendarId) { void connectSync(text, calendarId); },
+      check() { void checkSync(); },
+      saveAndCheck() {
+        void save().then(() => {
+          if (fileSession && !fileSession.unsaved && !hasConflict()) void checkSync();
+          else void showSyncOverview();
+        });
+      },
+      complete() { void completeSync(); },
+      cancel() { syncRun.cancelled = true; },
+      apply(choices) { void applySync(choices); }
+    };
+
+    async function openSync() {
+      if (!calendar || !openFolderAdapter) return;
+      app.syncDialog.open(syncHandlers);
+      await showSyncOverview();
+    }
+
+    /** @param {boolean} [cancellable] */
+    async function showSyncSetup(cancellable = false) {
+      const state = await readFolderState();
+      app.syncDialog.render({ phase: "setup", status: "Setup", calendarId: state ? app.folderState.sync(state)?.calendarId || "" : "", steps: null, cancellable });
+    }
+
+    /** The overview, or the setup while the key or the calendar is missing (docs/ui/Shell.md#sync-dialog). */
+    async function showSyncOverview() {
+      const state = await readFolderState();
+      const section = state ? app.folderState.sync(state) : null;
+      /** @type {MDCGoogleKey | null} */
+      let key = null;
+      try { key = await readStoredKey(); } catch { key = null; }
+      if (!state || !section || !key) {
+        await showSyncSetup(false);
+        return;
+      }
+      const { changed } = app.folderState.syncStatus(state);
+      const last = section.last;
+      const device = last ? state.devices[last.by]?.name || "another device" : "";
+      const when = last ? `${app.calendar.formatDay(new Date(last.at).toISOString().slice(0, 10), "dd DD.MM.YYYY")} ${new Date(last.at).toTimeString().slice(0, 5)}` : "";
+      const journal = section.journal;
+      app.syncDialog.render({
+        phase: "overview",
+        status: journal ? "Interrupted" : !last ? "Not synced yet" : changed ? "Local changes since last sync" : "Up to date",
+        facts: [
+          ["Last sync", last ? `${when} · ${device} · ${last.toGoogle} ↑ · ${last.toCalendar} ↓` : "Never"],
+          ["Local changes", changed ? "Yes, saved since the last sync" : "None"],
+          ["Calendar", section.calendarId]
+        ],
+        unsaved: fileSession ? fileSession.unsaved : 0,
+        interrupted: journal ? { done: journal.operations.filter(operation => operation.state !== "pending").length, total: journal.operations.length } : null
+      });
+    }
+
+    /** Shows an error of the synchronization with its way out. @param {unknown} error @param {MDCSyncRetry} retry */
+    function showSyncError(error, retry) {
+      syncBusy(false);
+      const code = /** @type {any} */ (error)?.code || "MDC-406";
+      if (/** @type {any} */ (error)?.name === "AbortError") return;
+      const ways = /** @type {Record<string, string>} */ ({
+        "MDC-401": "Choose the JSON key of the service account again.",
+        "MDC-402": "The key was deleted or disabled in Google Cloud. Create a new key and change the setup.",
+        "MDC-403": "Share the calendar with the service account, or check the calendar ID.",
+        "MDC-404": "Share the calendar with “Make changes to events”.",
+        "MDC-405": "Check the connection and try again.",
+        "MDC-407": "MD_Calendar.json could not be written. Nothing was lost; try again."
+      });
+      const title = /** @type {Error} */ (error)?.message || "Sync failed";
+      app.syncDialog.render({ phase: "error", status: "", title, message: ways[code] || "Try again.", code, detail: /** @type {any} */ (error)?.detail || "", retry });
+    }
+
+    /**
+     * Checks the key and the calendar step by step and stores both (docs/ui/Shell.md#sync-dialog).
+     * @param {string} text @param {string} calendarId
+     */
+    async function connectSync(text, calendarId) {
+      const labels = ["Reading key", "Getting access", "Reaching calendar", "Checking write access"];
+      /** @type {Array<{label: string, state: string, detail?: string}>} */
+      const steps = labels.map(label => ({ label, state: "waiting" }));
+      const show = () => app.syncDialog.render({ phase: "setup", status: "Connecting", calendarId, steps: steps.map(step => ({ ...step })), cancellable: true });
+      /** @param {number} index @param {() => Promise<unknown>} work */
+      const run = async (index, work) => {
+        steps[index].state = "running";
+        show();
+        await atLeast(work());
+        steps[index].state = "done";
+      };
+      let at = 0;
+      try {
+        /** @type {MDCGoogleKey | null} */
+        let key = null;
+        await run(at, async () => { key = app.google.readKey(text); });
+        const client = syncClient(/** @type {MDCGoogleKey} */ (/** @type {unknown} */ (key)), calendarId);
+        at = 1;
+        await run(at, () => client.authorize());
+        at = 2;
+        /** @type {{accessRole: string} | null} */
+        let probed = null;
+        await run(at, async () => {
+          try { probed = await client.probe(); } catch (error) {
+            // Missing write access shows at its own step.
+            if (/** @type {any} */ (error)?.code !== "MDC-404") throw error;
+            probed = { accessRole: "" };
+          }
+        });
+        at = 3;
+        await run(at, async () => { if (!probed?.accessRole) throw new app.google.GoogleError("MDC-404", "No write access to the calendar"); });
+        show();
+        const folder = /** @type {MDCStorageAdapter} */ (openFolderAdapter);
+        const existing = await folder.read(keyFile);
+        await folder.write(keyFile, text, existing ? existing.text : null);
+        await folderStateOf(folder).update(document => app.folderState.connected(document, calendarId));
+        const written = await readFolderState();
+        if (written) showSyncState(written);
+        await showSyncOverview();
+      } catch (error) {
+        steps[at].state = "failed";
+        steps[at].detail = `${/** @type {Error} */ (error)?.message || "Failed"}. ${/** @type {any} */ (error)?.code === "MDC-403" ? "Share the calendar with the service account." : ""}`.trim();
+        show();
+      }
+    }
+
+    /** Reads Google, compares and shows the merge view (docs/ui/Shell.md#sync-dialog). */
+    async function checkSync() {
+      if (!calendar || !backlog || !openFolderAdapter) return;
+      const labels = ["Connecting to Google", "Reading changes", "Comparing"];
+      /** @type {Array<{label: string, state: string, count?: string}>} */
+      const steps = labels.map(label => ({ label, state: "waiting" }));
+      let notice = "";
+      const show = () => app.syncDialog.render({ phase: "checking", status: "Checking", steps: steps.map(step => ({ ...step })), notice });
+      syncRun.abort = new AbortController();
+      const signal = syncRun.abort.signal;
+      syncBusy(true);
+      try {
+        const state = await readFolderState();
+        const section = state ? app.folderState.sync(state) : null;
+        const key = await readStoredKey();
+        if (!section || !key) {
+          syncBusy(false);
+          await showSyncSetup(false);
+          return;
+        }
+        const client = syncClient(key, section.calendarId);
+        syncRun.client = client;
+        steps[0].state = "running";
+        show();
+        const { timeZone } = await atLeast(client.probe(signal));
+        steps[0].state = "done";
+        steps[1].state = "running";
+        show();
+        /** @param {number} count */
+        const counted = count => {
+          steps[1].count = `${count} ${count === 1 ? "event" : "events"} read`;
+          show();
+        };
+        let full = !section.syncToken;
+        let read = await atLeast(client.changes({ syncToken: section.syncToken, signal, onPage: counted }));
+        if (read.expired) {
+          notice = "Google asked for a full comparison";
+          full = true;
+          read = await client.changes({ signal, onPage: counted });
+        }
+        if (read.expired) throw new app.google.GoogleError("MDC-406", "Google rejected the query");
+        const events = [...read.events];
+        // Differences left open last time are read again; the sync token no longer returns them.
+        for (const id of section.open || []) if (!events.some(event => event.id === id)) events.push(await client.get(id, signal));
+        steps[1].state = "done";
+        steps[2].state = "running";
+        show();
+        const comparison = app.sync.compare({ local: app.sync.collect(calendar, backlog), base: section.items, events, full, timeZone, tags: config.tags });
+        // Rows that changed only in the calendar show Google's side as it is now.
+        for (const difference of comparison.differences) {
+          if (difference.google || !difference.id || difference.case === "new-local") continue;
+          const event = await client.get(difference.id, signal);
+          const mapped = app.sync.fromEvent(event, timeZone, config.tags);
+          if ("fields" in mapped) difference.google = mapped.fields;
+          if (event?.etag && !difference.etag) difference.etag = String(event.etag);
+        }
+        await atLeast(Promise.resolve());
+        if (comparison.duplicates.length) {
+          app.notifications.show("warning", "Sync ID used twice", note`${comparison.duplicates.join(", ")}\nOnly the first item is synchronized.`);
+        }
+        Object.assign(syncRun, { timeZone, syncToken: read.syncToken, comparison, base: section.items });
+        syncBusy(false);
+        app.syncDialog.render({ phase: "review", status: comparison.differences.length ? `${comparison.differences.length} differences` : "Up to date", differences: comparison.differences, tags: config.tags });
+      } catch (error) {
+        if (signal.aborted) return;
+        showSyncError(error, "check");
+      } finally {
+        syncRun.abort = null;
+      }
+    }
+
+    /** Applies the chosen differences (docs/Architecture.md#journal). @param {Record<string, MDCSyncChoice | null>} choices */
+    async function applySync(choices) {
+      const { comparison } = syncRun;
+      if (!comparison || !openFolderAdapter) return;
+      const device = app.storage.device();
+      const journal = app.syncPlan.plan(comparison, choices, {
+        base: syncRun.base, timeZone: syncRun.timeZone, tags: config.tags, newId: () => app.google.newId(),
+        by: device.id, startedAt: app.folderState.stamp(new Date()), syncToken: syncRun.syncToken
+      });
+      try {
+        // The plan is on disk before the first request, so that an interruption can be completed (docs/Architecture.md#journal).
+        await folderStateOf(openFolderAdapter).update(document => app.folderState.journal(document, journal));
+      } catch (error) {
+        showSyncError(new app.google.GoogleError("MDC-407", "Sync state not written", error instanceof Error ? error.message : String(error)), "check");
+        return;
+      }
+      await runSyncJournal(journal, comparison.differences);
+    }
+
+    /** Completes an interrupted synchronization from its journal. */
+    async function completeSync() {
+      const state = await readFolderState();
+      const section = state ? app.folderState.sync(state) : null;
+      if (!section?.journal || !openFolderAdapter) return;
+      try {
+        const key = await readStoredKey();
+        if (!key) throw new app.google.GoogleError("MDC-401", "The key is missing");
+        syncRun.client = syncClient(key, section.calendarId);
+      } catch (error) {
+        showSyncError(error, "overview");
+        return;
+      }
+      syncRun.base = section.items;
+      const rows = section.journal.operations.map(operation => /** @type {MDCSyncDifference} */ ({
+        key: operation.key, id: operation.id, kind: operation.kind, case: "changed-local", choices: [operation.choice], preselected: operation.choice,
+        calendar: { title: operation.title }, google: null, etag: "", ref: null
+      }));
+      await runSyncJournal(section.journal, rows);
+    }
+
+    /**
+     * Runs a journal against Google, applies its local changes as one undo action, saves and records the result.
+     * @param {MDCSyncJournal} journal @param {MDCSyncDifference[]} rows
+     */
+    async function runSyncJournal(journal, rows) {
+      const folder = /** @type {MDCStorageAdapter} */ (openFolderAdapter);
+      const client = /** @type {MDCGoogleClient} */ (syncRun.client);
+      const total = journal.operations.length;
+      const finished = () => journal.operations.filter(operation => operation.state !== "pending").length;
+      /** @type {Record<string, string>} */
+      const states = Object.fromEntries(journal.operations.map(operation => [operation.key, operation.state === "pending" ? "waiting" : operation.state]));
+      for (const row of rows) if (!(row.key in states)) states[row.key] = "skipped";
+      syncRun.cancelled = false;
+      syncBusy(true);
+      app.syncDialog.render({ phase: "applying", status: "Applying", differences: rows, tags: config.tags, states, progress: { done: finished(), total, label: "" } });
+      try {
+        await app.syncPlan.run({
+          journal, client,
+          cancelled: () => syncRun.cancelled,
+          progress: operation => {
+            const shown = operation.state === "pending" ? "running" : operation.state;
+            app.syncDialog.rowState(operation.key, shown);
+            app.syncDialog.progress({ done: finished(), total, label: syncRun.cancelled ? "Cancelling after the current change…" : operation.title });
+          },
+          persist: async stored => { await folderStateOf(folder).update(document => app.folderState.journal(document, stored)); }
+        });
+      } catch (error) {
+        showSyncState((await readFolderState()) || {});
+        showSyncError(error, "overview");
+        return;
+      }
+      app.syncDialog.progress({ done: finished(), total, label: "Saving calendar" });
+      const action = calendar && backlog ? app.syncPlan.applyLocal(calendar, backlog, journal) : null;
+      if (action) execute(action);
+      await atLeast(save());
+      if (!fileSession || fileSession.unsaved > 0 || hasConflict()) {
+        showSyncState((await readFolderState()) || {});
+        showSyncError(new app.google.GoogleError("MDC-407", "Calendar not saved", "The changes stay unsaved; the sync completes after saving."), "overview");
+        return;
+      }
+      const { items, open, counts } = app.syncPlan.record(syncRun.base, journal);
+      const calendarHash = await app.storage.fingerprint(serialized("Calendar.md"));
+      try {
+        await folderStateOf(folder).update(document => app.folderState.synced(document, app.storage.device(), { syncToken: journal.syncToken, items, open, calendarHash, counts }, new Date()));
+      } catch (error) {
+        showSyncError(new app.google.GoogleError("MDC-407", "Sync state not written", error instanceof Error ? error.message : String(error)), "overview");
+        return;
+      }
+      showSyncState((await readFolderState()) || {});
+      syncBusy(false);
+      syncRun.comparison = null;
+      const failures = journal.operations.filter(operation => operation.state === "failed" || operation.state === "open")
+        .map(operation => ({ title: operation.title, reason: operation.error || ({ "changed-meanwhile": "Changed in Google meanwhile", "deleted-meanwhile": "Deleted in Google meanwhile", "missing-locally": "Changed in the calendar meanwhile" })[operation.reason || ""] || "Left open" }));
+      app.syncDialog.render({ phase: "done", status: "", counts, cancelled: journal.operations.some(operation => operation.state === "pending"), failures });
+    }
+
+    /** The synchronization state the sync control shows; `busy` while the sync dialog checks or applies. */
+    let syncShown = { changed: false, interrupted: false, busy: false };
+
+    /** Shows on the sync control what MD_Calendar.json says about the synchronization. @param {Record<string, any>} state */
+    function showSyncState(state) {
+      const { changed, interrupted } = app.folderState.syncStatus(state);
+      syncShown = { ...syncShown, changed, interrupted };
+      app.header.syncState(syncShown);
+    }
+
     /**
      * Applies `change` to MD_Calendar.json. The calendar never depends on the file: a failure only warns.
      * @param {MDCStorageAdapter} folder
@@ -395,6 +775,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         written = await change(document, device, new Date());
         return written;
       }).then(updated => {
+        if (written) showSyncState(written);
         // The start card shows this summary without opening the folder again; it is only a cache.
         if (updated && written) return app.storage.rememberInfo(folder, app.folderState.summary(written, device.id)).catch(() => {});
       }).catch(error => {
@@ -636,11 +1017,14 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
      */
     const entriesTitle = (count, done) => count === 1 ? `Entry ${done}` : `${count} entries ${done}`;
 
-    /** Creates the item a dialog result describes. @param {MDCDialogResult} result @param {{extra: string[]} | null} kept */
+    /**
+     * Creates the item a dialog result describes. An item converted from another kind keeps its unknown lines and its
+     * sync ID (docs/Domain.md#comparison). @param {MDCDialogResult} result @param {{extra: string[], sync?: string} | null} kept
+     */
     function createFrom(result, kept) {
       const target = /** @type {MDCCalendar} */ (calendar);
       const extra = kept?.extra || [];
-      const base = { title: result.title, location: result.location, note: result.note, tag: result.tag };
+      const base = { title: result.title, location: result.location, note: result.note, tag: result.tag, ...(kept?.sync ? { sync: kept.sync } : {}) };
       if (result.kind === "series") {
         return app.calendar.createSeries(target, {
           ...base, id: "", extra, start: result.date, startTime: result.startTime, endTime: result.endTime,
@@ -1179,6 +1563,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         for (const target of [...targets, field]) if (target instanceof HTMLElement) app.tiles.highlight(target);
       },
       showOptions() { app.menus.showOptions(); },
+      showSync() { void openSync(); },
       showNewMenu() {
         if (!calendar) return;
         app.menus.showNewMenu([

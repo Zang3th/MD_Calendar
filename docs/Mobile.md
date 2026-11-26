@@ -19,5 +19,6 @@ Mobile access is planned for version 2.0 (see [Roadmap](Roadmap.md)). Goal: the 
 ## Interim options before 2.0
 
 - Read the Markdown files directly in the iOS Files app.
+- Synchronize timed entries with a dedicated Google calendar and use the Google Calendar app (see [Domain](Domain.md#synchronization-with-google)).
 - Write an ICS file on save, served by the NAS, subscribed in the iOS calendar (read-only).
 - An iOS Shortcut that appends a line to the ungrouped entries of `Backlog.md` (directly below `# Backlog`) in the synced folder.

@@ -210,12 +210,13 @@ Line icons as inline SVG with a 2px stroke and round caps and joins. No emoji an
   - **12px**: dense places only, namely badges and, in the month, the repeat icon and tag icons.
 - The check box of an entry is 18px with the 16px check mark centered in it, 1px from each side, so that the mark keeps its strokes on whole pixels; the month's 12px box takes the small check mark (`icon-check-small`), drawn in the middle of the same 16px canvas, which overhangs the box by exactly 2px on each side, so that its 2px strokes also stay on whole pixels. The box frame is an inset 1.5px shadow, not a border. Both legs of the check mark run at exactly 45°, as in MD_Manager, which keeps their edges as even steps; its corners lie on the same pixel phase as there, and its outline is centered on the canvas (`M5 15L13 23L27 9`, slightly larger than MD_Manager's, whose outline sits half a pixel high).
 - An icon button is about twice as large as its icon (16px in 28–36px) and at least 24px in each direction.
-- Header exception: the nine buttons of the header pill (**+**, undo, redo, save and the five buttons on the right) are 36×36px with 18px icons, in landscape and portrait; the save control shows its icon only, in every layout. The view switcher keeps 16px icons. A 32-unit symbol would render with 2.25px strokes at 18px, so the header has its own symbols, `hdr-<name>` in the sprite and `res/header-icons/<name>.svg`, drawn on a 36×36 canvas: strokes of 4 units are exactly 2px, and straight strokes lie on even units, that is on whole pixels. Fine details use 3 units (1.5px). They exist for every header icon (plus, undo, redo, check, spinner, close, holiday, inbox, help, volume, muted, menu), including those taken over from MD_Manager.
+- Header exception: the ten buttons of the header pill (**+**, undo, redo, sync, save and the five buttons on the right) are 36×36px with 18px icons, in landscape and portrait; the save control shows its icon only, in every layout. The view switcher keeps 16px icons. A 32-unit symbol would render with 2.25px strokes at 18px, so the header has its own symbols, `hdr-<name>` in the sprite and `res/header-icons/<name>.svg`, drawn on a 36×36 canvas: strokes of 4 units are exactly 2px, and straight strokes lie on even units, that is on whole pixels. Fine details use 3 units (1.5px). They exist for every header icon (plus, undo, redo, sync, check, spinner, close, holiday, inbox, help, volume, muted, menu), including those taken over from MD_Manager.
 - Stroke and fill use `currentColor`; the button's state colors the icon.
 - Optical centering and pixel alignment are done with a `translate` group inside the symbol (for example `translate(.5 .5)` or `translate(-.625 0)`), never with CSS offsets.
 - Every symbol also exists as a standalone file `res/icons/<name>.svg` with identical geometry. A unit test checks that file and symbol match.
 - A toggle shows both of its icons in the markup; CSS shows one of them based on the button's `aria-pressed` state. The markup is never swapped.
 - The header icons for sound (speaker with two sound waves, speaker with an X) and help (question mark) follow the drawings of MD_Manager, redrawn on the 36-unit canvas (see the header exception).
+- The sync icon is the circle arrows: two arcs of one circle, each ending in an arrowhead, as `hdr-sync` for the header and `icon-sync` (32-unit canvas) for the head of the sync dialog. Draft geometry on the 36-unit canvas: `M7.5 16A10.5 10.5 0 0 1 26.5 11`, `M27 5v6.5h-6.5`, `M28.5 20A10.5 10.5 0 0 1 9.5 25`, `M9 31v-6.5h6.5`; the final drawing puts its straight strokes on whole pixels.
 - Tooltips are not used for now; every icon button names its action through `aria-label`. The tooltip system stays in place for tooltips that are added back one by one.
 
 ## Tag icons
@@ -262,10 +263,34 @@ The set, chosen by the user from three designs per tag:
 - The entry dialog fades in and rises 8px into place (200ms). It does not scale, and it keeps its own compositor layer while open, so that its icons do not snap to other pixels when the motion ends.
 - The focus card fades in its blurred background and rises in like the dialog; switching its day lets the content glide 16px in from that side.
 - The time wheels of the entry dialog turn like a drum: each row turns away by 22° per row from the middle (at most 80°), sinks back 6px per row and fades by 28 % per row (to at least 15 %); the middle row is lit. Wheels glide to a row with smooth scrolling and snap row by row. Only a row's face turns; the row itself stays flat, because a turned row would move its snap position.
-- While saving, the save control's arc turns once per 0.8s (a transform); with reduced motion it stands still.
+- While saving, the save control's arc turns once per 0.8s (a transform); with reduced motion it stands still. The sync icon turns the same way, once per 1.4s, while the sync dialog checks or applies.
 - The slide of a new period moves the view by 24px only; it does not fade it, because opacity on the view would break the glass blur of the bars inside.
 - Overdue entries are the one continuous animation: a red border beam travels along their outline at a constant speed (24 fading dash pieces of one rounded SVG outline, one lap in 4s). → [Views](Views.md#entry-tile)
 - `prefers-reduced-motion` disables non-essential motion.
+
+## Sync dialog
+
+The [sync dialog](Shell.md#sync-dialog) uses only the tokens above.
+
+| Element | Values |
+|---|---|
+| Dialog | 880 × 660px (at most the window minus 48px), radius 22px, `--panel` at 88 %, 1px `--edge`, shadow `.6`; fades in and rises 8px like the entry dialog (200ms) |
+| Head | padding 16px 16px 14px 20px; sync icon 18px in lightened `--accent` (turns while busy); “Sync with Google” 16px/800; status text 12.5px `--faint` right after it; close as a 32px icon button |
+| Body | padding 0 20px 12px, a 1px `--edge` line above; scrolls with the standard scrollbar |
+| Column head | sticky; “Calendar” left, “Google” right-aligned, 11.5px/700 `--faint`; columns `1fr 92px 1fr`, gap 12px |
+| Day label | 11.5px/700 `--faint`, tabular figures, 14px above, 4px below |
+| Row | padding 7px 0, a 1px `--card-edge` line below; the left side left-aligned, the right side right-aligned |
+| Side | line 1: time 12.5px `--muted` tabular, 10px gap, title 700 with a 7px dot in the tag hue (`hsl(h var(--tag-s) var(--tag-l))`); line 2, only when the location differs: 12px `--faint`; a missing side 12.5px `--faint` |
+| Changed value | `--warn` at 12 % behind, text lightened `--warn`, radius 5px, padding 1px 4px |
+| Winning value | `--ok` at 12 % behind, text lightened `--ok` |
+| Direction | 44 × 26px, radius 8px; `→` in `--accent`, `←` in `--accent-2`, removals in `--danger`, each on its color at 12 %; skipped: `--deco` without fill, and both sides of the row drop to opacity `.55` |
+| Conflict and series control | icon buttons 26 × 24px in a recessed well (padding 2px, radius 9px); selected: `--accent` at 24 % with lightened accent; while undecided the well has a 1px `--warn` ring at 45 % |
+| Row states during “Apply” | 20px circles: waiting a 2px `--deco` ring; running a spinner in `--accent`; done a drawn check mark on `--ok` at 24 %; failed a cross on `--danger` at 24 %; left open a clock on `--warn` at 24 %; not selected a dash in `--faint` |
+| Footer | padding 12px 16px 12px 20px, a 1px `--edge` line above; “N changes selected · N to decide” (counts 700 `--text`, open decisions lightened `--warn`), Cancel, Apply as the primary button; during “Apply” a 4px progress bar in `--accent` (grows with `scaleX`) with the running operation and “4 / 9” above it |
+| Overview, setup, check, result | centered, at most 520px wide (check 360px); overview as a fact list with 140px labels in `--faint`; check and setup steps as rows with state circle, label and counter; result: a 56px circle with a drawn check mark (or a pause sign in `--warn`), title 18px/800, one line of counts |
+| Waiting | the check shows a shimmering skeleton of the merge view below its steps, so that the list appears without a jump; check marks draw their stroke (240ms); under reduced motion the shimmer and drawing are replaced by a plain fade |
+
+Reference mockup (variant A): https://claude.ai/artifact/W3pSbFHAr9qrbDipmQhwtf
 
 ## Completion sound: Arpeggio
 

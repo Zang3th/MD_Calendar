@@ -4,7 +4,7 @@ The business model and its rules. How the model is stored is described in [DataF
 
 ## Time
 
-- All dates and times are local time. There are no time zones.
+- All dates and times are local time. There are no time zones. Only the [synchronization with Google](#synchronization-with-google) converts times, using the time zone of the Google calendar.
 - An all-day value is a plain date, never a point in time.
 - Dates are written as `DD.MM.YYYY` everywhere: in the data files, in the UI and in inputs. A date without a year (a birthday) is `DD.MM.` in the files and `DD.MM` in the UI. The holiday overview is the exception and writes `DD.MM.YY` (see [Views](ui/Views.md#holiday-overview)).
 - Weeks start on Monday. Week numbers follow ISO 8601.
@@ -87,7 +87,7 @@ An entry, a recurring entry and a multi-day entry can be turned into each other 
 - Tags are defined by hand in `Config.md`, each with a color and an icon ID; the app does not create or edit tags. The icon ID names one of the tag icons (see [Design System](ui/DesignSystem.md#tag-icons)).
 - An unknown or missing icon ID is an error. It is reported when `Config.md` is read, through the [notifications](Architecture.md#notifications) with the code `MDC-301`; the tag keeps its color and shows no icon.
 - The tag named “Vacation” marks vacations: its entries and multi-day entries are listed in the [holiday overview](ui/Views.md#holiday-overview).
-- The tag named “DayOff” marks days off, for example to reduce overtime. Days off are kept by hand in `Calendar.md`; the app only shows them. Its entries and multi-day entries are listed together with the vacations in the [holiday overview](ui/Views.md#holiday-overview), marked as days off. Its entries show no tile in the day list; instead their day gets a day-off badge (see [Views](ui/Views.md#day-header)), and they are left out of selections. Multi-day entries with this tag keep their bar and add no badge.
+- The tag named “DayOff” marks days off, for example to reduce overtime. Days off are kept by hand in `Calendar.md`; the app only shows them. A day off covers whole days and never has a time: in the entry dialog the tag rules out the time, and a day off with a time in the file is reported when it is read and loses its time on the next save (see [DataFormat](DataFormat.md#calendar)). Its entries and multi-day entries are listed together with the vacations in the [holiday overview](ui/Views.md#holiday-overview), marked as days off. Its entries show no tile in the day list; instead their day gets a day-off badge (see [Views](ui/Views.md#day-header)), and they are left out of selections. Multi-day entries with this tag keep their bar and add no badge.
 - An entry has at most one tag. Without a tag it has no color and no icon.
 
 ## Contact
@@ -140,6 +140,7 @@ An entry, a recurring entry and a multi-day entry can be turned into each other 
 | Source | Behavior |
 |---|---|
 | Google Calendar history (`.ics`) | Imported once at cutover into the calendar file. |
+| Dedicated Google calendar | Synchronized on request, see [Synchronization with Google](#synchronization-with-google). |
 | Invitation (`.ics`) | Imported the same way; usually one entry. |
 | Contacts (vCard) | Imported repeatedly; existing contacts are detected as duplicates and merged. |
 | Contacts (vCard) | Exported per contact and as the whole list. |
@@ -159,3 +160,68 @@ An entry, a recurring entry and a multi-day entry can be turned into each other 
 - A contact matches an existing one when the name, a phone number or an email address is the same. A match is merged: values the existing contact lacks are added, nothing is overwritten. All other contacts are added.
 - The import is one undoable action; a notification reports how many contacts were added and merged.
 - Export writes vCard 3.0. Labels map to `TYPE` values (Mobile `CELL`, Home `HOME`, Work `WORK`); anniversaries are written as `X-ABDATE` with `X-ABLabel`.
+
+## Synchronization with Google
+
+The calendar can be synchronized with one dedicated Google calendar, so that timed entries are available on the phone. Synchronization runs only when the user starts it in the [sync dialog](ui/Shell.md#sync-dialog); nothing happens automatically, in the background or on a timer. How it is carried out is described in [Architecture](Architecture.md#synchronization-with-google), how links are stored in [DataFormat](DataFormat.md#sync-ids).
+
+### What is synchronized
+
+| Local item | Google | Direction |
+|---|---|---|
+| Entry with a time | Event with a time | both |
+| Recurring entry with a time | Recurring event | calendar → Google |
+| Multi-day entry | All-day event over its dates | calendar → Google |
+| Entry or multi-day entry with the tag “DayOff” | All-day event on its day or days | calendar → Google |
+
+- Only items from the cutover date **23.11.2026** onward are synchronized; a series counts when it has an occurrence from that date on. There is no end date.
+- Entries without a time, recurring entries without a time, backlog entries, contacts, birthdays and holidays are not synchronized.
+- Of Google, only the dedicated calendar is read and written; the primary calendar is never touched.
+- Not imported from Google, shown as a note in the merge view: events with a time that span several days, all-day events created in Google, and recurring events created in Google.
+
+### Field mapping
+
+| Calendar | Google event |
+|---|---|
+| Title | Summary |
+| Date, start and end time | Start and end as local times in the time zone of the Google calendar, read on each synchronization. An event created in another time zone arrives converted (09:00 in New York becomes 15:00). |
+| No end time | End equal to the start. Reading back, an end equal to the start becomes no end time. |
+| Location | Location |
+| Note | Description |
+| Tag | The Google event color closest to the tag's color in `Config.md` and the tag name as a private extended property. Reading back, the property gives the tag; an event without it gets the tag whose Google color it has when exactly one tag maps to that color, otherwise no tag. A tag missing in `Config.md` keeps its name in the property and is written without a color. |
+| Done state | Not synchronized. Entries from Google arrive open; a done entry stays done when Google changes another field. |
+| `#Repeat`, end of the series, `#Except` | Recurrence rule with `UNTIL`, removed occurrences (`EXDATE`). Done dates and placed occurrences stay local. |
+| Multi-day entry | All-day event from `#Start` to `#End`, with title, location, note, color and tag. |
+
+Of every Google event only title, start, end, location, description, color, recurrence and the app's own extended properties are read and written; attendees, attachments, reminders, conference links and every other field are kept as Google has them.
+
+### Comparison
+
+Every synchronized item carries a [sync ID](DataFormat.md#sync-ids), the ID of its Google event; items are recognized by this ID only, never by title or date. The state of the last synchronization is kept per ID, so each difference is classified as one of the cases below. Each case has a preselected choice in the merge view:
+
+| Case | Preselected |
+|---|---|
+| New locally / new in Google | Copy to the other side |
+| Changed only locally / only in Google | Copy to the other side |
+| Locally moved into the backlog, time removed, or moved before the cutover date | Remove from Google |
+| Conflict: changed on both sides | Nothing: take Google, combine per field, or keep local |
+| Deleted on one side | Nothing |
+| Left the range in Google (became an all-day event, moved before the cutover date) | Nothing; offered as deletion of the local entry |
+| A series or all-day export changed or deleted in Google | Nothing: keep local (Google is set back or created again) or ignore |
+| Cannot be imported | Note only |
+
+- A conflict can be combined (the title from local, the time from Google): each field comes from the side that changed it. This is offered only when no field changed on both sides.
+- Deletions are never preselected; the user confirms each one or all at once. Removing an event from Google because its entry left the range locally is preselected, because the entry still exists locally.
+- Applying a deletion or removal drops the sync ID from the local item, which stays where it is (in the backlog, without time, before the cutover date).
+- A difference left unselected is skipped: its state of the last synchronization stays, so it appears again on the next run. “Ignore” records the current Google state as seen, so the difference appears again only after the next change in Google.
+- An item whose state of the last synchronization is missing (for example after `MD_Calendar.json` was recreated) is compared directly: equal sides are recorded as synchronized, different ones are a conflict.
+- Changing the kind of a synchronized item (an entry into a series, the tag “DayOff” set on an entry) is a local change of that item; its event keeps its ID.
+- When no local item changed since the last synchronization, only Google is queried for changes.
+
+### Applying
+
+- Synchronization starts only from the saved state; unsaved changes are saved first (“Save and continue”).
+- All local changes of one synchronization are one undo action, “Sync with Google (N changes)”. Undoing it later is an ordinary local change that the next synchronization offers for Google.
+- Each difference is applied as its own unit: it is either completely synchronized or left unchanged. A cancellation stops after the running difference; what is done stays done and is saved.
+- An event changed in Google after the check is not overwritten; its difference stays open.
+- Copying, pasting, duplicating and importing never copy a sync ID, and the entry dialog does not show it.

@@ -41,15 +41,19 @@ In scope for the desktop releases up to the cutover (0.6.0):
 - Undo/redo and explicit saving
 - One-time import of the complete Google Calendar history and import of single `.ics` invitations; vCard import and export
 
+In scope after the cutover (0.8.1):
+
+- Explicit synchronization of timed entries with one dedicated Google calendar, so that they are available on the phone (see [Domain](Domain.md#synchronization-with-google))
+
 The ordered work packages are in the [Roadmap](Roadmap.md).
 
 ## Out of scope
 
 - Reminders and notifications at entry time (permanently not needed)
 - Sending invitations or sharing calendars with other people
-- Synchronization with Google Calendar after the cutover
+- Automatic or background synchronization, and synchronization with any calendar other than the one dedicated Google calendar
 - Several computers writing at the same time (until the mobile phase)
-- Time zones: everything is local time
+- Time zones: everything is local time; only the synchronization with Google converts times
 - A time-grid view
 - Natural-language input and automatic scheduling
 - Subtasks: one note per entry is enough
@@ -58,4 +62,4 @@ The ordered work packages are in the [Roadmap](Roadmap.md).
 
 ## Cutover
 
-On a cutover date the complete Google Calendar history is imported once. Google Calendar then remains as a read-only archive.
+On a cutover date the complete Google Calendar history is imported once. The primary Google calendar then remains as a read-only archive; the synchronization uses a separate, dedicated calendar from the cutover date 23.11.2026 onward.

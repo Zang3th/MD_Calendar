@@ -179,7 +179,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     backlogToggle: current => current.toggleBacklog(),
     holidaysButton: current => current.toggleHolidays(),
     helpButton: current => current.showHelp(),
-    optionsButton: current => current.showOptions()
+    optionsButton: current => current.showOptions(),
+    syncButton: current => current.showSync()
   };
 
   // The calendar import reads the chosen .ics file (docs/ui/Shell.md#header).
@@ -309,9 +310,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   });
   const current = () => /** @type {MDCInteractionHandlers} */ (handlers);
   /** Shortcuts other than saving act only while no dialog or modal menu is open. */
-  const free = () => !app.dialog.isOpen() && !app.menus.isModalOpen();
+  const free = () => !app.dialog.isOpen() && !app.menus.isModalOpen() && !app.syncDialog.isOpen();
   const inCalendar = () => free() && !current().isContactsView();
-  shortcuts.bind("mod+shift?+s", () => current().save(), { inEditable: true });
+  // The sync dialog saves on its own (docs/Architecture.md#applying-and-saving).
+  shortcuts.bind("mod+shift?+s", () => current().save(), { inEditable: true, when: () => !app.syncDialog.isOpen() });
   shortcuts.bind(["mod+shift?+y", "mod+shift+z"], () => current().redo(), { when: free });
   shortcuts.bind("mod+z", () => current().undo(), { when: free });
   shortcuts.bind("mod+shift?+c", () => current().copy(keyTargets()), { when: () => free() && keyTargets().length > 0 });

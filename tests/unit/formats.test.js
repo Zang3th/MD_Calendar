@@ -13,6 +13,14 @@ function plain(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+test("a backlog entry keeps its sync ID; one used twice is reported", () => {
+  const source = "# Backlog\n\n- [ ] Call the landlord {sync=ab12cd34}\n\n## Home\n- [ ] Again #Home {sync=ab12cd34}\n";
+  const { backlog, warnings } = app.backlogFormat.parse(source);
+  assert.deepEqual([backlog.ungrouped[0].sync, backlog.groups[0].entries[0].tag], ["ab12cd34", "Home"]);
+  assert.deepEqual(plain(warnings).map((/** @type {any} */ warning) => [warning.lineNumber, warning.kind]), [[6, "duplicate-sync"]]);
+  assert.equal(app.backlogFormat.serialize(backlog), source);
+});
+
 test("the backlog golden file round-trips and keeps groups in order", () => {
   const { backlog, warnings } = app.backlogFormat.parse(golden("Backlog.md"));
   assert.deepEqual(plain(warnings), []);

@@ -10,7 +10,7 @@
 ### 12.11.2026
 - @gym
 - [ ] Sort tax documents
-- [ ] 09:30 - 10:15 Dentist #Private
+- [ ] 09:30 - 10:15 Dentist #Private {sync=k3v9q2ab}
   - Location: Dr. Example's practice
   - Bring the bonus booklet
 - [x] 14:00 Hairdresser
@@ -42,6 +42,8 @@ This line is not understood by the parser and is preserved
 - 24.11.2026
 
 ### Trade fair #Work
+#Sync
+- t7m2p4qd
 #Start
 - 20.11.2026
 #End
@@ -92,6 +94,8 @@ Booth B12.
 ### Gym #Private
 #Id
 - gym
+#Sync
+- 4c8n1kre
 #Start
 - 03.11.2026 18:30 - 20:00
 #Repeat

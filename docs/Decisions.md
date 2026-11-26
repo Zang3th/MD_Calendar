@@ -8,7 +8,7 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 **Reasons:** full control over the data model (ordered day lists, backlog, contacts, birthdays); no dependency on Google's broken birthday sync; human-readable data; fits the MD_Manager way of working.
 **Rejected:**
 - Buying a frontend for Google Calendar (Notion Calendar, Morgen, Akiflow): solves neither birthdays nor the portrait layout.
-- Own frontend on the Google Calendar API: needs OAuth and a server origin, and Google's data model has no backlog or ordered day lists.
+- Own frontend on the Google Calendar API: Google's data model has no backlog, ordered day lists or loose to-dos; Google is only a synchronization target for timed entries (D61).
 - CalDAV on the NAS: good mobile support, but more operations work and a constrained data model.
 - Fully own sync engine and mobile app: far too large.
 
@@ -28,7 +28,7 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 
 ## D4 · Explicit saving
 
-**Decision:** Save with `Ctrl+S`; no autosave, no crash recovery; a version check before every write.
+**Decision:** Save with `Ctrl+S`; no autosave, no crash recovery; a version check before every write. The one exception is the synchronization with Google, which saves its own changes at its end, triggered by the explicit “Apply” (D74).
 **Reasons:** the user wants control over when the synced files change. → [Architecture](Architecture.md#saving)
 
 ## D5 · No reminders
@@ -97,11 +97,11 @@ Why the project is the way it is. Each entry records a decision, its reasons and
 **Reasons:** a short, light sense of achievement that fits the calm Aurora UI; brighter and quicker than the MD_Manager sound.
 **Rejected:** the unchanged MD_Manager "sweep duo" (low octave glides, too heavy for the calendar) and nine further synthesized candidates: Glass, Drop, Two-tone, Marimba, Kalimba, Click & shimmer, Aurora pad, Glider, Soft.
 
-## D18 · No entry IDs
+## D18 · No hidden entry IDs
 
-**Decision:** Entries carry no IDs or hidden markers; they are identified by date, title and position. → [DataFormat](DataFormat.md#entry-identity)
+**Decision:** Entries carry no hidden markers and no IDs of their own. An ID appears only where a function needs it, visibly: the `#Id` of a series with placed occurrences (D57) and the sync ID of a synchronized item (D70). Outside the synchronization, entries are identified by date, title and position. → [DataFormat](DataFormat.md#entry-identity)
 **Reasons:** the files must stay readable and easy to edit by hand, also on a phone.
-**Rejected:** visible or hidden IDs per entry (for example HTML comments).
+**Rejected:** an ID on every entry; hidden IDs (for example HTML comments).
 
 ## D19 · No user settings; mute in the header
 
@@ -338,7 +338,7 @@ Open-source projects that were evaluated and what they contributed:
 
 ## D59 · Days off are entries with the tag “DayOff”
 
-**Decision:** Days off, for example to reduce overtime, are entries with the tag named “DayOff”, kept by hand in `Calendar.md`. They show no tile; their day header shows one day-off badge after the holiday badge, in the fixed color `--dayoff` with the clock and “Day off” (the clock only where it does not fit). The badge opens the vacations of the holiday overview, as holiday badges open its holidays. A hidden tile stays in the list, so that positions read from it still count every entry. Multi-day entries with the tag keep their bar only. The holiday overview lists entries and multi-day entries with the tag in the tab “Vacation”, in one list with the vacations by date; a mark before the date tells them apart: the clock and a date in `--dayoff` for a day off, the icon and color of the tag “Vacation” from `Config.md` for a vacation. → [Domain](Domain.md#tags), [Views](ui/Views.md#day-header)
+**Decision:** Days off, for example to reduce overtime, are entries with the tag named “DayOff”, kept by hand in `Calendar.md`, without a time: the entry dialog rules out the time for the tag, and a time found in the file is reported and dropped on the next save. They show no tile; their day header shows one day-off badge after the holiday badge, in the fixed color `--dayoff` with the clock and “Day off” (the clock only where it does not fit). The badge opens the vacations of the holiday overview, as holiday badges open its holidays. A hidden tile stays in the list, so that positions read from it still count every entry. Multi-day entries with the tag keep their bar only. The holiday overview lists entries and multi-day entries with the tag in the tab “Vacation”, in one list with the vacations by date; a mark before the date tells them apart: the clock and a date in `--dayoff` for a day off, the icon and color of the tag “Vacation” from `Config.md` for a vacation. → [Domain](Domain.md#tags), [Views](ui/Views.md#day-header)
 **Reasons:** a day off belongs to the day like a holiday, not to its to-dos; a tag needs no new data format.
 **Rejected:** a tile in the day list (a day off is no to-do); editing days off in the app (kept in the file); the entry title on the badge; a separate `## Days off` section (new format); a tinted day card (not wanted); the badge in the tag color (the user wants a fixed color); badges for multi-day days off (the bar already shows them); an own tab “Days off” (the user wants days off and vacations in one list).
 
@@ -347,3 +347,105 @@ Open-source projects that were evaluated and what they contributed:
 **Decision:** Day badges open no list of their own. A birthday or anniversary badge opens the contact view on its (first) person, a holiday badge the holidays and a day-off badge the vacations of the holiday overview; the target lights up there with the highlight of a search hit: the contact rows and the date in the contact, or the rows of that day. → [Views](ui/Views.md#day-header)
 **Reasons:** one way to handle every badge; the page behind a badge already shows everything the list showed, and the highlight says what was asked for.
 **Rejected:** the small list below the badge (a second way next to the jumps); a jump without a highlight (the user could not see what the badge meant).
+
+## D61 · Explicit synchronization with one dedicated Google calendar
+
+**Decision:** Timed entries are synchronized with Google Calendar so that they are available on the phone, only when the user starts it in the sync dialog, and only with one dedicated secondary Google calendar (for example “MD_Calendar”); the primary calendar is neither read nor written. Synchronization covers items from the cutover date 23.11.2026 onward. → [Domain](Domain.md#synchronization-with-google), [Product](Product.md#scope)
+**Reasons:** phone access long before the mobile phase; the user keeps control over when Google changes; the key reaches nothing but this calendar, the history in the primary calendar stays out of reach, and the calendar can be deleted and set up again.
+**Rejected:** automatic or background synchronization; the primary calendar (the key could change the whole history); writing a dedicated calendar while reading the primary one (unclear where a local change to an event from the primary calendar goes).
+
+## D62 · Authentication with a service account
+
+**Decision:** The app authenticates as a Google service account whose JSON key lies in the calendar folder as `MD_Calendar.key.json`; it signs the token request itself with WebCrypto and calls the Google endpoints directly from the page. The user shares the dedicated calendar with the service account. → [Architecture](Architecture.md#access)
+**Reasons:** works under `file://` without a server or a sign-in flow (the endpoints accept `Origin: null`); no consent screen, no seven-day token expiry of apps in testing mode and no verification warning; the key reaches only calendars shared with it.
+**Rejected:** OAuth with a desktop client and copying the redirected URL by hand (consent flow, refresh token expires after seven days in testing mode); OAuth with a setup script (needs Node and the command line); Google Identity Services (needs an `http(s)` origin); a Google Apps Script endpoint (second code location, slow, weak error handling); API key, secret iCal address and CalDAV (read-only or no gain).
+
+## D63 · Guided setup in the sync dialog
+
+**Decision:** Without key or calendar ID the sync dialog shows a setup step: pick or drop the downloaded key, paste the calendar ID; the app checks both at once and names a failure precisely. On success it writes the key unchanged as `MD_Calendar.key.json` and the calendar ID into `sync` of `MD_Calendar.json`. → [Shell](ui/Shell.md#sync-dialog), [DataFormat](DataFormat.md#md_calendarkeyjson)
+**Reasons:** no renaming and no hand-written JSON; the setup is verified immediately; the secret stays out of the status file.
+**Rejected:** renaming the key by hand (no check before use); one hand-made file with key and ID (error-prone).
+
+## D64 · Incremental Google queries with a sync token
+
+**Decision:** Google is queried incrementally with the Calendar API sync token kept in `MD_Calendar.json`; on HTTP 410 the app runs one full comparison and says so. Locally the app compares in memory with the state of the last synchronization; without local changes since then only Google is queried. → [Architecture](Architecture.md#calendar-api)
+**Reasons:** complete and fast for years of entries; deletions in Google are reported explicitly instead of being inferred from a missing event.
+**Rejected:** a full comparison on each run (grows with the years, deletions only inferred); a sliding window (later corrections to older entries would not be synchronized).
+
+## D65 · Series and all-day exports go only from the calendar to Google
+
+**Decision:** Recurring entries with a time are uploaded as Google series; multi-day entries and days off as all-day events. None of them is imported from Google. A change or deletion in Google of such an event is a difference with the choice “keep local” (Google is set back or created again) or “ignore”; a series created in Google is a note only. → [Domain](Domain.md#what-is-synchronized)
+**Reasons:** series, days off and multi-day entries are kept on the desktop; Google can express what the calendar cannot (single occurrences moved or renamed, other rules), and importing that would be lossy and by far the most complex part; nothing changes silently on either side.
+**Rejected:** series in both directions (lossy mapping of single changed occurrences and unsupported rules); no series at all (recurring entries missing on the phone); overwriting changes in Google silently, or ignoring them (both sides drift apart unnoticed).
+
+## D66 · No end time means zero duration
+
+**Decision:** An entry without an end time is written to Google with the end equal to the start; an event whose end equals its start becomes an entry without an end time. → [Domain](Domain.md#field-mapping)
+**Reasons:** no invented duration; a lossless round trip without a hidden marker.
+**Rejected:** a fixed default duration with a hidden marker (Google shows a duration that never existed); a default duration per tag (needs an extension of `Config.md`).
+
+## D67 · Time zone of the Google calendar
+
+**Decision:** Times are written and read as local times in the time zone of the dedicated Google calendar, read on each synchronization. → [Domain](Domain.md#field-mapping)
+**Reasons:** one source of truth, independent of the device; Google handles daylight saving time.
+**Rejected:** a fixed `Europe/Berlin` in the code (diverges when the calendar setting changes); the device's time zone (shifts every entry when synchronizing while travelling).
+
+## D68 · Tags as Google colors plus a private property
+
+**Decision:** A tag is written as the closest of Google's 11 event colors and its name as a private extended property; reading back, the property gives the tag, else the color does when exactly one tag maps to it. Title, location and note map to summary, location and description; only these and the app's own fields are written. The done state stays local. → [Domain](Domain.md#field-mapping)
+**Reasons:** a lossless round trip; Google colors resemble the local ones and a tag can be set on the phone through the color; fields set in Google are kept; done carries little meaning for timed entries and Google has no done state for events.
+**Rejected:** the tag as `#Tag` text in the title (clutters titles); no tags; a “✓ ” prefix for done entries (changes titles, turns checked occurrences into single changes of a series); a hidden done property (no use on either side).
+
+## D69 · Google events the calendar cannot hold are notes
+
+**Decision:** Timed events spanning several days, all-day events created in Google and series created in Google are not imported; the merge view shows them as notes. → [Domain](Domain.md#what-is-synchronized)
+**Reasons:** the calendar has no timed entries over several days; importing them would lose the end or duplicate the event.
+**Rejected:** importing as an entry on the start day (loses the end, conflicts with D66 on the next run); importing as a multi-day entry (falls out of the synchronization and duplicates the event).
+
+## D70 · Visible sync IDs
+
+**Decision:** Every synchronized item carries the ID of its Google event visibly in its file: `{sync=<id>}` at the end of an entry line, a `#Sync` block for multi-day and recurring entries. Items are recognized only by this ID; the state of the last synchronization is kept per ID as field fingerprints in `MD_Calendar.json`. The app chooses 8-character IDs from `a`–`v` and `0`–`9`, which Google accepts as event IDs. → [DataFormat](DataFormat.md#sync-ids)
+**Reasons:** robust for entries edited by hand, renamed or moved to another day; no need to follow entries through every domain operation; a client-chosen ID makes a repeated create detectable.
+**Rejected:** a trailing `^id` (does not say what it is), `[sync:: id]` (longer), `(sync: id)` (parentheses are common in titles), an indented `- Sync:` line (collides with notes), an HTML comment (loudest in the raw text), `@` and `#` (taken by placed occurrences and tags); a link table following entries through the session (every domain operation involved); heuristic matching (renamed and moved entries appear as deleted and new).
+
+## D71 · Deletions are never preselected
+
+**Decision:** A deletion on one side is offered for the other side and never preselected. An entry that leaves the range locally (into the backlog, time removed, before the cutover date) is removed from Google, preselected, because it still exists locally; leaving the range in Google is offered as a deletion and not preselected. Applying it drops the sync ID locally. → [Domain](Domain.md#comparison)
+**Reasons:** nothing disappears by accident, for example after deleting an event on the phone by mistake; Google has no backlog, so a planned entry moved back must disappear there.
+**Rejected:** deletions preselected like other changes (one quick apply loses an entry); deletions never transferred.
+
+## D72 · Preselected merge view; unselected differences stay open
+
+**Decision:** Every difference has a preselected choice (copy for one-sided changes, nothing for conflicts, deletions and changes to exports in Google); conflicts can be combined per field. A difference left unselected keeps its state of the last synchronization and appears again; “Ignore” records the Google state as seen. → [Domain](Domain.md#comparison)
+**Reasons:** nothing is lost; decisions can be postponed while the clear differences are applied.
+**Rejected:** treating unselected differences as accepted (both sides drift apart invisibly); requiring a decision for every difference before applying.
+
+## D73 · Synchronization starts from the saved state
+
+**Decision:** “Check sync status” works only without unsaved changes; the dialog offers “Save and continue”. → [Shell](ui/Shell.md#sync-dialog)
+**Reasons:** a clear starting point on disk; saving stays explicit.
+**Rejected:** a hint only (one click more for the same result); synchronizing unsaved changes (after a reload Google would hold entries that never existed locally).
+
+## D74 · One undo action, saved by the synchronization
+
+**Decision:** All local changes of a synchronization are one undo action, “Sync with Google (N changes)”, and the synchronization saves them itself at its end through the write queue and the version check. → [Architecture](Architecture.md#applying-and-saving)
+**Reasons:** the synchronization is one completed operation; there is no state in which Google changed and the calendar only in memory.
+**Rejected:** applying as unsaved changes (a reload or closing the page leaves both sides apart).
+
+## D75 · Journal and one transaction per difference
+
+**Decision:** “Apply” writes the complete plan as a journal into `MD_Calendar.json` before the first request; every Google operation is idempotent; each difference is its own transaction. “Cancel” finishes the running operation, applies and saves what is done and leaves the rest open; an open journal is completed in the sync dialog. → [Architecture](Architecture.md#journal)
+**Reasons:** every state after a cancellation or crash is consistent: each item is either completely synchronized or unchanged; no compensation that can fail on its own.
+**Rejected:** all or nothing with compensation (needs the network again and can fail, events appear and vanish on the phone); no cancellation during “Apply”.
+
+## D76 · Sync dialog with a two-column merge view
+
+**Decision:** The sync dialog shows its review as two columns, “Calendar” and “Google”, grouped by day, one row per difference with a direction control between them, and says in every phase what happens: steps with live counters while checking, a determinate progress bar and live row states while applying, minimum durations as in D51, an animation for every wait. The dialog is lean: no step indicator, no illustration, no cards. → [Shell](ui/Shell.md#sync-dialog), [Design System](ui/DesignSystem.md#sync-dialog)
+**Reasons:** both sides and the direction of each change are visible at a glance, as in a merge tool such as Fork; it is never unclear whether something is still being written.
+**Rejected:** a list by categories with a one-line summary per change; a list with a detail pane; a step indicator and illustrations (bloat).
+
+## D77 · Sync control left of the save control, circle arrows
+
+**Decision:** An icon button with circle arrows sits directly left of the save control. A dot in `--accent` shows local changes since the last synchronization (from the hash of `Calendar.md`, without a network request), a dot in `--warn` an interrupted synchronization; the arrows turn while the dialog checks or applies. → [Shell](ui/Shell.md#sync-control), [Design System](ui/DesignSystem.md#icons)
+**Reasons:** synchronization is the step after saving; the dot is a quiet reminder, and an interrupted synchronization must not go unnoticed; circle arrows are the established sign and read instantly.
+**Rejected:** showing changes in Google on the button (would need automatic queries); the Orbit ring of the logo with an arrowhead, a calendar with a small circular arrow (too dense at 18px), two opposed arrows.

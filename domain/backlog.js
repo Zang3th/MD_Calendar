@@ -384,7 +384,12 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
    */
   function pasteEntries(calendar, backlog, entries, target) {
     const label = entries.length === 1 ? entries[0].title : `${entries.length} entries`;
-    const copies = entries.map(entry => ({ ...entry, done: false, note: [...entry.note], extra: [...entry.extra] }));
+    // A copy is a new item: it never takes the sync ID along (docs/Domain.md#applying).
+    const copies = entries.map(entry => {
+      const copy = { ...entry, done: false, note: [...entry.note], extra: [...entry.extra] };
+      delete copy.sync;
+      return copy;
+    });
     if (isBacklog(target)) {
       return backlogStep(calendar, backlog, label, [], () => {
         let next = target.index;

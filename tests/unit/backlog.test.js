@@ -69,6 +69,16 @@ test("the backlog has no times: an entry moved or pasted there loses its time, a
   assert.equal(backlog.groups[1].entries[0].start, "");
 });
 
+test("an entry keeps its sync ID when it moves into the backlog; a pasted copy never takes it", () => {
+  const { calendar, backlog } = fixture();
+  const day = /** @type {any} */ (calendar.days.get("2026-11-12"));
+  day.entries[0] = { ...day.entries[0], start: "09:30", sync: "ab12cd34" };
+  app.backlog.move(calendar, backlog, { key: "2026-11-12", index: 0 }, { key: "", group: -1, index: 0 }).redo();
+  assert.equal(/** @type {any} */ (backlog.ungrouped[0]).sync, "ab12cd34");
+  app.backlog.pasteEntries(calendar, backlog, [backlog.ungrouped[0]], { key: "2026-11-12", index: 0 }).redo();
+  assert.equal("sync" in day.entries[0], false);
+});
+
 test("a timed entry dragged in from elsewhere goes into its time slot; within its day it lands where dropped", () => {
   const state = fixture();
   const { calendar, backlog } = state;

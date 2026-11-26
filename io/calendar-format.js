@@ -11,14 +11,17 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   /** The position of an occurrence placed by hand in a day (docs/DataFormat.md#calendar). */
   const pinPattern = /^- @(\S+)$/;
   const idPattern = /^\S+$/;
+  /** The sync ID at the end of an entry line, and the value of a #Sync block (docs/DataFormat.md#sync-ids). */
+  const syncSuffix = / \{sync=([a-v0-9]+)\}$/;
+  const syncPattern = /^[a-v0-9]+$/;
   /** An indented line below an entry: up to two spaces or one tab of indentation are cut off, the rest is kept as written. */
   const subLinePattern = /^(?: {1,2}|\t)(.*\S.*)$/;
   const timePattern = /^([01]\d|2[0-3]):([0-5]\d)(?: - ([01]\d|2[0-3]):([0-5]\d))? (.+)$/;
   const seriesStartPattern = /^(\d{2}\.\d{2}\.\d{4})(?: ([01]\d|2[0-3]):([0-5]\d)(?: - ([01]\d|2[0-3]):([0-5]\d))?)?$/;
   const locationPrefix = "Location: ";
   const blockKeys = {
-    multiDay: ["Start", "End", "Location", "Note"],
-    series: ["Id", "Start", "Repeat", "Except", "Done", "Location", "Note"]
+    multiDay: ["Sync", "Start", "End", "Location", "Note"],
+    series: ["Id", "Sync", "Start", "Repeat", "Except", "Done", "Location", "Note"]
   };
 
   const { parseDate: dayKey, formatDate: displayDate } = app.calendar;
@@ -40,8 +43,13 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       end = time[3] ? `${time[3]}:${time[4]}` : "";
       rest = time[5];
     }
+    const sync = syncSuffix.exec(rest);
+    if (sync && sync.index > 0) return { start, end, ...titleAndTag(rest.slice(0, sync.index)), sync: sync[1] };
     return { start, end, ...titleAndTag(rest) };
   }
+
+  /** The sync ID suffix of an entry line or heading, "" without. @param {{sync?: string}} item */
+  const syncText = item => item.sync ? ` {sync=${item.sync}}` : "";
 
   /** @param {string[]} lines */
   function trimTrailingBlanks(lines) {
@@ -78,13 +86,16 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const single = (/** @type {string} */ name) => values[name]?.length === 1 ? values[name][0] : null;
     const location = values.Location ? single("Location") : "";
     if (location === null) return null;
+    const sync = values.Sync ? single("Sync") : "";
+    if (sync === null || (sync && !syncPattern.test(sync))) return null;
+    const synced = sync ? { sync } : {};
 
     if (kind === "multiDay") {
       const start = dayKey(single("Start") || "");
       const end = dayKey(single("End") || "");
       if (!start || !end || end < start) return null;
       warnings.push(...itemWarnings);
-      return { title, tag, start, end, location, note, extra };
+      return { title, tag, start, end, location, note, extra, ...synced };
     }
 
     const id = values.Id ? single("Id") : "";
@@ -100,7 +111,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       id, title, tag, start,
       startTime: startMatch[2] ? `${startMatch[2]}:${startMatch[3]}` : "",
       endTime: startMatch[4] ? `${startMatch[4]}:${startMatch[5]}` : "",
-      rule, except, done, location, note, extra
+      rule, except, done, location, note, extra, ...synced
     };
   }
 
@@ -167,7 +178,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       extraTarget.push(line);
     }
 
-    /** @type {Map<object, number>} */
+    /** Line index of each parsed item's heading and each entry's line. @type {Map<object, number>} */
     const headings = new Map();
     /** References to placed occurrences, resolved once the series are known. @type {Array<{day: MDCDay, id: string, at: number, target: string[], position: number, line: string, index: number}>} */
     const references = [];
@@ -229,6 +240,13 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       const item = entryPattern.exec(line);
       if (item && day && item[2].trim()) {
         entry = { done: item[1] !== " ", ...entryText(item[2]), location: "", note: [], extra: [] };
+        headings.set(entry, index);
+        // A day off covers whole days: its time is reported and dropped (docs/DataFormat.md#calendar).
+        if (entry.tag === app.calendar.dayOffTag && entry.start) {
+          warnings.push({ lineNumber: index + 1, kind: "day-off-time", text: line });
+          entry.start = "";
+          entry.end = "";
+        }
         day.entries.push(entry);
         extraTarget = entry.extra;
         return;
@@ -238,6 +256,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     });
     closeSection();
     resolveReferences(calendar, references, headings, warnings);
+    reportDuplicateSyncIds([...[...calendar.days.values()].flatMap(each => each.entries), ...calendar.multiDay, ...calendar.series], headings, warnings);
 
     if (!hasHeader) warnings.unshift({ lineNumber: 1, kind: "missing-header", text: lines[0] || "" });
     warnings.sort((left, right) => left.lineNumber - right.lineNumber);
@@ -277,6 +296,21 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     }
   }
 
+  /**
+   * Reports every item whose sync ID an earlier item already carries; the items keep it as written, and the
+   * synchronization uses it only for the first (docs/DataFormat.md#sync-ids).
+   * @param {Array<MDCEntry | MDCMultiDay | MDCSeries | MDCRawBlock>} items in file order @param {Map<object, number>} lines
+   * @param {MDCFormatWarning[]} warnings
+   */
+  function reportDuplicateSyncIds(items, lines, warnings) {
+    const seen = new Set();
+    for (const item of items) {
+      if ("raw" in item || !item.sync) continue;
+      if (seen.has(item.sync)) warnings.push({ lineNumber: (lines.get(item) ?? 0) + 1, kind: "duplicate-sync", text: item.sync });
+      seen.add(item.sync);
+    }
+  }
+
   /** Blank lines read after a note line, by entry; they become note lines only when another note line follows. */
   const pendingBlanks = new WeakMap();
 
@@ -306,7 +340,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   function entryLines(entry) {
     const time = entry.start ? `${entry.start}${entry.end ? ` - ${entry.end}` : ""} ` : "";
     const tag = entry.tag ? ` #${entry.tag}` : "";
-    const lines = [`- [${entry.done ? "x" : " "}] ${time}${entry.title}${tag}`];
+    const lines = [`- [${entry.done ? "x" : " "}] ${time}${entry.title}${tag}${syncText(entry)}`];
     if (entry.location) lines.push(`  - ${locationPrefix}${entry.location}`);
     for (const note of entry.note) lines.push(note ? `  ${note}` : "");
     return lines.concat(entry.extra);
@@ -316,6 +350,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   function itemLines(item, blocks) {
     const lines = [`### ${item.title}${item.tag ? ` #${item.tag}` : ""}`];
     if ("id" in item && item.id) lines.push("#Id", `- ${item.id}`);
+    if (item.sync) lines.push("#Sync", `- ${item.sync}`);
     for (const [name, values] of blocks) {
       if (values.length) lines.push(`#${name}`, ...values.map(value => `- ${value}`));
     }
@@ -370,7 +405,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     if (calendar.multiDay.length || calendar.multiDayHead.length) {
       // Ordered by start date; equal start dates keep their stored order. Unreadable items follow.
       const ordered = [...calendar.multiDay].sort((left, right) =>
-        ("raw" in left ? "~" : left.start).localeCompare("raw" in right ? "~" : right.start));
+        "raw" in left || "raw" in right ? Number("raw" in left) - Number("raw" in right) : left.start.localeCompare(right.start));
       lines.push("", multiDayHeading, ...calendar.multiDayHead);
       for (const item of ordered) lines.push("", ...multiDayLines(item));
     }
@@ -382,7 +417,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   }
 
   // Entry lines are shared with Backlog.md (see docs/DataFormat.md#backlog).
-  const entry = { pattern: entryPattern, text: entryText, subLine, lines: entryLines };
+  const entry = { pattern: entryPattern, text: entryText, subLine, lines: entryLines, reportDuplicateSyncIds };
 
   app.calendarFormat = { parse, serialize, entry };
 })(window.MDCalendar);

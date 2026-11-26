@@ -139,9 +139,11 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const noteLine = (state.note.split(/\r?\n/).find(line => line.trim()) || "").trim().replace(/^-\s*/, "");
     // Several days have neither time nor repeat (docs/Domain.md#multi-day-entry), the backlog neither; both stay visible.
     const blocked = range ? "Not for several days" : state.start ? "" : "Not in the backlog";
+    // A day off covers whole days (docs/Domain.md#tags).
+    const timeBlocked = blocked || (state.tag === app.calendar.dayOffTag ? "Not for a day off" : "");
     tokens.innerHTML =
       token("date", icon(state.start ? "calendar" : "inbox"), dateText(), `Date: ${state.start ? dateText() : "Backlog"}`).replace("<button ", `<button data-date="${state.start}" `) +
-      token("time", icon("clock"), time, time ? `Time: ${time}` : "Time", "", blocked) +
+      token("time", icon("clock"), time, time ? `Time: ${time}` : "Time", "", timeBlocked) +
       token("repeat", icon("repeat"), repeatText(), state.repeat ? `Repeat: ${repeatText()}` : "Repeat", "", blocked) +
       token("tag", tag ? app.tiles.tagIcon(tag.name, "dlg__tagicon") || icon("tag") : icon("tag"), state.tag, state.tag ? `Tag: ${state.tag}` : "Tag", tagStyle) +
       // Location and note show only whether they are set.
@@ -702,6 +704,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     }
     const range = isRange();
     const repeated = rule();
+    // Several days, the backlog and a day off have no time; a time chosen before stays in the state and returns with one day.
+    const timeless = range || !state.start || state.tag === app.calendar.dayOffTag;
     // Blank lines inside the note stay; blank lines before and after it are dropped.
     const lines = state.note.split(/\r?\n/).map(line => line.trimEnd());
     const first = lines.findIndex(Boolean);
@@ -712,9 +716,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       note: first < 0 ? [] : lines.slice(first, lines.findLastIndex(Boolean) + 1),
       date: state.start,
       end: range ? state.end : "",
-      // Several days and the backlog have no time; a time chosen before stays in the state and returns with one day.
-      startTime: range || !state.start ? "" : state.startTime,
-      endTime: range || !state.start || !state.startTime ? "" : state.endTime,
+      startTime: timeless ? "" : state.startTime,
+      endTime: timeless || !state.startTime ? "" : state.endTime,
       rule: repeated,
       tag: state.tag
     };

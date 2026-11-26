@@ -50,7 +50,8 @@ function checkArchitecture(root) {
     [sortable, "SortableJS belongs in ui/"]
   ]);
 
-  checker.checkModules(layers, { namespace: "MDCalendar", packages: (_file, layer) => PACKAGES[layer] });
+  // Only the Google client talks to the network (docs/Architecture.md#runtime).
+  checker.checkModules(layers, { namespace: "MDCalendar", packages: (_file, layer) => PACKAGES[layer], network: ["io/google.js"] });
   if (checker.exists("MD_Calendar.html")) checker.checkPage("MD_Calendar.html", "dist/app.js", production.length > 0);
   else if (production.length) checker.report("MD_Calendar.html", "ARCH-WIRING-001", "production modules exist but the application page is missing");
   if (checker.exists("styles.css")) checker.checkStyles("styles.css");

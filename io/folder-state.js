@@ -8,12 +8,23 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
 (function (app) {
   const fileName = "MD_Calendar.json";
   const format = 1;
+  const sorted = /** @type {"sorted"} */ ("sorted");
+  const syncFields = ["date", "time", "title", "location", "note", "tag", "start", "end", "rule", "except"];
   const order = {
-    "": ["format", "devices", "files"],
-    devices: /** @type {"sorted"} */ ("sorted"),
-    "devices.*": ["name", "path", "lastOpened", "lastSaved"],
-    files: /** @type {"sorted"} */ ("sorted"),
-    "files.*": ["hash", "savedAt", "savedBy"]
+    "": ["format", "devices", "files", "sync"],
+    devices: sorted,
+    "devices.*": ["name", "path", "lastOpened", "lastSaved", "lastSynced"],
+    files: sorted,
+    "files.*": ["hash", "savedAt", "savedBy"],
+    sync: ["calendarId", "syncToken", "last", "items", "open", "journal"],
+    "sync.last": ["at", "by", "calendarHash", "toGoogle", "toCalendar", "skipped", "failed"],
+    "sync.items": sorted,
+    "sync.items.*": ["kind", "etag", "calendar", "google"],
+    "sync.items.*.calendar": syncFields,
+    "sync.items.*.google": syncFields,
+    "sync.journal": ["startedAt", "by", "syncToken", "skipped", "open", "forgotten", "same", "operations"],
+    // The items of an array share the array's path.
+    "sync.journal.operations": ["key", "id", "kind", "choice", "title", "state", "reason", "error", "google", "local", "record"]
   };
 
   /** @returns {MDCFolderState} */
@@ -21,10 +32,61 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return { format, devices: {}, files: {} };
   }
 
+  const isObject = (/** @type {unknown} */ value) => typeof value === "object" && value !== null && !Array.isArray(value);
+
   /** @param {Record<string, any>} state @returns {MDCFolderState} */
   function normalized(state) {
-    const isObject = (/** @type {unknown} */ value) => typeof value === "object" && value !== null && !Array.isArray(value);
     return /** @type {MDCFolderState} */ ({ ...state, devices: isObject(state.devices) ? state.devices : {}, files: isObject(state.files) ? state.files : {} });
+  }
+
+  /**
+   * The sync section, `null` while the synchronization is not set up. Missing parts are filled in; unknown fields are kept.
+   * @param {Record<string, any>} state @returns {MDCSyncState | null}
+   */
+  function sync(state) {
+    const section = state.sync;
+    if (!isObject(section) || typeof section.calendarId !== "string" || !section.calendarId) return null;
+    return { ...section, items: isObject(section.items) ? section.items : {}, journal: isObject(section.journal) ? section.journal : null };
+  }
+
+  /** @param {Record<string, any>} state @param {Partial<MDCSyncState>} changes */
+  function withSync(state, changes) {
+    const current = /** @type {MDCSyncState} */ (sync(state));
+    return { ...normalized(state), sync: { ...current, ...changes } };
+  }
+
+  /**
+   * Records the calendar set up in the sync dialog. Another calendar than before starts over: its token, its items and
+   * the last synchronization belong to the old calendar (docs/DataFormat.md#md_calendarjson).
+   * @param {Record<string, any>} state @param {string} calendarId
+   */
+  function connected(state, calendarId) {
+    const current = sync(state);
+    if (current?.calendarId === calendarId) return normalized(state);
+    return { ...normalized(state), sync: { calendarId, items: {}, journal: null } };
+  }
+
+  /** Stores or removes the journal of a synchronization being applied. @param {Record<string, any>} state @param {MDCSyncJournal | null} journal */
+  function journal(state, journal) {
+    return withSync(state, { journal });
+  }
+
+  /**
+   * Records a completed synchronization: the new sync token and item states, the last run and its device; the journal is
+   * removed. @param {Record<string, any>} state @param {MDCDevice} device @param {MDCSyncResult} result @param {Date} now
+   */
+  function synced(state, device, result, now) {
+    const at = stamp(now);
+    const { toGoogle, toCalendar, skipped, failed } = result.counts;
+    const next = withSync(state, {
+      syncToken: result.syncToken,
+      last: { at, by: device.id, calendarHash: result.calendarHash, toGoogle, toCalendar, skipped, failed },
+      items: result.items,
+      // Written only while differences are open.
+      open: result.open.length ? result.open : undefined,
+      journal: null
+    });
+    return withDevice(next, device, { lastSynced: at });
   }
 
   /** UTC time without milliseconds, for example 2026-11-16T09:30:00Z. @param {Date} now */
@@ -82,5 +144,17 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return jsonFile.create({ adapter: folder, name: fileName, format, initial: create, order, unreadable });
   }
 
-  app.folderState = { fileName, create, opened, saved, file, read, summary };
+  /**
+   * What the sync control shows (docs/ui/Shell.md#sync-control): whether the synchronization is set up, whether
+   * `Calendar.md` was saved since the last synchronization, and whether one was interrupted.
+   * @param {Record<string, any>} state
+   */
+  function syncStatus(state) {
+    const section = sync(state);
+    if (!section) return { connected: false, changed: false, interrupted: false };
+    const saved = normalized(state).files["Calendar.md"]?.hash;
+    return { connected: true, changed: Boolean(saved) && saved !== section.last?.calendarHash, interrupted: Boolean(section.journal) };
+  }
+
+  app.folderState = { fileName, create, opened, saved, file, read, summary, sync, connected, journal, synced, stamp, syncStatus };
 })(window.MDCalendar);

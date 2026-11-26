@@ -26,6 +26,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     let entry = null;
     /** @type {string[]} */
     let extraTarget = backlog.head;
+    /** Line index of each entry, for reports. @type {Map<object, number>} */
+    const entryLines = new Map();
 
     lines.forEach((line, index) => {
       if (line.trim() === "") {
@@ -51,6 +53,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         const title = text.start ? `${text.start}${text.end ? ` - ${text.end}` : ""} ${text.title}` : text.title;
         entry = { done: item[1] !== " ", ...text, start: "", end: "", title, location: "", note: [], extra: [] };
         (group ? group.entries : backlog.ungrouped).push(entry);
+        entryLines.set(entry, index);
         extraTarget = entry.extra;
         return;
       }
@@ -59,6 +62,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       extraTarget.push(line);
     });
 
+    format.reportDuplicateSyncIds([...backlog.ungrouped, ...backlog.groups.flatMap(each => each.entries)], entryLines, warnings);
+    warnings.sort((left, right) => left.lineNumber - right.lineNumber);
     if (!hasHeader) warnings.unshift({ lineNumber: 1, kind: "missing-header", text: lines[0] || "" });
     // The ungrouped entries replace the former Inbox group; its unknown lines stay after the file heading.
     const inbox = backlog.groups.findIndex(candidate => candidate.name === formerInbox);

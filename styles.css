@@ -225,6 +225,19 @@ html[data-build="missing"] .build-missing { display: block; max-width: 40rem; ma
   .hdr .seg button { padding: 0 12px; }
   .hdr .seg button span { display: none; }
 }
+/* Sync control (docs/ui/Shell.md#sync-control): left of the save control; a dot in the accent for local changes since
+   the last synchronization, in the warning yellow for an interrupted one; the arrows turn while the dialog works. */
+.sync { margin-left: 2px; }
+.sync__icon { position: relative; display: grid; place-items: center; }
+.sync__dot {
+  position: absolute; top: -3px; right: -4px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+  box-shadow: 0 0 0 2px var(--panel); opacity: 0; transform: scale(.4); transition: opacity .2s, transform .3s;
+}
+.sync.is-changed .sync__dot, .sync.is-interrupted .sync__dot { opacity: 1; transform: none; }
+.sync.is-interrupted .sync__dot { background: var(--warn); }
+.sync.is-interrupted { color: var(--warn); }
+.sync.is-busy { color: var(--accent); }
+.sync.is-busy .ui-icon { animation: save-spin 1.4s linear infinite; }
 @keyframes save-spin { from { rotate: 0turn; } to { rotate: 1turn; } }
 @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--warn) var(--strong), transparent); } 50% { box-shadow: 0 0 0 5px transparent; } }
 @keyframes pop { from { transform: scale(.3); } to { transform: scale(1); } }
@@ -1019,3 +1032,135 @@ button.cx-go:disabled { color: var(--deco); }
 .notefield > .notefield__view { position: absolute; inset: 0; z-index: 1; overflow-y: auto; white-space: pre-wrap; overflow-wrap: break-word; cursor: text; }
 .notefield:focus-within > .notefield__view, .notefield > .notefield__view:empty { display: none; }
 .notefield:has(> .notefield__view:not(:empty)):not(:focus-within) > :is(textarea, .notefield__mirror) { opacity: 0; }
+
+/* ---------- Sync dialog (docs/ui/DesignSystem.md#sync-dialog) ---------- */
+.sd {
+  width: min(880px, calc(100vw - 48px)); height: min(660px, calc(100vh - 48px)); padding: 0; color: var(--text); border-radius: 22px;
+  background: color-mix(in srgb, var(--panel) 88%, transparent); border: 1px solid var(--edge); backdrop-filter: blur(30px);
+  box-shadow: 0 40px 120px rgba(0,0,0,.6), inset 0 1px 0 var(--edge); flex-direction: column; overflow: hidden;
+}
+.sd[open] { display: flex; animation: dialog-in .2s cubic-bezier(.2,.8,.2,1); will-change: transform; }
+.sd::backdrop { background: color-mix(in srgb, var(--base) 40%, transparent); backdrop-filter: blur(10px); }
+.sd__head { flex: none; display: flex; align-items: center; gap: 10px; padding: 16px 16px 14px 20px; }
+.sd__icon { width: 18px; height: 18px; color: color-mix(in srgb, var(--accent) var(--light), #fff); }
+.sd:is([data-phase="checking"], [data-phase="applying"]) .sd__icon { animation: save-spin 1.4s linear infinite; }
+.sd__heading { margin: 0; font-size: 16px; font-weight: 800; }
+.sd__status { flex: 1; min-width: 0; font-size: 12.5px; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sd__close { width: 32px; height: 32px; }
+.sd.is-applying .sd__close { visibility: hidden; }
+.sd__body { flex: 1; min-height: 0; overflow: auto; padding: 0 20px 12px; border-top: 1px solid var(--edge); }
+.sd__foot { flex: none; display: flex; align-items: center; gap: 10px; padding: 12px 16px 12px 20px; border-top: 1px solid var(--edge); }
+.sd__foot .btn { height: 34px; }
+.sd__foot .btn:not(.btn--primary) { color: var(--muted); }
+.sd__foot .btn:not(.btn--primary):hover:not(:disabled) { color: var(--text); background: var(--glass-2); }
+.sd__foot .btn:disabled { opacity: var(--o-disabled); }
+.sd__sum { flex: 1; font-size: 12.5px; color: var(--muted); }
+.sd__sum b { color: var(--text); font-weight: 700; }
+.sd__open { color: color-mix(in srgb, var(--warn) var(--light), #fff); }
+
+/* Overview, setup, check and result: short centered lists. */
+.sd__center { max-width: 520px; margin: 28px auto 0; display: flex; flex-direction: column; gap: 14px; }
+.sd__center--check { max-width: 360px; }
+.sd__lead { margin: 0; color: var(--muted); font-size: 13.5px; }
+.sd__facts { display: grid; grid-template-columns: 140px 1fr; gap: 10px 12px; margin: 0; font-size: 13.5px; }
+.sd__facts dt { color: var(--faint); }
+.sd__facts dd { margin: 0; overflow-wrap: anywhere; }
+.sd__linkbtn, .sd__link { color: var(--accent); font-weight: 700; font-size: 13px; text-decoration: none; padding: 0; }
+.sd__linkbtn:hover, .sd__link:hover { text-decoration: underline; }
+.sd__unsaved { margin: 0; color: color-mix(in srgb, var(--warn) var(--light), #fff); font-size: 13px; }
+.sd__warning { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; font-size: 13px;
+  color: color-mix(in srgb, var(--warn) var(--light), #fff); background: color-mix(in srgb, var(--warn) var(--hover), transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warn) var(--ring), transparent); }
+.sd__warning .ui-icon { flex: none; }
+.sd__drop { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 88px; border-radius: 16px; color: var(--muted); font-weight: 700;
+  border: 1.5px dashed var(--deco); background: var(--card); transition: background .15s, color .15s, border-color .15s; }
+.sd__drop:hover, .sd__drop.is-over { color: var(--text); background: var(--glass-2); border-color: color-mix(in srgb, var(--accent) var(--ring), transparent); }
+.sd__field { display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 700; color: var(--faint); }
+.sd__field input { height: 38px; padding: 0 12px; border-radius: 12px; color: var(--text); font: inherit; font-size: 13.5px; font-weight: 600;
+  background: color-mix(in srgb, var(--base) 40%, transparent); border: 1px solid var(--edge); outline: none; }
+.sd__field input:focus { border-color: color-mix(in srgb, var(--accent) var(--ring), transparent); }
+.sd__field input::placeholder { color: var(--faint); }
+.sd__steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.sd__step { display: grid; grid-template-columns: 20px 1fr auto; align-items: center; column-gap: 10px; font-size: 13.5px; }
+.sd__step.is-waiting .sd__steplabel { color: var(--faint); }
+.sd__count { color: var(--faint); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.sd__detail { grid-column: 2 / -1; margin-top: 2px; font-size: 12.5px; color: color-mix(in srgb, var(--danger) var(--light), #fff); }
+.sd__notice { margin: 0; font-size: 12.5px; color: var(--faint); }
+
+/* State circles: waiting ring, spinner, drawn check, cross, clock, dash. */
+.sd__circle { flex: none; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; }
+.sd__circle .ui-icon { width: 12px; height: 12px; }
+.sd__circle.is-waiting { box-shadow: inset 0 0 0 2px var(--deco); }
+.sd__circle.is-done { color: var(--ok); background: color-mix(in srgb, var(--ok) var(--active), transparent); }
+.sd__circle.is-failed { color: var(--danger); background: color-mix(in srgb, var(--danger) var(--active), transparent); }
+.sd__circle.is-open { color: var(--warn); background: color-mix(in srgb, var(--warn) var(--active), transparent); }
+.sd__circle.is-skipped { color: var(--faint); }
+.sd__spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--accent) 25%, transparent); border-top-color: var(--accent); animation: save-spin .8s linear infinite; }
+.sd__draw use, .sd__draw path { stroke-dasharray: 40; stroke-dashoffset: 0; animation: sd-draw .24s ease-out; }
+@keyframes sd-draw { from { stroke-dashoffset: 40; } }
+
+/* Skeleton of the merge view while checking. */
+.sd__skeleton { margin-top: 28px; display: flex; flex-direction: column; gap: 14px; }
+.sd__ghost { display: grid; grid-template-columns: 1fr 92px 1fr; gap: 12px; }
+.sd__ghost i { height: 14px; border-radius: 6px; background: linear-gradient(90deg, var(--card) 30%, var(--glass-2) 50%, var(--card) 70%); background-size: 300% 100%; animation: sd-shimmer 1.6s linear infinite; }
+.sd__ghost i:nth-child(2) { width: 44px; justify-self: center; }
+@keyframes sd-shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+
+/* Merge view: two columns, one row per difference with its direction control between them. */
+.sd__merge { display: flex; flex-direction: column; }
+.sd__cols { position: sticky; top: 0; z-index: 1; display: grid; grid-template-columns: 1fr 92px 1fr; gap: 12px; padding: 12px 0 6px; font-size: 11.5px; font-weight: 700; color: var(--faint);
+  background: color-mix(in srgb, var(--panel) 96%, transparent); }
+.sd__cols span:last-child { text-align: right; }
+.sd__day { margin: 14px 0 4px; font-size: 11.5px; font-weight: 700; color: var(--faint); font-variant-numeric: tabular-nums; }
+.sd__row { display: grid; grid-template-columns: 1fr 92px 1fr; gap: 12px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--card-edge); }
+.sd__side { min-width: 0; display: flex; flex-direction: column; gap: 2px; transition: opacity .2s; }
+.sd__side--google { align-items: flex-end; text-align: right; }
+.sd__row.is-skipped .sd__side { opacity: .55; }
+.sd__line { display: flex; align-items: baseline; gap: 10px; min-width: 0; max-width: 100%; }
+.sd__side--google .sd__line { flex-direction: row-reverse; }
+.sd__time { flex: none; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.sd__title { min-width: 0; font-weight: 700; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sd__dot { display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; vertical-align: 1px; background: hsl(var(--h) 62% 68%); }
+.sd__place { font-size: 12px; color: var(--faint); }
+.sd__side.is-missing { font-size: 12.5px; color: var(--faint); }
+.sd__val { border-radius: 5px; padding: 1px 4px; }
+.sd__val.is-chg { color: color-mix(in srgb, var(--warn) var(--light), #fff); background: color-mix(in srgb, var(--warn) var(--hover), transparent); }
+.sd__val.is-win { color: color-mix(in srgb, var(--ok) var(--light), #fff); background: color-mix(in srgb, var(--ok) var(--hover), transparent); }
+.sd__ctl { display: grid; place-items: center; }
+.sd__dir { width: 44px; height: 26px; border-radius: 8px; display: grid; place-items: center; transition: background .15s, color .15s, box-shadow .15s; }
+.sd__dir .ui-icon, .sd__opt .ui-icon { width: 16px; height: 16px; }
+.sd__dir.is-right { --tone: var(--accent); }
+.sd__dir.is-left { --tone: var(--accent-2); }
+.sd__dir.is-danger { --tone: var(--danger); }
+.sd__dir[aria-pressed="true"] { color: var(--tone); background: color-mix(in srgb, var(--tone) var(--hover), transparent); }
+.sd__dir[aria-pressed="true"]:hover { background: color-mix(in srgb, var(--tone) var(--active), transparent); }
+.sd__dir[aria-pressed="false"] { color: var(--deco); box-shadow: inset 0 0 0 1px var(--card-edge); }
+.sd__dir[aria-pressed="false"]:hover { color: var(--muted); background: var(--glass-2); }
+.sd__well { display: inline-flex; gap: 2px; padding: 2px; border-radius: 9px; background: color-mix(in srgb, var(--base) 40%, transparent); transition: box-shadow .2s; }
+.sd__well.is-open { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warn) var(--ring), transparent); }
+.sd__opt { width: 26px; height: 24px; border-radius: 7px; display: grid; place-items: center; color: var(--muted); transition: background .15s, color .15s; }
+.sd__opt:hover { color: var(--text); background: var(--glass-2); }
+.sd__opt[aria-pressed="true"] { color: color-mix(in srgb, var(--accent) var(--light), #fff); background: color-mix(in srgb, var(--accent) var(--active), transparent); }
+.sd__opt.is-danger[aria-pressed="true"] { color: color-mix(in srgb, var(--danger) var(--light), #fff); background: color-mix(in srgb, var(--danger) var(--active), transparent); }
+.sd__note { color: var(--faint); display: grid; }
+
+/* Applying: a determinate bar in the footer. */
+.sd__progress { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.sd__progresstext { display: flex; justify-content: space-between; gap: 12px; font-size: 12.5px; color: var(--muted); }
+.sd__current { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sd__fraction { font-variant-numeric: tabular-nums; }
+.sd__bar { height: 4px; border-radius: 2px; background: var(--card); overflow: hidden; }
+.sd__bar i { display: block; height: 100%; background: var(--accent); transform: scaleX(0); transform-origin: left; transition: transform .3s cubic-bezier(.2,.8,.2,1); }
+
+/* Result. */
+.sd__result { align-items: center; text-align: center; margin-top: 64px; }
+.sd__result h3 { margin: 0; font-size: 18px; font-weight: 800; }
+.sd__result p { margin: 0; color: var(--muted); font-size: 13.5px; }
+.sd__big { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; color: var(--ok); background: color-mix(in srgb, var(--ok) var(--active), transparent); }
+.sd__big .ui-icon { width: 28px; height: 28px; }
+.sd__big.is-paused { color: var(--warn); background: color-mix(in srgb, var(--warn) var(--active), transparent); }
+.sd__big.is-failed { color: var(--danger); background: color-mix(in srgb, var(--danger) var(--active), transparent); }
+.sd__code { font-size: 12px !important; color: var(--faint) !important; }
+.sd__failures { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; text-align: left; }
+.sd__failures li { display: flex; gap: 10px; }
+.sd__failures span { color: color-mix(in srgb, var(--danger) var(--light), #fff); }
+@media (prefers-reduced-motion: reduce) { .sd__ghost i { animation: none; } }

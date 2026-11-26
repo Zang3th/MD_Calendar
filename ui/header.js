@@ -12,6 +12,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   const titleText = element("titleText");
   const titleSizer = element("titleSizer");
   const save = element("save");
+  const syncButton = element("syncButton");
   const sound = element("sound");
   const undo = /** @type {HTMLButtonElement} */ (element("undo"));
   const redo = /** @type {HTMLButtonElement} */ (element("redo"));
@@ -141,5 +142,18 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     if (lastState) update(lastState);
   }
 
-  app.header = { update, flashSaved, saving, failed, setVersion };
+  /**
+   * Shows the state of the synchronization on the sync control (docs/ui/Shell.md#sync-control): a dot for local changes
+   * since the last synchronization, a warning for an interrupted one, turning arrows while the dialog checks or applies.
+   * @param {{changed: boolean, interrupted: boolean, busy: boolean}} state
+   */
+  function syncState({ changed, interrupted, busy }) {
+    syncButton.classList.toggle("is-changed", changed && !interrupted);
+    syncButton.classList.toggle("is-interrupted", interrupted);
+    syncButton.classList.toggle("is-busy", busy);
+    label(syncButton, interrupted ? "Sync with Google (interrupted, needs completing)"
+      : changed ? "Sync with Google (local changes since last sync)" : "Sync with Google");
+  }
+
+  app.header = { update, flashSaved, saving, failed, setVersion, syncState };
 })(window.MDCalendar);
