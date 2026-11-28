@@ -1076,10 +1076,11 @@ button.cx-go:disabled { color: var(--deco); }
 .sd__center { max-width: 520px; margin: 28px auto 0; display: flex; flex-direction: column; gap: 14px; }
 .sd__center--check { max-width: 360px; }
 .sd__lead { margin: 0; color: var(--muted); font-size: 13.5px; }
-.sd__overview { gap: 20px; }
-.sd__group + .sd__group { padding-top: 18px; border-top: 1px solid var(--card-edge); }
-.sd__grouphead { margin: 0 0 10px; font-size: 11.5px; font-weight: 700; color: var(--faint); }
-.sd__facts { display: grid; grid-template-columns: 140px 1fr; gap: 12px; margin: 0; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.sd__overview { max-width: 560px; gap: 12px; }
+.sd__card { border-radius: 16px; background: var(--card); box-shadow: inset 0 0 0 1px var(--card-edge); }
+.sd__group { padding: 16px 18px; }
+.sd__group + .sd__group { border-top: 1px solid var(--card-edge); }
+.sd__facts { display: grid; grid-template-columns: 124px 1fr; gap: 12px; margin: 0; font-size: 13.5px; font-variant-numeric: tabular-nums; }
 .sd__facts dt { color: var(--faint); }
 .sd__facts dd { margin: 0; overflow-wrap: anywhere; }
 .sd__sub { display: block; margin-top: 2px; font-size: 12.5px; color: var(--muted); }

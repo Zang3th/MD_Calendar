@@ -115,9 +115,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   function renderOverview(next) {
     const warning = next.interrupted ? `<div class="sd__warning">${icon("info")}<span>The last sync was interrupted after ${next.interrupted.done} of ${next.interrupted.total} changes.</span></div>` : "";
     const unsaved = next.unsaved && !next.interrupted ? `<p class="sd__unsaved">You have ${next.unsaved} unsaved ${next.unsaved === 1 ? "change" : "changes"}.</p>` : "";
-    const groups = next.groups.map(group => `<section class="sd__group"><h3 class="sd__grouphead">${esc(group.title)}</h3>` +
+    const groups = next.groups.map(group => `<section class="sd__group" aria-label="${esc(group.title)}">` +
       `<dl class="sd__facts">${group.facts.map(([label, value, detail, tone]) => `<dt>${esc(label)}</dt><dd>${esc(value)}${detail ? `<span class="sd__sub${tone ? ` is-${tone}` : ""}">${esc(detail)}</span>` : ""}</dd>`).join("")}</dl></section>`).join("");
-    body.innerHTML = `<div class="sd__center sd__overview">${warning}${groups}${unsaved}</div>`;
+    body.innerHTML = `<div class="sd__center sd__overview">${warning}<div class="sd__card">${groups}</div>${unsaved}</div>`;
     const primary = next.interrupted ? button("Complete sync", "btn--primary", 'data-action="complete"')
       : next.unsaved ? button("Save and continue", "btn--primary", 'data-action="save-check"') : button("Check status", "btn--primary", 'data-action="check"');
     foot.innerHTML = `${button("Change setup", "btn--warn", 'data-action="setup"')}<span class="sd__sum"></span>${primary}`;
