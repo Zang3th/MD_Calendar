@@ -1,4 +1,4 @@
-import { linkfield } from "@zang3th/md-libs/ui";
+import { linkfield, modal } from "@zang3th/md-libs/ui";
 
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
@@ -1037,13 +1037,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     current.apply(result);
   });
 
-  // The dialog has no padding, so a click on the dialog element itself is a click on the backdrop. It closes only when
-  // the press began there too: a text selection dragged out of the dialog ends with a click on the dialog element.
-  let pressOnBackdrop = false;
-  dialog.addEventListener("pointerdown", event => { pressOnBackdrop = event.target === dialog; });
-  dialog.addEventListener("click", event => {
-    if (event.target === dialog && pressOnBackdrop) close();
-  });
+  // A press on the backdrop closes it; one that begins in the dialog, such as a text selection dragged out, never does.
+  modal.closeOnBackdrop({ dialog, close });
   // Escape closes an open popover first, then the dialog. It is handled on the key itself: Chrome lets a page cancel the
   // dialog's close request only now and then, so a third Escape would close the whole dialog.
   dialog.addEventListener("keydown", event => {

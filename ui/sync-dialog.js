@@ -1,3 +1,5 @@
+import { modal } from "@zang3th/md-libs/ui";
+
 window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({});
 
 // The sync dialog (docs/ui/Shell.md#sync-dialog, look in docs/ui/DesignSystem.md#sync-dialog): setup, overview, check,
@@ -419,16 +421,10 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     void takeKey(event.dataTransfer?.files[0]);
   });
 
-  // A click on the backdrop closes like the close button while nothing runs: not while connecting, checking or applying.
-  // The dialog has no padding, so a click on the dialog element itself is a click on the backdrop; it counts only when
-  // the press began there too, so a text selection dragged out of the dialog never closes it.
+  // A press on the backdrop closes like the close button while nothing runs: not while connecting, checking or applying.
   const busy = () => view?.phase === "checking" || view?.phase === "applying" ||
     (view?.phase === "setup" && Boolean(view.steps) && !view.steps?.some(item => item.state === "failed"));
-  let pressOnBackdrop = false;
-  dialog.addEventListener("pointerdown", event => { pressOnBackdrop = event.target === dialog; });
-  dialog.addEventListener("click", event => {
-    if (event.target === dialog && pressOnBackdrop && !busy()) handlers?.close();
-  });
+  modal.closeOnBackdrop({ dialog, close: () => handlers?.close(), when: () => !busy() });
 
   // Escape closes like the close button, except while applying, which only Cancel ends (docs/ui/Shell.md#sync-dialog).
   dialog.addEventListener("cancel", event => {

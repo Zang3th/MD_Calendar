@@ -172,6 +172,9 @@ test("the overview lists what is known; a check is logged apart from the last sy
   const overview = dialog.locator(".sd__overview");
   await expect(overview.locator(".sd__group", { hasText: "Last sync" })).toContainText("Never");
   await expect(overview.locator(".sd__group", { hasText: "Last check" })).toContainText("In sync");
+  // A press on the backdrop closes the dialog while nothing runs.
+  await page.mouse.click(5, 5);
+  await expect(dialog).toBeHidden();
 });
 
 test("an interrupted synchronization is completed from its journal without creating anything twice", async ({ page, calendar }) => {

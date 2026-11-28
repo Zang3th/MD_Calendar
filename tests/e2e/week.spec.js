@@ -229,6 +229,16 @@ test("the entry dialog picks days and ranges in its calendar, moves an entry to 
   await expect(page.locator(".wk .bar")).toHaveCount(0);
 });
 
+test("a press on the backdrop closes the entry dialog without acting on the day beneath it", async ({ page, calendar }) => {
+  await calendar.openApp({ "Calendar.md": "# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] First\n" });
+  await page.locator('.day[data-day="2026-11-13"]').click({ position: { x: 60, y: 400 } });
+  await expect(page.locator("#dialog")).toBeVisible();
+  const day = /** @type {{x: number, y: number, width: number, height: number}} */ (await page.locator('.day[data-day="2026-11-10"]').boundingBox());
+  await page.mouse.click(day.x + 40, day.y + day.height - 40);
+  await expect(page.locator("#dialog")).toBeHidden();
+  await expect(page.locator("#undo")).toBeDisabled();
+});
+
 test("links in notes open in a new tab: by click in the focus card and the dialog's note, by Ctrl+click while editing it", async ({ page, calendar }) => {
   await calendar.openApp({ "Calendar.md": "# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] Call Clara #Work\n  www.example.org\n  See [docs](https://e.de) here\n" });
   await page.evaluate(() => {
