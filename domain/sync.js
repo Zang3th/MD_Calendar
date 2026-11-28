@@ -12,13 +12,6 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     1: "#7986cb", 2: "#33b679", 3: "#8e24aa", 4: "#e67c73", 5: "#f6bf26", 6: "#f4511e",
     7: "#039be5", 8: "#616161", 9: "#3f51b5", 10: "#0b8043", 11: "#d50000"
   });
-  /** The fields compared per kind, in the order of MD_Calendar.json. */
-  const fieldsOf = /** @type {Record<MDCSyncKind, string[]>} */ ({
-    entry: ["date", "time", "title", "location", "note", "tag"],
-    "day-off": ["start", "end", "title", "location", "note"],
-    "multi-day": ["start", "end", "title", "location", "note", "tag"],
-    series: ["start", "rule", "except", "title", "location", "note", "tag"]
-  });
   /** One-way kinds: the calendar is the source (docs/Decisions.md D65). */
   const exported = ["day-off", "multi-day", "series"];
 
@@ -392,6 +385,21 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return { differences: order(differences), same, forgotten, duplicates: local.duplicates };
   }
 
+  /**
+   * What changed locally since the last synchronization, without asking Google: the comparison against the recorded
+   * state alone (docs/ui/Shell.md#sync-control). Only synchronized items count, so a change to an entry without a time
+   * counts for nothing. @param {MDCSyncLocal} local @param {Record<string, MDCSyncItem>} base @returns {MDCSyncLocalChanges}
+   */
+  function localChanges(local, base) {
+    const counts = { added: 0, changed: 0, removed: 0 };
+    for (const difference of compare({ local, base, events: [], full: false, timeZone: "", tags: [] }).differences) {
+      if (difference.case === "new-local") counts.added += 1;
+      else if (difference.case === "changed-local") counts.changed += 1;
+      else counts.removed += 1;
+    }
+    return counts;
+  }
+
   /** Differences in the order of the merge view; again after Google's side of some was read. @param {MDCSyncDifference[]} differences */
   function order(differences) {
     return differences.sort((left, right) => sortKey(left).localeCompare(sortKey(right)));
@@ -415,5 +423,5 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return Object.fromEntries(Object.keys(calendar).map(name => [name, fromGoogle.includes(name) ? google[name] : calendar[name]]));
   }
 
-  app.sync = { cutover, fieldsOf, colorId, eventTag, zoned, instantOf, localFields, fingerprints, collect, fromEvent, toEvent, compare, order, combined };
+  app.sync = { cutover, colorId, eventTag, localFields, fingerprints, collect, fromEvent, toEvent, compare, localChanges, order, combined };
 })(window.MDCalendar);

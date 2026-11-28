@@ -119,7 +119,7 @@ test("changes page through the calendar, return the next sync token and report a
   /** @type {number[]} */
   const counts = [];
   const result = await client.changes({ onPage: (/** @type {number} */ count) => counts.push(count) });
-  assert.deepEqual(JSON.parse(JSON.stringify(result)), { expired: false, events: [{ id: "a" }, { id: "b" }], syncToken: "next", timeZone: "Europe/Berlin" });
+  assert.deepEqual(JSON.parse(JSON.stringify(result)), { expired: false, events: [{ id: "a" }, { id: "b" }], syncToken: "next" });
   assert.deepEqual(counts, [1, 2]);
   assert.equal(new URL(requests[1].url).searchParams.get("singleEvents"), "false");
   same(await client.changes({ syncToken: "old" }), { expired: true });

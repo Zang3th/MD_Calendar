@@ -422,7 +422,7 @@ Open-source projects that were evaluated and what they contributed:
 
 ## D73 · Synchronization starts from the saved state
 
-**Decision:** “Check sync status” works only without unsaved changes; the dialog offers “Save and continue”. → [Shell](ui/Shell.md#sync-dialog)
+**Decision:** “Check status” works only without unsaved changes; the dialog offers “Save and continue”. → [Shell](ui/Shell.md#sync-dialog)
 **Reasons:** a clear starting point on disk; saving stays explicit.
 **Rejected:** a hint only (one click more for the same result); synchronizing unsaved changes (after a reload Google would hold entries that never existed locally).
 
@@ -446,6 +446,12 @@ Open-source projects that were evaluated and what they contributed:
 
 ## D77 · Sync control left of the save control, circle arrows
 
-**Decision:** An icon button with circle arrows sits directly left of the save control. A dot in `--accent` shows local changes since the last synchronization (from the hash of `Calendar.md`, without a network request), a dot in `--warn` an interrupted synchronization; the arrows turn while the dialog checks or applies. → [Shell](ui/Shell.md#sync-control), [Design System](ui/DesignSystem.md#icons)
+**Decision:** An icon button with circle arrows sits directly left of the save control. A dot in `--accent` shows saved local changes to synchronized items since the last synchronization (the local part of the comparison against the recorded state, without a network request; an entry without a time changes nothing), a dot in `--warn` an interrupted synchronization; the arrows turn while the dialog checks or applies. → [Shell](ui/Shell.md#sync-control), [Design System](ui/DesignSystem.md#icons)
 **Reasons:** synchronization is the step after saving; the dot is a quiet reminder, and an interrupted synchronization must not go unnoticed; circle arrows are the established sign and read instantly.
 **Rejected:** showing changes in Google on the button (would need automatic queries); the Orbit ring of the logo with an arrowhead, a calendar with a small circular arrow (too dense at 18px), two opposed arrows.
+
+## D78 · A check is logged apart from the synchronization
+
+**Decision:** “Check status” is recorded as its own entry (`sync.checked`: when, device, number of differences) and never changes the last synchronization. A check without differences also stores the new sync token and the items both sides agree on. → [Domain](Domain.md#applying), [DataFormat](DataFormat.md#md_calendarjson)
+**Reasons:** only applying changes is a synchronization, so “Last sync” must not move on a check; after a check without differences the state is known to be in sync, so the sync control must not keep showing local changes (for example when the same change was made on both sides), and the next check starts from the new sync token.
+**Rejected:** recording a check without differences as a synchronization without changes (“Last sync” would move although nothing was synchronized); leaving the recorded state untouched until something is applied (the dot would stay on although nothing is left to do).

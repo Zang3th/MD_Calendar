@@ -186,13 +186,12 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
      * The events changed since `syncToken`, or every event without one; deleted events come as `cancelled`. Returns
      * `expired` when Google rejects the token (HTTP 410).
      * @param {{syncToken?: string, signal?: AbortSignal, onPage?: (count: number) => void}} [options]
-     * @returns {Promise<{expired: true} | {expired: false, events: any[], syncToken: string, timeZone: string}>}
+     * @returns {Promise<{expired: true} | {expired: false, events: any[], syncToken: string}>}
      */
     async function changes({ syncToken, signal, onPage = () => {} } = {}) {
       /** @type {any[]} */
       const found = [];
       let pageToken = "";
-      let timeZone = "";
       for (;;) {
         const query = new URLSearchParams({ maxResults: "2500", singleEvents: "false" });
         if (syncToken) query.set("syncToken", syncToken);
@@ -201,13 +200,12 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         if (response.status === 410 && syncToken) return { expired: true };
         if (!response.ok) fail(response, payload);
         found.push(...(payload?.items || []));
-        timeZone = String(payload?.timeZone || timeZone);
         onPage(found.length);
         if (payload?.nextPageToken) {
           pageToken = payload.nextPageToken;
           continue;
         }
-        return { expired: false, events: found, syncToken: String(payload?.nextSyncToken || ""), timeZone };
+        return { expired: false, events: found, syncToken: String(payload?.nextSyncToken || "") };
       }
     }
 

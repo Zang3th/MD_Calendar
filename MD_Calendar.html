@@ -258,14 +258,6 @@
           stroke-linecap="round"
           stroke-linejoin="round"/>
     </symbol>
-    <symbol id="icon-sync" viewBox="0 0 32 32" fill="none">
-    <path d="M6 16A10 10 0 0 1 23 10M24 6V10H20
-             M26 16A10 10 0 0 1 9 22M8 26V22H12"
-          stroke="currentColor"
-          stroke-width="4"
-          stroke-linecap="round"
-          stroke-linejoin="round"/>
-    </symbol>
     <symbol id="icon-arrow-right" viewBox="0 0 32 32" fill="none">
     <path d="M6 16H26M18 8L26 16L18 24"
           stroke="currentColor"
@@ -367,8 +359,8 @@
           stroke-linejoin="round"/>
     </symbol>
     <symbol id="hdr-sync" viewBox="0 0 36 36" fill="none">
-    <path d="M7 18A11 11 0 0 1 27 12M28 7V12H23
-             M29 18A11 11 0 0 1 9 24M8 29V24H13"
+    <path d="M8 12A11.7 11.7 0 0 1 28 12M28 7V12H23
+             M28 24A11.7 11.7 0 0 1 8 24M8 29V24H13"
           stroke="currentColor"
           stroke-width="4"
           stroke-linecap="round"
@@ -617,7 +609,7 @@
           <input type="file" id="icsImport" accept=".ics,text/calendar" hidden>
           <button class="iconbtn" id="undo" type="button" aria-label="Undo" disabled><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#hdr-undo"></use></svg></button>
           <button class="iconbtn" id="redo" type="button" aria-label="Redo" disabled><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#hdr-redo"></use></svg></button>
-          <button class="iconbtn sync" id="syncButton" type="button" aria-haspopup="dialog" aria-label="Sync with Google"><span class="sync__icon"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#hdr-sync"></use></svg><i class="sync__dot"></i></span></button>
+          <button class="iconbtn sync" id="syncButton" type="button" aria-haspopup="dialog" aria-label="Sync with Google"><span class="sync__icon"><span class="sync__glyph"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#hdr-sync"></use></svg></span><i class="sync__dot"></i></span></button>
           <button class="save" id="save" type="button" aria-label="All saved"><span class="save__icon"><i class="save__dot"></i><svg class="ui-icon save__ok" aria-hidden="true" viewBox="0 0 32 32"><use href="#hdr-check"></use></svg><i class="save__spin"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#hdr-spinner"></use></svg></i><svg class="ui-icon save__fail" aria-hidden="true" viewBox="0 0 32 32"><use href="#hdr-close"></use></svg></span></button>
         </div>
       </div>
@@ -651,7 +643,7 @@
       <div class="cx" id="contacts" hidden></div>
     </main>
     <aside class="backlog glass" id="backlog" aria-label="Backlog" aria-hidden="true" inert>
-      <h2 class="backlog__title"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-inbox"></use></svg>Backlog</h2>
+      <h2 class="backlog__title">Backlog</h2>
       <div class="bl" id="backlogGroups"></div>
     </aside>
   </div>
@@ -699,9 +691,8 @@
       <div class="menu glass dlg__menu" id="dialogDeleteMenu" role="menu" aria-label="Delete" hidden></div>
     </form>
   </dialog>
-  <dialog class="sd" id="syncDialog" aria-labelledby="syncTitle">
+  <dialog class="sd" id="syncDialog" aria-labelledby="syncTitle" tabindex="-1">
     <header class="sd__head">
-      <svg class="ui-icon sd__icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-sync"></use></svg>
       <h2 class="sd__heading" id="syncTitle">Sync with Google</h2>
       <span class="sd__status" id="syncStatus" role="status"></span>
       <button class="iconbtn sd__close" id="syncClose" type="button" aria-label="Close"><svg class="ui-icon" aria-hidden="true" viewBox="0 0 32 32"><use href="#icon-close"></use></svg></button>

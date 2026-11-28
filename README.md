@@ -146,7 +146,7 @@ The verification pipeline builds the bundle and runs strict TypeScript checking 
     </tr>
   </thead>
   <tbody>
-    <tr><td>master</td><td>26.11.2026</td><td>713</td><td>963</td><td>7,482</td><td>135</td><td>See <a href="https://github.com/Zang3th/MD_Calendar/blob/master/docs/Roadmap.md">roadmap</a></td></tr>
+    <tr><td>master</td><td>28.11.2026</td><td>704</td><td>980</td><td>7,547</td><td>137</td><td>See <a href="https://github.com/Zang3th/MD_Calendar/blob/master/docs/Roadmap.md">roadmap</a></td></tr>
     <tr><td>v0.8.0</td><td>26.11.2026</td><td>643</td><td>834</td><td>6,014</td><td>101</td><td>Focus mode, better controls and highlighting</td></tr>
     <tr><td>v0.7.0</td><td>19.11.2026</td><td>591</td><td>805</td><td>5,472</td><td>86</td><td>Reworked entry dialog, contacts and start page</td></tr>
     <tr><td>v0.6.0</td><td>16.11.2026</td><td>517</td><td>606</td><td>4,070</td><td>59</td><td>Project baseline with MD_Libs as application core</td></tr>

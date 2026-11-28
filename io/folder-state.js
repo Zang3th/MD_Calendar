@@ -16,8 +16,9 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     "devices.*": ["name", "path", "lastOpened", "lastSaved", "lastSynced"],
     files: sorted,
     "files.*": ["hash", "savedAt", "savedBy"],
-    sync: ["calendarId", "syncToken", "last", "items", "open", "journal"],
-    "sync.last": ["at", "by", "calendarHash", "toGoogle", "toCalendar", "skipped", "failed"],
+    sync: ["calendarId", "syncToken", "last", "checked", "items", "open", "journal"],
+    "sync.last": ["at", "by", "toGoogle", "toCalendar", "skipped", "failed"],
+    "sync.checked": ["at", "by", "differences"],
     "sync.items": sorted,
     "sync.items.*": ["kind", "etag", "calendar", "google"],
     "sync.items.*.calendar": syncFields,
@@ -80,13 +81,25 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     const { toGoogle, toCalendar, skipped, failed } = result.counts;
     const next = withSync(state, {
       syncToken: result.syncToken,
-      last: { at, by: device.id, calendarHash: result.calendarHash, toGoogle, toCalendar, skipped, failed },
+      last: { at, by: device.id, toGoogle, toCalendar, skipped, failed },
       items: result.items,
       // Written only while differences are open.
       open: result.open.length ? result.open : undefined,
       journal: null
     });
     return withDevice(next, device, { lastSynced: at });
+  }
+
+  /**
+   * Records a check, apart from the last synchronization: when, by which device and how many differences it found.
+   * A check without differences also stores the new sync token and the items both sides agree on, since that state is
+   * known to be in sync. @param {Record<string, any>} state @param {MDCDevice} device @param {MDCSyncCheck} result @param {Date} now
+   */
+  function checked(state, device, result, now) {
+    /** @type {Partial<MDCSyncState>} */
+    const changes = { checked: { at: stamp(now), by: device.id, differences: result.differences } };
+    if (result.inSync) Object.assign(changes, { syncToken: result.inSync.syncToken, items: result.inSync.items, open: result.inSync.open.length ? result.inSync.open : undefined });
+    return withSync(state, changes);
   }
 
   /** UTC time without milliseconds, for example 2026-11-16T09:30:00Z. @param {Date} now */
@@ -144,17 +157,5 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return jsonFile.create({ adapter: folder, name: fileName, format, initial: create, order, unreadable });
   }
 
-  /**
-   * What the sync control shows (docs/ui/Shell.md#sync-control): whether the synchronization is set up, whether
-   * `Calendar.md` was saved since the last synchronization, and whether one was interrupted.
-   * @param {Record<string, any>} state
-   */
-  function syncStatus(state) {
-    const section = sync(state);
-    if (!section) return { connected: false, changed: false, interrupted: false };
-    const saved = normalized(state).files["Calendar.md"]?.hash;
-    return { connected: true, changed: Boolean(saved) && saved !== section.last?.calendarHash, interrupted: Boolean(section.journal) };
-  }
-
-  app.folderState = { fileName, create, opened, saved, file, read, summary, sync, connected, journal, synced, stamp, syncStatus };
+  app.folderState = { fileName, create, opened, saved, file, read, summary, sync, connected, journal, synced, checked, stamp };
 })(window.MDCalendar);

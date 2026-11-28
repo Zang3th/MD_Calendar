@@ -224,4 +224,5 @@ Every synchronized item carries a [sync ID](DataFormat.md#sync-ids), the ID of i
 - All local changes of one synchronization are one undo action, “Sync with Google (N changes)”. Undoing it later is an ordinary local change that the next synchronization offers for Google.
 - Each difference is applied as its own unit: it is either completely synchronized or left unchanged. A cancellation stops after the running difference; what is done stays done and is saved.
 - An event changed in Google after the check is not overwritten; its difference stays open.
+- A check is not a synchronization: it is recorded on its own (when, by which device, how many differences) and leaves the last synchronization as it is. A check that finds no differences also stores the new sync token and the items both sides agree on, since that state is known to be in sync.
 - Copying, pasting, duplicating and importing never copy a sync ID, and the entry dialog does not show it.

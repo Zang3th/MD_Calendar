@@ -374,6 +374,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       });
       started.on("reloaded", ({ file }) => {
         render();
+        if ((file === "Calendar.md" || file === "Backlog.md") && syncItems) showLocalSyncChanges();
         app.notifications.show("info", "File reloaded", note`${file} changed outside the app.`);
       });
       started.on("checkError", ({ error }) => {
@@ -463,7 +464,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       },
       overview() { void showSyncOverview(); },
       setup() { void showSyncSetup(true); },
-      connect(text, name, calendarId) { void connectSync(text, calendarId); },
+      connect(text, calendarId) { void connectSync(text, calendarId); },
       check() { void checkSync(); },
       saveAndCheck() {
         void save().then(() => {
@@ -485,7 +486,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     /** @param {boolean} [cancellable] */
     async function showSyncSetup(cancellable = false) {
       const state = await readFolderState();
-      app.syncDialog.render({ phase: "setup", status: "Setup", calendarId: state ? app.folderState.sync(state)?.calendarId || "" : "", steps: null, cancellable });
+      app.syncDialog.render({ phase: "setup", calendarId: state ? app.folderState.sync(state)?.calendarId || "" : "", steps: null, cancellable });
     }
 
     /** The overview, or the setup while the key or the calendar is missing (docs/ui/Shell.md#sync-dialog). */
@@ -499,23 +500,50 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         await showSyncSetup(false);
         return;
       }
-      const { changed } = app.folderState.syncStatus(state);
-      const last = section.last;
-      const device = last ? state.devices[last.by]?.name || "another device" : "";
-      const at = last ? new Date(last.at) : null;
-      const when = at ? `${app.calendar.formatDay(app.calendar.todayKey(at), "dd DD.MM.YYYY")} ${at.toTimeString().slice(0, 5)}` : "";
+      /** @param {string} id */
+      const device = id => state.devices[id]?.name || "another device";
       const journal = section.journal;
       app.syncDialog.render({
         phase: "overview",
-        status: journal ? "Interrupted" : !last ? "Not synced yet" : changed ? "Local changes since last sync" : "Up to date",
-        facts: [
-          ["Last sync", last ? `${when} · ${device} · ${last.toGoogle} ↑ · ${last.toCalendar} ↓` : "Never"],
-          ["Local changes", changed ? "Yes, saved since the last sync" : "None"],
-          ["Calendar", section.calendarId]
-        ],
+        groups: syncFacts(section, device, key.clientEmail),
         unsaved: fileSession ? fileSession.unsaved : 0,
         interrupted: journal ? { done: journal.operations.filter(operation => operation.state !== "pending").length, total: journal.operations.length } : null
       });
+    }
+
+    /**
+     * The facts of the overview in groups, from what is known without asking Google (docs/ui/Shell.md#sync-dialog).
+     * @param {MDCSyncState} section @param {(id: string) => string} device @param {string} account @returns {MDCSyncFactGroup[]}
+     */
+    function syncFacts(section, device, account) {
+      /** @param {Array<[number, string]>} parts */
+      const join = parts => parts.filter(([count]) => count).map(([count, label]) => `${count} ${label}`).join(" · ");
+      /** @param {number} count @param {string} one */
+      const plural = (count, one) => `${count} ${one}${count === 1 ? "" : "s"}`;
+      const { last, checked } = section;
+      const own = app.storage.device().id;
+      /** “Today 12:28”, “Yesterday 12:44” or “Tue 10.11.2026 18:40”; another device is named. @param {{at: string, by: string}} record */
+      const when = ({ at: stamp, by }) => {
+        const at = new Date(stamp);
+        const day = app.calendar.todayKey(at);
+        const days = dates.diff(day, app.calendar.todayKey(new Date()));
+        const date = days === 0 ? "Today" : days === 1 ? "Yesterday" : app.calendar.formatDay(day, "dd DD.MM.YYYY");
+        return `${date} ${at.toTimeString().slice(0, 5)}${by === own ? "" : ` · ${device(by)}`}`;
+      };
+      const local = localSyncChanges(section.items);
+      const open = section.open?.length || 0;
+      /** @type {MDCSyncFact[]} */
+      const status = [];
+      if (checked) status.push(["Last check", when(checked), checked.differences ? plural(checked.differences, "difference") : "In sync", checked.differences ? "warn" : "ok"]);
+      status.push(last
+        ? ["Last sync", when(last), join([[last.toGoogle, "to Google"], [last.toCalendar, "to the calendar"], [last.skipped, "skipped"], [last.failed, "failed"]]) || "No changes", last.failed ? "warn" : undefined]
+        : ["Last sync", "Never"]);
+      status.push(["Local changes", join([[local.added, "new"], [local.changed, "changed"], [local.removed, "removed"]]) || "None"]);
+      if (open) status.push(["Left open", plural(open, "difference"), "from Google, read again on the next check"]);
+      return [
+        { title: "Connection", facts: [["Calendar", section.calendarId], ["Service account", account]] },
+        { title: "Status", facts: status }
+      ];
     }
 
     /** Shows an error of the synchronization with its way out. @param {unknown} error @param {MDCSyncRetry} retry */
@@ -532,7 +560,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         "MDC-407": "MD_Calendar.json could not be written. Nothing was lost; try again."
       });
       const title = /** @type {Error} */ (error)?.message || "Sync failed";
-      app.syncDialog.render({ phase: "error", status: "", title, message: ways[code] || "Try again.", code, detail: /** @type {any} */ (error)?.detail || "", retry });
+      app.syncDialog.render({ phase: "error", title, message: ways[code] || "Try again.", code, detail: /** @type {any} */ (error)?.detail || "", retry });
     }
 
     /**
@@ -543,7 +571,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       const labels = ["Reading key", "Getting access", "Reaching calendar", "Checking write access"];
       /** @type {Array<{label: string, state: string, detail?: string}>} */
       const steps = labels.map(label => ({ label, state: "waiting" }));
-      const show = () => app.syncDialog.render({ phase: "setup", status: "Connecting", calendarId, steps: steps.map(step => ({ ...step })), cancellable: true });
+      const show = () => app.syncDialog.render({ phase: "setup", calendarId, steps: steps.map(step => ({ ...step })), cancellable: true });
       /** @param {number} index @param {() => Promise<unknown>} work */
       const run = async (index, work) => {
         steps[index].state = "running";
@@ -593,7 +621,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       /** @type {Array<{label: string, state: string, count?: string}>} */
       const steps = labels.map(label => ({ label, state: "waiting" }));
       let notice = "";
-      const show = () => app.syncDialog.render({ phase: "checking", status: "Checking", steps: steps.map(step => ({ ...step })), notice });
+      const show = () => app.syncDialog.render({ phase: "checking", steps: steps.map(step => ({ ...step })), notice });
       syncRun.abort = new AbortController();
       const signal = syncRun.abort.signal;
       syncBusy(true);
@@ -650,14 +678,43 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
           app.notifications.show("warning", "Sync ID used twice", note`${comparison.duplicates.join(", ")}\nOnly the first item is synchronized.`);
         }
         Object.assign(syncRun, { timeZone, syncToken: read.syncToken, comparison, base: section.items });
+        await recordCheck(comparison);
         syncBusy(false);
-        app.syncDialog.render({ phase: "review", status: comparison.differences.length ? `${comparison.differences.length} differences` : "Up to date", differences: comparison.differences, tags: config.tags });
+        app.syncDialog.render({ phase: "review", differences: comparison.differences, tags: config.tags });
       } catch (error) {
         if (signal.aborted) return;
         showSyncError(error, "check");
       } finally {
         syncRun.abort = null;
       }
+    }
+
+    /**
+     * Records a check apart from the last synchronization (docs/Domain.md#comparison). Without differences both sides are
+     * in sync: the new sync token and the items both agree on are stored too, so the sync control shows no local changes.
+     * @param {MDCSyncComparison} comparison
+     */
+    async function recordCheck(comparison) {
+      const folder = /** @type {MDCStorageAdapter} */ (openFolderAdapter);
+      const device = app.storage.device();
+      /** @type {MDCSyncCheck} */
+      const result = { differences: comparison.differences.length };
+      if (!result.differences) {
+        const journal = app.syncPlan.plan(comparison, {}, {
+          base: syncRun.base, timeZone: syncRun.timeZone, tags: config.tags, newId: () => app.google.newId(),
+          by: device.id, startedAt: app.folderState.stamp(new Date()), syncToken: syncRun.syncToken
+        });
+        const { items, open } = app.syncPlan.record(syncRun.base, journal);
+        result.inSync = { syncToken: journal.syncToken, items, open };
+      }
+      try {
+        await folderStateOf(folder).update(document => app.folderState.checked(document, device, result, new Date()));
+      } catch (error) {
+        // Only the record is lost; the review is still shown.
+        app.notifications.show("error", "File not updated", note`${app.folderState.fileName}\nThe calendar is not affected.`, { details: error instanceof Error ? error.message : String(error), code: "MDC-203" });
+        return;
+      }
+      showSyncState((await readFolderState()) || {});
     }
 
     /** Applies the chosen differences (docs/Architecture.md#journal). @param {Record<string, MDCSyncChoice | null>} choices */
@@ -714,7 +771,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       for (const row of rows) if (!(row.key in states)) states[row.key] = "skipped";
       syncRun.cancelled = false;
       syncBusy(true);
-      app.syncDialog.render({ phase: "applying", status: "Applying", differences: rows, tags: config.tags, states, progress: { done: finished(), total, label: "" } });
+      app.syncDialog.render({ phase: "applying", differences: rows, tags: config.tags, states, progress: { done: finished(), total, label: "" } });
       try {
         await app.syncPlan.run({
           journal, client,
@@ -741,9 +798,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
         return;
       }
       const { items, open, counts } = app.syncPlan.record(syncRun.base, journal);
-      const calendarHash = await app.storage.fingerprint(serialized("Calendar.md"));
       try {
-        await folderStateOf(folder).update(document => app.folderState.synced(document, app.storage.device(), { syncToken: journal.syncToken, items, open, calendarHash, counts }, new Date()));
+        await folderStateOf(folder).update(document => app.folderState.synced(document, app.storage.device(), { syncToken: journal.syncToken, items, open, counts }, new Date()));
       } catch (error) {
         showSyncError(new app.google.GoogleError("MDC-407", "Sync state not written", error instanceof Error ? error.message : String(error)), "overview");
         return;
@@ -753,16 +809,34 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       syncRun.comparison = null;
       const failures = journal.operations.filter(operation => operation.state === "failed" || operation.state === "open")
         .map(operation => ({ title: operation.title, reason: operation.error || ({ "changed-meanwhile": "Changed in Google meanwhile", "deleted-meanwhile": "Deleted in Google meanwhile", "missing-locally": "Changed in the calendar meanwhile" })[operation.reason || ""] || "Left open" }));
-      app.syncDialog.render({ phase: "done", status: "", counts, cancelled: journal.operations.some(operation => operation.state === "pending"), failures });
+      app.syncDialog.render({ phase: "done", counts, cancelled: journal.operations.some(operation => operation.state === "pending"), failures });
     }
 
     /** The synchronization state the sync control shows; `busy` while the sync dialog checks or applies. */
     let syncShown = { changed: false, interrupted: false, busy: false };
+    /** The recorded state of the last synchronization, which the calendar is compared with; `null` while not set up. @type {Record<string, MDCSyncItem> | null} */
+    let syncItems = null;
 
     /** Shows on the sync control what MD_Calendar.json says about the synchronization. @param {Record<string, any>} state */
     function showSyncState(state) {
-      const { changed, interrupted } = app.folderState.syncStatus(state);
-      syncShown = { ...syncShown, changed, interrupted };
+      const section = app.folderState.sync(state);
+      syncItems = section?.items || null;
+      syncShown = { ...syncShown, interrupted: Boolean(section?.journal) };
+      showLocalSyncChanges();
+    }
+
+    /**
+     * Local changes of synchronized items since the last synchronization (docs/ui/Shell.md#sync-control).
+     * @param {Record<string, MDCSyncItem> | null} [items] the recorded state; the one the sync control shows by default
+     */
+    function localSyncChanges(items = syncItems) {
+      return items && calendar && backlog ? app.sync.localChanges(app.sync.collect(calendar, backlog), items) : { added: 0, changed: 0, removed: 0 };
+    }
+
+    /** Compares the calendar as it is now with the last synchronization and shows the result on the sync control. */
+    function showLocalSyncChanges() {
+      const { added, changed, removed } = localSyncChanges();
+      syncShown = { ...syncShown, changed: added + changed + removed > 0 };
       app.header.syncState(syncShown);
     }
 

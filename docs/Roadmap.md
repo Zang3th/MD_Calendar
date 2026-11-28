@@ -170,10 +170,17 @@ Ab hier ersetzt MD_Calendar den Google-Kalender als Daily-Driver.
 
 - [x] ~Feature ausarbeiten~
 - [x] ~Feature implementieren~
-- [ ] Google-Auth hinterlegen
-- [ ] Feature testen
+- [x] ~Google-Auth hinterlegen~
+- [x] ~Feature testen~
 
 ### Bugs und Verbesserungen
+
+- [x] ~Sync: Dünne Schrift neben dem Header wegnehmen~
+- [x] ~Sync: Nach Überprüfung ob lokal mit Google kolidiert muss sich das Icon wieder ändern~
+- [x] ~Sync: Status-Icon verschönern => Schwarze Border etc.~
+- [x] ~Sync: Solange keine Transaktion läuft, sind Klicks in den Hintergrund zum Schließen noch erlaubt~
+- [x] ~Sync: Kein separater Close-Button im Footer~
+- [x] ~Sync: Startseite verbessern~
 
 ### Release
 

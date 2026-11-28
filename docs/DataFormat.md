@@ -44,9 +44,9 @@ Technical data that does not belong in Markdown. The app writes it when a folder
     "last": {
       "at": "2026-11-16T09:41:12Z",
       "by": "6f1c2a9e-…",
-      "calendarHash": "sha256-4f2a…",
       "toGoogle": 5, "toCalendar": 3, "skipped": 1, "failed": 0
     },
+    "checked": { "at": "2026-11-17T08:05:40Z", "by": "6f1c2a9e-…", "differences": 2 },
     "items": {
       "k3v9q2ab": {
         "kind": "entry",
@@ -69,7 +69,8 @@ Technical data that does not belong in Markdown. The app writes it when a folder
 | `sync` | Present once the synchronization is set up. |
 | `sync.calendarId` | ID of the dedicated Google calendar. Setting up another calendar starts over: its token, items and last synchronization are dropped. |
 | `sync.syncToken` | Google's sync token of the last query; the next query returns only what changed since. Absent before the first synchronization and after Google rejected it. |
-| `sync.last` | The last completed synchronization: when, by which device, the hash of `Calendar.md` after it (compared with `files` to tell whether something changed locally since) and its counts. |
+| `sync.last` | The last completed synchronization: when, by which device and its counts. A check alone never changes it. |
+| `sync.checked` | The last check: when, by which device and how many differences it found. Absent before the first check. |
 | `sync.items` | The state of the last synchronization, one entry per sync ID: the kind (`entry`, `series`, `multi-day`, `day-off`), the ETag of the Google event, and per synchronized field a fingerprint of its value: the 53-bit hash of MD_Libs `core/history` (`fingerprint`) of the normalized value, in hexadecimal. `calendar` is the state both sides had; `google` is present only after “Ignore” and holds the Google state recorded as seen. A series has the fields `start`, `rule`, `except`; a multi-day entry or day off `start` and `end`. |
 | `sync.open` | IDs of Google events whose differences were left open; the next synchronization reads them again, because the sync token no longer returns them. Absent when nothing is open. |
 | `sync.journal` | `null`, or the plan of a synchronization being applied, see [Architecture](Architecture.md#journal). It holds the target state of each operation, including titles and notes, until the synchronization is complete. |

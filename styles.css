@@ -226,15 +226,24 @@ html[data-build="missing"] .build-missing { display: block; max-width: 40rem; ma
   .hdr .seg button span { display: none; }
 }
 /* Sync control (docs/ui/Shell.md#sync-control): left of the save control; a dot in the accent for local changes since
-   the last synchronization, in the warning yellow for an interrupted one; the arrows turn while the dialog works. */
-.sync { margin-left: 2px; }
+   the last synchronization, in the warning yellow for an interrupted one; the arrows turn while the dialog works.
+   Instead of a ring, which would read as a dark border on the glass, the dot cuts a notch into the arrows; the mask sits
+   on the wrapper, so it stays in place while the arrows turn. */
+@property --sync-notch { syntax: "<length>"; inherits: true; initial-value: 0px; }
+.sync { margin-left: 2px; --sync-notch: 0px; transition: --sync-notch .3s; }
+.sync.is-changed, .sync.is-interrupted { --sync-notch: 5px; }
 .sync__icon { position: relative; display: grid; place-items: center; }
+.sync__glyph {
+  display: grid;
+  mask: radial-gradient(circle at calc(100% + 1.5px) -.5px, transparent var(--sync-notch), #000 calc(var(--sync-notch) + .5px));
+}
 .sync__dot {
-  position: absolute; top: -3px; right: -4px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
-  box-shadow: 0 0 0 2px var(--panel); opacity: 0; transform: scale(.4); transition: opacity .2s, transform .3s;
+  position: absolute; top: -4px; right: -5px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent) var(--glow), transparent);
+  opacity: 0; transform: scale(.4); transition: opacity .2s, transform .3s;
 }
 .sync.is-changed .sync__dot, .sync.is-interrupted .sync__dot { opacity: 1; transform: none; }
-.sync.is-interrupted .sync__dot { background: var(--warn); }
+.sync.is-interrupted .sync__dot { background: var(--warn); box-shadow: 0 0 6px color-mix(in srgb, var(--warn) var(--glow), transparent); }
 .sync.is-interrupted { color: var(--warn); }
 .sync.is-busy { color: var(--accent); }
 .sync.is-busy .ui-icon { animation: save-spin 1.4s linear infinite; }
@@ -261,6 +270,12 @@ body.hide-icons :is(.ev__tag, .bar__tag) { display: none; }
 .btn { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; padding: 8px 16px; border-radius: 999px; font-weight: 700; transition: background .15s, box-shadow .15s; }
 .btn--primary { background: linear-gradient(90deg, var(--accent), var(--accent-2)); color: var(--on-accent); }
 .btn--primary:hover { box-shadow: inset 0 0 0 100px var(--glass-2); }
+/* A warning action, built like the save control with unsaved changes: lightened warning text on a warning tint and ring. */
+.btn--warn {
+  color: color-mix(in srgb, var(--warn) var(--light), #fff); background: color-mix(in srgb, var(--warn) var(--hover), transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warn) var(--ring), transparent);
+}
+.btn--warn:hover:not(:disabled) { background: color-mix(in srgb, var(--warn) var(--active), transparent); }
 
 /* ---------- Backlog panel ---------- */
 .app { position: relative; }
@@ -272,7 +287,7 @@ body.hide-icons :is(.ev__tag, .bar__tag) { display: none; }
 }
 body.backlog-open .backlog { transform: none; visibility: visible; transition: transform .35s cubic-bezier(.2,.8,.2,1); }
 body.backlog-open .main { margin-right: 354px; }
-.backlog__title { margin: 0 6px 12px; display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 800; letter-spacing: -.02em; }
+.backlog__title { margin: 0 6px 12px; font-size: 18px; font-weight: 800; letter-spacing: -.02em; }
 /* The list reaches into the panel padding, so its scrollbar sits 6px from the panel edge. */
 .bl { --pad: 14px; flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 16px; margin-right: -14px; padding-right: 14px; }
 .bl__group { display: flex; flex-direction: column; min-height: 0; }
@@ -1042,17 +1057,16 @@ button.cx-go:disabled { color: var(--deco); }
 .sd[open] { display: flex; animation: dialog-in .2s cubic-bezier(.2,.8,.2,1); will-change: transform; }
 .sd::backdrop { background: color-mix(in srgb, var(--base) 40%, transparent); backdrop-filter: blur(10px); }
 .sd__head { flex: none; display: flex; align-items: center; gap: 10px; padding: 16px 16px 14px 20px; }
-.sd__icon { width: 18px; height: 18px; color: color-mix(in srgb, var(--accent) var(--light), #fff); }
-.sd:is([data-phase="checking"], [data-phase="applying"]) .sd__icon { animation: save-spin 1.4s linear infinite; }
 .sd__heading { margin: 0; font-size: 16px; font-weight: 800; }
 .sd__status { flex: 1; min-width: 0; font-size: 12.5px; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sd__close { width: 32px; height: 32px; }
 .sd.is-applying .sd__close { visibility: hidden; }
 .sd__body { flex: 1; min-height: 0; overflow: auto; padding: 0 20px 12px; border-top: 1px solid var(--edge); }
 .sd__foot { flex: none; display: flex; align-items: center; gap: 10px; padding: 12px 16px 12px 20px; border-top: 1px solid var(--edge); }
+.sd__foot:not(:has(.btn)) { display: none; }
 .sd__foot .btn { height: 34px; }
-.sd__foot .btn:not(.btn--primary) { color: var(--muted); }
-.sd__foot .btn:not(.btn--primary):hover:not(:disabled) { color: var(--text); background: var(--glass-2); }
+.sd__foot .btn:not(.btn--primary, .btn--warn) { color: var(--muted); }
+.sd__foot .btn:not(.btn--primary, .btn--warn):hover:not(:disabled) { color: var(--text); background: var(--glass-2); }
 .sd__foot .btn:disabled { opacity: var(--o-disabled); }
 .sd__sum { flex: 1; font-size: 12.5px; color: var(--muted); }
 .sd__sum b { color: var(--text); font-weight: 700; }
@@ -1062,11 +1076,17 @@ button.cx-go:disabled { color: var(--deco); }
 .sd__center { max-width: 520px; margin: 28px auto 0; display: flex; flex-direction: column; gap: 14px; }
 .sd__center--check { max-width: 360px; }
 .sd__lead { margin: 0; color: var(--muted); font-size: 13.5px; }
-.sd__facts { display: grid; grid-template-columns: 140px 1fr; gap: 10px 12px; margin: 0; font-size: 13.5px; }
+.sd__overview { gap: 20px; }
+.sd__group + .sd__group { padding-top: 18px; border-top: 1px solid var(--card-edge); }
+.sd__grouphead { margin: 0 0 10px; font-size: 11.5px; font-weight: 700; color: var(--faint); }
+.sd__facts { display: grid; grid-template-columns: 140px 1fr; gap: 12px; margin: 0; font-size: 13.5px; font-variant-numeric: tabular-nums; }
 .sd__facts dt { color: var(--faint); }
 .sd__facts dd { margin: 0; overflow-wrap: anywhere; }
-.sd__linkbtn, .sd__link { color: var(--accent); font-weight: 700; font-size: 13px; text-decoration: none; padding: 0; }
-.sd__linkbtn:hover, .sd__link:hover { text-decoration: underline; }
+.sd__sub { display: block; margin-top: 2px; font-size: 12.5px; color: var(--muted); }
+.sd__sub.is-ok { color: color-mix(in srgb, var(--ok) var(--light), #fff); }
+.sd__sub.is-warn { color: color-mix(in srgb, var(--warn) var(--light), #fff); }
+.sd__link { color: var(--accent); font-weight: 700; font-size: 13px; text-decoration: none; padding: 0; }
+.sd__link:hover { text-decoration: underline; }
 .sd__unsaved { margin: 0; color: color-mix(in srgb, var(--warn) var(--light), #fff); font-size: 13px; }
 .sd__warning { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; font-size: 13px;
   color: color-mix(in srgb, var(--warn) var(--light), #fff); background: color-mix(in srgb, var(--warn) var(--hover), transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warn) var(--ring), transparent); }

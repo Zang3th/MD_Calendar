@@ -146,9 +146,9 @@ The rules of the synchronization are in [Domain](Domain.md#synchronization-with-
 
 ### Applying and saving
 
-- “Check sync status” needs a saved state; the sync dialog saves through the normal save first (“Save and continue”, with the version check).
+- “Check status” needs a saved state; the sync dialog saves through the normal save first (“Save and continue”, with the version check).
 - The local changes are one action of the undo history. The synchronization saves them itself through the session's write queue with the version check; afterwards the unsaved count is 0. A version conflict while saving keeps the changes unsaved, keeps the journal open and shows the reload-or-overwrite choice; the next synchronization completes the journal.
-- The synchronization only reads Google while external changes are checked as usual. During “Apply” the automatic reload of external changes waits until the dialog is done.
+- While the sync dialog is open, the automatic check for external changes waits; it resumes when the dialog closes, so that nothing is reloaded under a check or an “Apply”.
 
 ### Errors
 
@@ -159,7 +159,7 @@ The rules of the synchronization are in [Domain](Domain.md#synchronization-with-
 | `MDC-403` | Calendar not found or not shared with the service account. |
 | `MDC-404` | Calendar shared without write access. |
 | `MDC-405` | No connection to Google. |
-| `MDC-406` | Google rejected a single operation; the difference stays open, the error is shown at its row. |
+| `MDC-406` | Google rejected a request: a single operation (the difference stays open, the error is shown at its row) or the whole check (for example the Calendar API not enabled). |
 | `MDC-407` | The sync state in `MD_Calendar.json` could not be written. |
 
 Every error names the way out (share the calendar, replace the key, try again). Details never contain the key or an access token.

@@ -71,7 +71,7 @@ test("the sync section is set up, records a completed synchronization in a stabl
   await file.update((/** @type {any} */ document) => folderState.journal(document, { operations, same: [], forgotten: [], open: [], skipped: 0, syncToken: "t", by: "d1", startedAt: "2026-11-16T09:29:00Z" }));
   assert.deepEqual(Object.keys(JSON.parse(disk.text("MD_Calendar.json") || "").sync.journal.operations[0]), ["key", "id", "kind", "choice", "title", "state", "google", "record"]);
   const items = { zz99: { calendar: { tag: "t", title: "a" }, etag: "\"2\"", kind: /** @type {const} */ ("day-off") }, ab12cd34: { kind: /** @type {const} */ ("entry"), etag: "\"1\"", calendar: { title: "b", date: "c" } } };
-  const result = { syncToken: "token", items, open: [], calendarHash: "sha256-ab", counts: { failed: 0, skipped: 1, toCalendar: 2, toGoogle: 3 } };
+  const result = { syncToken: "token", items, open: [], counts: { failed: 0, skipped: 1, toCalendar: 2, toGoogle: 3 } };
   await file.update((/** @type {any} */ document) => folderState.synced(document, device, result, now));
   assert.equal(disk.text("MD_Calendar.json"), `{
   "format": 1,
@@ -88,7 +88,6 @@ test("the sync section is set up, records a completed synchronization in a stabl
     "last": {
       "at": "2026-11-16T09:30:00Z",
       "by": "d1",
-      "calendarHash": "sha256-ab",
       "toGoogle": 3,
       "toCalendar": 2,
       "skipped": 1,
@@ -123,11 +122,12 @@ test("the sync section is set up, records a completed synchronization in a stabl
   assert.deepEqual(JSON.parse(JSON.stringify(other.sync)), { calendarId: "c2@group.calendar.google.com", items: {}, journal: null });
 });
 
-test("the sync control shows local changes since the last synchronization and an interrupted one", () => {
-  const set = (/** @type {object} */ sync, hash = "sha256-b") => ({ format: 1, devices: {}, files: { "Calendar.md": { hash } }, sync: { calendarId: "c1", items: {}, journal: null, ...sync } });
-  const status = (/** @type {any} */ state) => JSON.parse(JSON.stringify(folderState.syncStatus(state)));
-  assert.deepEqual(status({ format: 1 }), { connected: false, changed: false, interrupted: false });
-  assert.deepEqual(status(set({})), { connected: true, changed: true, interrupted: false });
-  assert.deepEqual(status(set({ last: { calendarHash: "sha256-b" } })), { connected: true, changed: false, interrupted: false });
-  assert.deepEqual(status(set({ last: { calendarHash: "sha256-a" }, journal: { operations: [] } })), { connected: true, changed: true, interrupted: true });
+test("a check is recorded apart from the last synchronization; only one without differences stores the new state", () => {
+  const last = { at: "2026-11-10T08:00:00Z", by: "d1", toGoogle: 1, toCalendar: 0, skipped: 0, failed: 0 };
+  const start = { format: 1, devices: {}, files: {}, sync: { calendarId: "c1", syncToken: "old", last, items: {}, journal: null } };
+  const items = { ab12cd34: { kind: /** @type {const} */ ("entry"), etag: "\"1\"", calendar: { title: "b" } } };
+  const found = JSON.parse(JSON.stringify(folderState.checked(start, device, { differences: 2 }, now).sync));
+  assert.deepEqual(found, { ...start.sync, checked: { at: "2026-11-16T09:30:00Z", by: "d1", differences: 2 } });
+  const inSync = JSON.parse(JSON.stringify(folderState.checked(start, device, { differences: 0, inSync: { syncToken: "new", items, open: [] } }, now)));
+  assert.deepEqual([inSync.sync.syncToken, inSync.sync.items, inSync.sync.last, inSync.sync.checked.differences, inSync.devices], ["new", items, last, 0, {}]);
 });

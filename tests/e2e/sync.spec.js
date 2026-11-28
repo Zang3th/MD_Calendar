@@ -5,12 +5,12 @@ const { test, expect } = require("./fixtures");
 /** MD_Calendar.json with a synchronization set up. @param {object} [sync] */
 function state(sync = {}) {
   return JSON.stringify({
-    format: 1, devices: {}, files: { "Calendar.md": { hash: "sha256-same" } },
-    sync: { calendarId: "placeholder@group.calendar.google.com", last: { at: "2026-11-12T09:00:00Z", by: "d1", calendarHash: "sha256-same", toGoogle: 0, toCalendar: 0, skipped: 0, failed: 0 }, items: {}, journal: null, ...sync }
+    format: 1, devices: {}, files: {},
+    sync: { calendarId: "placeholder@group.calendar.google.com", last: { at: "2026-11-12T09:00:00Z", by: "d1", toGoogle: 0, toCalendar: 0, skipped: 0, failed: 0 }, items: {}, journal: null, ...sync }
   });
 }
 
-test("the sync control sits left of the save control and gets its dot once the calendar is saved after the last sync", async ({ page, calendar }) => {
+test("the sync control sits left of the save control and gets its dot only for saved changes to synchronized items", async ({ page, calendar }) => {
   await calendar.openApp({ "MD_Calendar.json": state(), "Calendar.md": "# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [ ] First\n" });
   const sync = page.locator("#syncButton");
   await expect(sync).toBeVisible();
@@ -18,8 +18,14 @@ test("the sync control sits left of the save control and gets its dot once the c
   await expect(sync).toHaveAttribute("aria-label", "Sync with Google");
   await expect(sync).not.toHaveClass(/is-changed/);
 
+  // An entry without a time is not synchronized: saving it leaves the control as it is.
   await page.locator('.day[data-day="2026-11-12"] .ev__check').first().click();
   await page.keyboard.press("Control+s");
+  await expect.poll(async () => JSON.parse(await calendar.readFile("MD_Calendar.json") || "{}").files?.["Calendar.md"]?.savedAt).toBeTruthy();
+  await expect(sync).not.toHaveClass(/is-changed/);
+
+  // A timed entry from the cutover on is; it arrives here from another device.
+  await calendar.writeFile("Calendar.md", "# Calendar\n\n## November 2026\n\n### 12.11.2026\n- [x] First\n\n### 24.11.2026\n- [ ] 09:00 Call\n");
   await expect(sync).toHaveClass(/is-changed/);
   await expect(sync).toHaveAttribute("aria-label", "Sync with Google (local changes since last sync)");
   await expect(sync.locator(".sync__dot")).toHaveCSS("opacity", "1");
@@ -94,7 +100,7 @@ test("the setup checks the key and the calendar step by step and stores both", a
   await connect.click();
   await expect(dialog.locator(".sd__step.is-done")).toHaveCount(3, { timeout: 10_000 });
   await expect(dialog).toHaveAttribute("data-phase", "overview", { timeout: 10_000 });
-  await expect(dialog.locator(".sd__facts")).toContainText("Never");
+  await expect(dialog.locator(".sd__overview")).toContainText("Never");
   expect(await calendar.readFile("MD_Calendar.key.json")).toBe(key);
   expect(JSON.parse(await calendar.readFile("MD_Calendar.json") || "{}").sync.calendarId).toBe(calendarId);
 });
@@ -111,7 +117,7 @@ test("a check shows both sides in the merge view; applying copies each way, save
   });
   await page.locator("#syncButton").click();
   const dialog = page.locator("#syncDialog");
-  await dialog.getByRole("button", { name: "Check sync status" }).click();
+  await dialog.getByRole("button", { name: "Check status" }).click();
   await expect(dialog).toHaveAttribute("data-phase", "review", { timeout: 10_000 });
   const rows = dialog.locator(".sd__row");
   await expect(rows).toHaveCount(2);
@@ -138,6 +144,34 @@ test("a check shows both sides in the merge view; applying copies each way, save
   await expect(dialog).toBeHidden();
   await expect(page.locator("#undo")).toHaveAttribute("aria-label", "Undo “Sync with Google (2 changes)” (Ctrl+Z)");
   await expect(page.locator("#syncButton")).not.toHaveClass(/is-changed/);
+});
+
+test("the overview lists what is known; a check is logged apart from the last sync, and when in sync it clears the dot", async ({ page, calendar }) => {
+  const google = await fakeGoogle(page, [{ id: "dent0001", etag: "\"3\"", status: "confirmed", summary: "Dentist", start: { dateTime: "2026-11-24T09:00:00" }, end: { dateTime: "2026-11-24T09:00:00" } }]);
+  await calendar.openApp({
+    "MD_Calendar.key.json": serviceKey(),
+    "MD_Calendar.json": JSON.stringify({ format: 1, devices: {}, files: {}, sync: { calendarId, items: {}, journal: null } }),
+    "Calendar.md": "# Calendar\n\n## November 2026\n\n### 24.11.2026\n- [ ] 09:00 Dentist {sync=dent0001}\n"
+  });
+  const sync = page.locator("#syncButton");
+  await expect(sync).toHaveClass(/is-changed/);
+  await sync.click();
+  const dialog = page.locator("#syncDialog");
+  await expect(dialog.locator(".sd__overview")).toContainText("1 new");
+  await expect(dialog.locator(".sd__overview")).toContainText("sync@placeholder.iam.gserviceaccount.com");
+  // Enter runs the primary action, “Check status”.
+  await page.keyboard.press("Enter");
+  await expect(dialog).toContainText("Everything is in sync", { timeout: 10_000 });
+  await expect(sync).not.toHaveClass(/is-changed/);
+  expect(google.writes).toEqual([]);
+  const state = JSON.parse(await calendar.readFile("MD_Calendar.json") || "{}");
+  expect([state.sync.syncToken, Object.keys(state.sync.items), state.sync.last, state.sync.checked.differences]).toEqual(["token-1", ["dent0001"], undefined, 0]);
+
+  await dialog.getByRole("button", { name: "Done" }).click();
+  await sync.click();
+  const overview = dialog.locator(".sd__overview");
+  await expect(overview.locator(".sd__group", { hasText: "Last sync" })).toContainText("Never");
+  await expect(overview.locator(".sd__group", { hasText: "Last check" })).toContainText("In sync");
 });
 
 test("an interrupted synchronization is completed from its journal without creating anything twice", async ({ page, calendar }) => {

@@ -91,6 +91,16 @@ test("only timed entries, days off, multi-day entries and timed series from the 
   assert.deepEqual(plain(local.items.get("gm000001").fields), { start: "2026-11-24 18:30", rule: "FREQ=WEEKLY;BYDAY=TU", except: "", title: "Gym", location: "", note: "", tag: "" });
 });
 
+test("local changes count only synchronized items: an entry without a time changes nothing", () => {
+  const lines = (/** @type {string} */ call, /** @type {string} */ task) => ["## November 2026", "", "### 24.11.2026", `- [ ] ${call} {sync=call0001}`, `- [ ] ${task}`, "- [ ] 10:00 Gone {sync=gone0001}"];
+  const before = folder(lines("09:00 Call", "Loose task"));
+  const earlier = sync.collect(before.calendar, before.backlog);
+  const base = Object.fromEntries([...earlier.items.keys()].map(id => [id, recorded(earlier, id)]));
+  const count = (/** @type {string[]} */ calendarLines) => { const { calendar, backlog } = folder(calendarLines); return plain(sync.localChanges(sync.collect(calendar, backlog), base)); };
+  assert.deepEqual(count(lines("09:00 Call", "Loose task renamed")), { added: 0, changed: 0, removed: 0 });
+  assert.deepEqual(count([...lines("09:30 Call", "Loose task").slice(0, -1), "- [ ] 11:00 New"]), { added: 1, changed: 1, removed: 1 });
+});
+
 test("one-sided changes are copied, conflicts and deletions wait for a decision, leaving the range locally removes from Google", () => {
   const { calendar, backlog } = folder([
     "## November 2026", "",

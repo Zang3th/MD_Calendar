@@ -34,7 +34,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   /** Labels of the choices of a conflict, which compare the two sides. */
   const conflictLabels = /** @type {Partial<Record<MDCSyncChoice, string>>} */ ({ "to-calendar": "Take Google", "to-google": "Keep calendar" });
   const reasons = /** @type {Record<string, string>} */ ({
-    backlog: "in the backlog", "no-time": "no time", "before-cutover": "before 23.11.2026", "all-day": "an all-day event",
+    backlog: "in the backlog", "no-time": "no time", "before-cutover": `before ${app.calendar.formatDay(app.sync.cutover, "DD.MM.YYYY")}`, "all-day": "an all-day event",
     "several-days": "spans several days", series: "a series created in Google", deleted: "deleted", changed: "changed in Google"
   });
 
@@ -44,6 +44,8 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     choices = new Map();
     key = { name: "", text: "" };
     if (!dialog.open) dialog.showModal();
+    // The dialog itself takes the focus, so that Enter runs the primary action instead of the close button.
+    dialog.focus();
   }
 
   function close() {
@@ -61,7 +63,6 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     }
     view = next;
     dialog.dataset.phase = next.phase;
-    status.textContent = next.status || "";
     if (next.phase === "setup") renderSetup(next);
     else if (next.phase === "overview") renderOverview(next);
     else if (next.phase === "checking") renderChecking(next);
@@ -84,7 +85,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
       ${steps}
     </div>`;
     const running = Boolean(next.steps?.some(item => item.state === "running"));
-    foot.innerHTML = `<span class="sd__sum"></span>${next.cancellable ? button("Cancel", "", 'data-action="overview"') : button("Close", "", 'data-action="close"')}` +
+    foot.innerHTML = `<span class="sd__sum"></span>${next.cancellable ? button("Cancel", "", 'data-action="overview"') : ""}` +
       button("Connect", "btn--primary", `data-action="connect"${running ? " disabled" : ""}`);
     allowConnect();
   }
@@ -112,11 +113,12 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   function renderOverview(next) {
     const warning = next.interrupted ? `<div class="sd__warning">${icon("info")}<span>The last sync was interrupted after ${next.interrupted.done} of ${next.interrupted.total} changes.</span></div>` : "";
     const unsaved = next.unsaved && !next.interrupted ? `<p class="sd__unsaved">You have ${next.unsaved} unsaved ${next.unsaved === 1 ? "change" : "changes"}.</p>` : "";
-    body.innerHTML = `<div class="sd__center">${warning}<dl class="sd__facts">${next.facts.map(([label, value]) => `<dt>${esc(label)}</dt><dd>${esc(value)}</dd>`).join("")}` +
-      `<dt>Setup</dt><dd><button class="sd__linkbtn" type="button" data-action="setup">Change setup</button></dd></dl>${unsaved}</div>`;
+    const groups = next.groups.map(group => `<section class="sd__group"><h3 class="sd__grouphead">${esc(group.title)}</h3>` +
+      `<dl class="sd__facts">${group.facts.map(([label, value, detail, tone]) => `<dt>${esc(label)}</dt><dd>${esc(value)}${detail ? `<span class="sd__sub${tone ? ` is-${tone}` : ""}">${esc(detail)}</span>` : ""}</dd>`).join("")}</dl></section>`).join("");
+    body.innerHTML = `<div class="sd__center sd__overview">${warning}${groups}${unsaved}</div>`;
     const primary = next.interrupted ? button("Complete sync", "btn--primary", 'data-action="complete"')
-      : next.unsaved ? button("Save and continue", "btn--primary", 'data-action="save-check"') : button("Check sync status", "btn--primary", 'data-action="check"');
-    foot.innerHTML = `<span class="sd__sum"></span>${button("Close", "", 'data-action="close"')}${primary}`;
+      : next.unsaved ? button("Save and continue", "btn--primary", 'data-action="save-check"') : button("Check status", "btn--primary", 'data-action="check"');
+    foot.innerHTML = `${button("Change setup", "btn--warn", 'data-action="setup"')}<span class="sd__sum"></span>${primary}`;
   }
 
   /** @param {Extract<MDCSyncView, {phase: "checking"}>} next */
@@ -149,7 +151,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
   function renderError(next) {
     body.innerHTML = `<div class="sd__center sd__result"><span class="sd__big is-failed">${icon("close")}</span><h3>${esc(next.title)}</h3>` +
       `<p>${esc(next.message)}</p>${next.detail ? `<p class="sd__code">${esc(next.code)} · ${esc(next.detail)}</p>` : `<p class="sd__code">${esc(next.code)}</p>`}</div>`;
-    foot.innerHTML = `<span class="sd__sum"></span>${button("Close", "", 'data-action="close"')}${next.retry ? button("Try again", "btn--primary", `data-action="${next.retry}"`) : ""}`;
+    foot.innerHTML = `<span class="sd__sum"></span>${next.retry ? button("Try again", "btn--primary", `data-action="${next.retry}"`) : ""}`;
   }
 
   // ---------- Merge view ----------
@@ -349,7 +351,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     if (fraction) fraction.textContent = `${value.done} / ${value.total}`;
   }
 
-  /** Shows a short status next to the title, such as a wait Google asked for. @param {string} text */
+  /** Shows a wait Google asked for next to the title; an empty text hides it. @param {string} text */
   function notice(text) {
     status.textContent = text;
   }
@@ -372,7 +374,7 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     if (!action) return;
     const field = /** @type {HTMLInputElement | null} */ (body.querySelector("#syncCalendarId"));
     if (action === "pick-key") keyInput.click();
-    else if (action === "connect") handlers.connect(key.text, key.name, field?.value.trim() || "");
+    else if (action === "connect") handlers.connect(key.text, field?.value.trim() || "");
     else if (action === "close") handlers.close();
     else if (action === "overview") handlers.overview();
     else if (action === "setup") handlers.setup();
@@ -417,10 +419,32 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     void takeKey(event.dataTransfer?.files[0]);
   });
 
+  // A click on the backdrop closes like the close button while nothing runs: not while connecting, checking or applying.
+  // The dialog has no padding, so a click on the dialog element itself is a click on the backdrop; it counts only when
+  // the press began there too, so a text selection dragged out of the dialog never closes it.
+  const busy = () => view?.phase === "checking" || view?.phase === "applying" ||
+    (view?.phase === "setup" && Boolean(view.steps) && !view.steps?.some(item => item.state === "failed"));
+  let pressOnBackdrop = false;
+  dialog.addEventListener("pointerdown", event => { pressOnBackdrop = event.target === dialog; });
+  dialog.addEventListener("click", event => {
+    if (event.target === dialog && pressOnBackdrop && !busy()) handlers?.close();
+  });
+
   // Escape closes like the close button, except while applying, which only Cancel ends (docs/ui/Shell.md#sync-dialog).
   dialog.addEventListener("cancel", event => {
     event.preventDefault();
     if (view?.phase !== "applying") handlers?.close();
+  });
+
+  // Enter runs the primary action of the footer, unless it lands on a button or link, which act on their own. It is
+  // heard on the document: a phase replaces the content, and the focus then falls back to the page.
+  document.addEventListener("keydown", event => {
+    if (!dialog.open || event.key !== "Enter" || event.isComposing || !handlers) return;
+    if (event.target instanceof Element && event.target.closest("button, a")) return;
+    const primary = /** @type {HTMLButtonElement | null} */ (foot.querySelector(".btn--primary:not(:disabled)"));
+    if (!primary) return;
+    event.preventDefault();
+    primary.click();
   });
 
   // Arrow keys move between the rows of the merge view; Space toggles the focused control.
@@ -434,5 +458,5 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     /** @type {HTMLElement | null} */ (next.querySelector('button[aria-pressed="true"], button'))?.focus();
   });
 
-  app.syncDialog = { open, close, render, rowState, progress, notice, isOpen: () => dialog.open, phase: () => view?.phase || "" };
+  app.syncDialog = { open, close, render, rowState, progress, notice, isOpen: () => dialog.open };
 })(window.MDCalendar);

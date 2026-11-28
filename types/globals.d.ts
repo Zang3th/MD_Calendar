@@ -123,18 +123,17 @@ interface MDCalendarNamespace {
     displayName(contact: MDCContact): string;
   };
   sync: {
+    /** Items from this day on are synchronized. */
     cutover: string;
-    fieldsOf: Record<MDCSyncKind, string[]>;
     colorId(hex: string): string;
     eventTag(event: any, tags: MDCTag[]): string;
-    zoned(instant: number, timeZone: string): { date: string; time: string };
-    instantOf(date: string, time: string, timeZone: string): number;
     localFields(kind: MDCSyncKind, item: any, key?: string): Record<string, string>;
     fingerprints(fields: Record<string, string>): MDCSyncFields;
     collect(calendar: MDCCalendar, backlog: MDCBacklog): MDCSyncLocal;
     fromEvent(event: any, timeZone: string, tags: MDCTag[]): MDCSyncRemote;
     toEvent(kind: MDCSyncKind, fields: Record<string, string>, timeZone: string, tags: MDCTag[], tag?: string): Record<string, unknown>;
     compare(input: { local: MDCSyncLocal; base: Record<string, MDCSyncItem>; events: any[]; full: boolean; timeZone: string; tags: MDCTag[] }): MDCSyncComparison;
+    localChanges(local: MDCSyncLocal, base: Record<string, MDCSyncItem>): MDCSyncLocalChanges;
     order(differences: MDCSyncDifference[]): MDCSyncDifference[];
     combined(difference: MDCSyncDifference): Record<string, string>;
   };
@@ -146,14 +145,12 @@ interface MDCalendarNamespace {
     progress(value: { done: number; total: number; label: string }): void;
     notice(text: string): void;
     isOpen(): boolean;
-    phase(): string;
   };
   syncPlan: {
     plan(comparison: MDCSyncComparison, choices: Record<string, MDCSyncChoice | null>, context: { base: Record<string, MDCSyncItem>; timeZone: string; tags: MDCTag[]; newId: () => string; by: string; startedAt: string; syncToken: string }): MDCSyncJournal;
     run(options: { journal: MDCSyncJournal; client: MDCGoogleClient; cancelled?: () => boolean; progress?: (operation: MDCSyncOperation) => void; persist?: (journal: MDCSyncJournal) => Promise<void>; signal?: AbortSignal }): Promise<void>;
     applyLocal(calendar: MDCCalendar, backlog: MDCBacklog, journal: MDCSyncJournal): MDCUndoAction | null;
     record(base: Record<string, MDCSyncItem>, journal: MDCSyncJournal): { items: Record<string, MDCSyncItem>; open: string[]; counts: MDCSyncCounts };
-    find(calendar: MDCCalendar, backlog: MDCBacklog, id: string): MDCSyncRef | null;
   };
   google: {
     readKey(text: string): MDCGoogleKey;
@@ -169,11 +166,11 @@ interface MDCalendarNamespace {
     file(folder: MDCStorageAdapter, unreadable: () => void): ReturnType<typeof import("@zang3th/md-libs/platform").jsonFile.create>;
     read(text: string): MDCFolderState | null;
     summary(state: Record<string, any>, deviceId: string): MDCFolderInfo;
-    syncStatus(state: Record<string, any>): { connected: boolean; changed: boolean; interrupted: boolean };
     sync(state: Record<string, any>): MDCSyncState | null;
     connected(state: Record<string, any>, calendarId: string): MDCFolderState;
     journal(state: Record<string, any>, journal: MDCSyncJournal | null): MDCFolderState;
     synced(state: Record<string, any>, device: MDCDevice, result: MDCSyncResult, now: Date): MDCFolderState;
+    checked(state: Record<string, any>, device: MDCDevice, result: MDCSyncCheck, now: Date): MDCFolderState;
     stamp(now: Date): string;
   };
   vcard: { parse(text: string): MDCContact[]; serialize(contacts: MDCContact[]): string };
@@ -453,6 +450,7 @@ type MDCSyncState = {
   /** Google's sync token of the last query; absent before the first synchronization and after Google rejected it */
   syncToken?: string;
   last?: MDCSyncLast;
+  checked?: MDCSyncChecked;
   items: Record<string, MDCSyncItem>;
   /** Events of differences left open, read again on the next synchronization */
   open?: string[];
@@ -460,7 +458,11 @@ type MDCSyncState = {
   [key: string]: unknown;
 };
 type MDCSyncCounts = { toGoogle: number; toCalendar: number; skipped: number; failed: number };
-type MDCSyncLast = MDCSyncCounts & { at: string; by: string; calendarHash: string };
+type MDCSyncLast = MDCSyncCounts & { at: string; by: string };
+/** The last check, kept apart from the last synchronization. */
+type MDCSyncChecked = { at: string; by: string; differences: number };
+/** What a check records; `inSync` only when it found no differences. */
+type MDCSyncCheck = { differences: number; inSync?: { syncToken: string; items: Record<string, MDCSyncItem>; open: string[] } };
 type MDCSyncKind = "entry" | "series" | "multi-day" | "day-off";
 /** Fingerprints of the synchronized fields, by field name. */
 type MDCSyncFields = Record<string, string>;
@@ -495,21 +497,24 @@ type MDCSyncOperation = {
 };
 // Sync dialog (see docs/ui/Shell.md#sync-dialog).
 type MDCSyncRetry = "check" | "complete" | "overview" | "";
+/** A titled group of facts in the overview of the sync dialog. */
+type MDCSyncFactGroup = { title: string; facts: MDCSyncFact[] };
+/** Label, value and an optional quieter second line, tinted by its tone. */
+type MDCSyncFact = [label: string, value: string, detail?: string, tone?: "ok" | "warn"];
 type MDCSyncStep = { label: string; state: string; count?: string; detail?: string };
-type MDCSyncView = { status?: string } & (
+type MDCSyncView =
   | { phase: "setup"; calendarId: string; steps: MDCSyncStep[] | null; cancellable: boolean }
-  | { phase: "overview"; facts: Array<[string, string]>; unsaved: number; interrupted: { done: number; total: number } | null }
+  | { phase: "overview"; groups: MDCSyncFactGroup[]; unsaved: number; interrupted: { done: number; total: number } | null }
   | { phase: "checking"; steps: MDCSyncStep[]; notice: string }
   | { phase: "review"; differences: MDCSyncDifference[]; tags: MDCTag[] }
   | { phase: "applying"; differences: MDCSyncDifference[]; tags: MDCTag[]; states: Record<string, string>; progress: { done: number; total: number; label: string } }
   | { phase: "done"; counts: MDCSyncCounts; cancelled: boolean; failures: Array<{ title: string; reason: string }> }
-  | { phase: "error"; title: string; message: string; code: string; detail: string; retry: MDCSyncRetry }
-);
+  | { phase: "error"; title: string; message: string; code: string; detail: string; retry: MDCSyncRetry };
 type MDCSyncDialogHandlers = {
   close(): void;
   overview(): void;
   setup(): void;
-  connect(keyText: string, keyName: string, calendarId: string): void;
+  connect(keyText: string, calendarId: string): void;
   check(): void;
   saveAndCheck(): void;
   complete(): void;
@@ -571,13 +576,15 @@ type MDCGoogleClient = {
   authorize(signal?: AbortSignal): Promise<string>;
   probe(signal?: AbortSignal): Promise<{ timeZone: string; accessRole: string }>;
   get(id: string, signal?: AbortSignal): Promise<any>;
-  changes(options?: { syncToken?: string; signal?: AbortSignal; onPage?: (count: number) => void }): Promise<{ expired: true } | { expired: false; events: any[]; syncToken: string; timeZone: string }>;
+  changes(options?: { syncToken?: string; signal?: AbortSignal; onPage?: (count: number) => void }): Promise<{ expired: true } | { expired: false; events: any[]; syncToken: string }>;
   insert(event: Record<string, unknown> & { id: string }, signal?: AbortSignal): Promise<{ status: "created"; event: any } | { status: "exists" }>;
   patch(id: string, fields: Record<string, unknown>, etag: string, signal?: AbortSignal): Promise<{ status: "updated"; event: any } | { status: "changed" } | { status: "gone" }>;
   remove(id: string, signal?: AbortSignal): Promise<{ status: "deleted" }>;
 };
 /** What a completed synchronization records. */
-type MDCSyncResult = { syncToken: string; items: Record<string, MDCSyncItem>; open: string[]; calendarHash: string; counts: MDCSyncCounts };
+type MDCSyncResult = { syncToken: string; items: Record<string, MDCSyncItem>; open: string[]; counts: MDCSyncCounts };
+/** Local changes since the last synchronization, by what they do in Google. */
+type MDCSyncLocalChanges = { added: number; changed: number; removed: number };
 
 type MDCRecentFolder = { id: string; name: string; openedAt: number; info?: MDCFolderInfo };
 /** What the start card shows of a folder, from its MD_Calendar.json. */

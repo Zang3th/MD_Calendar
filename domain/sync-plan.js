@@ -300,5 +300,5 @@ window.MDCalendar = window.MDCalendar || /** @type {MDCalendarNamespace} */ ({})
     return { items, open: [...open].filter(Boolean), counts };
   }
 
-  app.syncPlan = { plan, run, applyLocal, record, find };
+  app.syncPlan = { plan, run, applyLocal, record };
 })(window.MDCalendar);
